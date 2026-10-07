@@ -1,0 +1,1 @@
+[{"model":"Persistence","year":2025,"mae":10426,"rmse":null,"r2":null},{"model":"Random Forest","year":2025,"mae":12690,"rmse":18502,"r2":0.360},{"model":"Random Forest","year":2024,"mae":11060,"rmse":null,"r2":null},{"model":"Ridge Regression","year":2025,"mae":null,"rmse":null,"r2":null},{"model":"Gradient Boosting","year":2025,"mae":null,"rmse":null,"r2":null}]

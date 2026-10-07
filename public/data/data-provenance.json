@@ -1,0 +1,29 @@
+{
+  "research-summary.json": {
+    "source": "User-supplied MALARIASCOPE specification",
+    "classification": "Supplied study aggregate",
+    "license": "Not specified",
+    "underlyingRecords": "Not connected",
+    "sha256": "4d013603e4cf24f6d40ecdacd9491c92cc4c0aab29ffbde1110893100633a87d"
+  },
+  "boundaries.geojson": {
+    "source": "Natural Earth public-domain country outlines, distributed by datasets/geo-countries",
+    "classification": "Public source country outline; not district boundaries",
+    "license": "Public domain",
+    "url": "https://github.com/datasets/geo-countries",
+    "retrieved": "2026-10-07",
+    "sha256": "a7be025bdd48bb15ce732bc27823de3a88a3e5967852aa83d01c028d642c27d1"
+  },
+  "model-performance.json": {
+    "source": "User-supplied MALARIASCOPE specification",
+    "classification": "Supplied study output; not independently verified",
+    "license": "Not specified",
+    "sha256": "8802dbe3bdf3f84cf2bb0b51e26e0e80aaff18d2527bef841d7d7b91f8617074"
+  },
+  "spatial-analysis.json": {
+    "source": "User-supplied MALARIASCOPE specification",
+    "classification": "Supplied study output; not independently verified",
+    "license": "Not specified",
+    "sha256": "674f561fc984ea13f130cb4fa51f155d118dd0899491f942b2999d015309a849"
+  }
+}

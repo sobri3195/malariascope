@@ -1,0 +1,331 @@
+.d360-workspace-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 15px;
+}
+.d360-workspace-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 10px;
+  color: #62777e;
+}
+.d360-workspace-controls select {
+  max-width: 320px;
+}
+.d360-workspace-controls > a {
+  margin-left: auto;
+  padding-bottom: 10px;
+}
+.d360-heading .heading-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.d360-heading .heading-actions .button {
+  font-size: 10px;
+}
+.d360-source-note {
+  font-size: 10px;
+}
+.d360-source-note svg {
+  flex-shrink: 0;
+}
+.d360-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px;
+  background: linear-gradient(110deg, #eaf4ef, #f7faf9);
+  border: 1px solid #dceae3;
+  border-radius: 8px;
+  margin-bottom: 17px;
+}
+.d360-hero h2 {
+  font-size: 25px;
+  color: #23564d;
+  margin-top: 7px;
+}
+.d360-hero p {
+  font-size: 11px;
+  color: #607d72;
+  margin-top: 8px;
+}
+.d360-hero .badge {
+  font-size: 10px;
+  padding: 8px 12px;
+}
+.d360-primary-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 17px;
+}
+.d360-secondary-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.d360-value {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 18px;
+  border-radius: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-width: 0;
+}
+.d360-value > span {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #647c77;
+  font-weight: 600;
+}
+.d360-value > strong {
+  font-family: Manrope, sans-serif;
+  font-size: 23px;
+  color: #23534b;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.d360-value > small {
+  font-size: 10px;
+  color: #62777e;
+  line-height: 1.7;
+}
+.d360-secondary-metrics .d360-value > strong {
+  font-size: 19px;
+}
+.d360-chart {
+  height: 285px;
+  width: 100%;
+  padding: 5px 15px 15px;
+  font-size: 10px;
+}
+.d360-chart .recharts-cartesian-axis-tick-value {
+  font-size: 10px;
+  fill: #62777e;
+}
+.d360-explanation {
+  padding: 5px 21px 20px;
+  color: #52746b;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.d360-explanation > p {
+  margin: 12px 0;
+}
+.d360-explanation ol {
+  padding-left: 19px;
+  margin: 15px 0;
+}
+.d360-explanation li {
+  padding: 7px 0;
+}
+.d360-explanation strong {
+  font-weight: 550;
+}
+.d360-explanation li small {
+  display: block;
+  color: #62777e;
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 5px;
+}
+.d360-explanation > small {
+  font-size: 10px;
+  display: block;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  color: #647770;
+}
+.d360-tabs {
+  scrollbar-width: thin;
+}
+.d360-tabs button {
+  font-size: 11px;
+  padding: 12px 16px;
+}
+.d360-panel .toolbar small {
+  font-size: 10px;
+  color: #62777e;
+  line-height: 1.6;
+}
+.d360-signal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.7;
+  color: #627b74;
+}
+.d360-signal > span:nth-child(2) {
+  flex: 1;
+}
+.d360-report > dl {
+  grid-template-columns: 1fr 1fr;
+}
+.d360-report-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.d360-report pre {
+  font-size: 10px;
+}
+.d360-workspace [role='tabpanel']:focus-visible {
+  outline: 2px solid #168478;
+  outline-offset: 5px;
+}
+@media (max-width: 1100px) {
+  .d360-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .d360-heading .heading-actions {
+    justify-content: flex-start;
+  }
+  .d360-secondary-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .d360-value {
+    padding: 15px;
+  }
+  .d360-value > strong {
+    font-size: 21px;
+  }
+  .d360-heading .heading-actions .button {
+    font-size: 10px;
+  }
+  .d360-workspace-controls > a {
+    margin-left: 0;
+  }
+}
+@media (max-width: 650px) {
+  .d360-workspace-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .d360-workspace-controls label:nth-child(2) {
+    grid-column: 1/-1;
+    grid-row: 2;
+  }
+  .d360-workspace-controls select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .d360-workspace-controls > a {
+    grid-column: 1/-1;
+    padding: 4px 0;
+  }
+  .d360-primary-metrics,
+  .d360-secondary-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .d360-value {
+    padding: 13px;
+    gap: 10px;
+  }
+  .d360-value > strong,
+  .d360-secondary-metrics .d360-value > strong {
+    font-size: 19px;
+  }
+  .d360-value > span {
+    font-size: 8px;
+  }
+  .d360-value > small {
+    font-size: 9px;
+  }
+  .d360-hero {
+    padding: 18px;
+  }
+  .d360-hero h2 {
+    font-size: 22px;
+  }
+  .d360-heading .heading-actions {
+    padding-top: 0;
+    width: 100%;
+    gap: 8px;
+  }
+  .d360-heading .heading-actions .button {
+    font-size: 9px;
+    padding: 9px;
+    white-space: normal;
+  }
+  .d360-heading .heading-actions .primary {
+    flex: 1;
+  }
+  .d360-heading .heading-actions .button svg {
+    flex-shrink: 0;
+  }
+  .d360-signal {
+    flex-wrap: wrap;
+  }
+  .d360-chart {
+    height: 265px;
+    padding-left: 0;
+    padding-right: 5px;
+  }
+  .d360-report > dl {
+    display: block;
+  }
+  .d360-report-item {
+    margin-bottom: 10px;
+  }
+  .d360-report pre {
+    font-size: 9px;
+  }
+}
+@media print {
+  .d360-workspace-controls,
+  .d360-source-note,
+  .d360-tabs {
+    display: none !important;
+  }
+  .d360-workspace.has-report {
+    display: none !important;
+  }
+  .d360-report {
+    display: block !important;
+    border: none !important;
+  }
+  .d360-report pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: white;
+    font-size: 9px;
+    break-inside: auto;
+  }
+  .d360-report > dl {
+    display: block;
+  }
+  .d360-report-item {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    margin-bottom: 8px;
+  }
+  .d360-report table {
+    font-size: 9px;
+  }
+  .d360-report {
+    break-inside: auto !important;
+  }
+  .d360-report .panel-head p {
+    font-size: 10px;
+  }
+  .d360-panel .button {
+    display: none !important;
+  }
+}
