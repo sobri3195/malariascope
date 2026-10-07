@@ -77,6 +77,7 @@ import './styles.css';
 import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import { validateGeometry, resolveFeatureRow } from './geometry';
 const MapView = lazy(() => import('./Map'));
+const ForecastWorkbench = lazy(() => import('./ForecastWorkbench'));
 const District360 = lazy(() => import('./DistrictIntelligence360'));
 const SpatialLab = lazy(() => import('./SpatialLab'));
 const modules: [string, string, React.ElementType][] = [
@@ -85,7 +86,7 @@ const modules: [string, string, React.ElementType][] = [
   ['surveillance', 'Surveillance Center', Activity],
   ['district-intelligence', 'District Intelligence 360°', Target],
   ['climate', 'Climate Intelligence', Wind],
-  ['forecasting', 'Forecasting Center', Activity],
+  ['forecasting', 'Forecasting Workbench Pro', Activity],
   ['model-benchmarking', 'Model Laboratory', FlaskConical],
   ['spatial-analysis', 'Spatial Analysis', Layers],
   ['early-warning', 'Early Warning Center', Bell],
@@ -1011,177 +1012,10 @@ function Climate() {
   );
 }
 function Models({ models, forecast = false }: { models: any[]; forecast?: boolean }) {
-  const { filtered, model, setModel, year } = useData();
-  const [metric, setMetric] = useState('mae'),
-    [tab, setTab] = useState('Overview');
-  const available = models
-    .filter((m) => m.year === year)
-    .sort((a, b) => {
-      if (a[metric] === null) return 1;
-      if (b[metric] === null) return -1;
-      return metric === 'r2' ? b[metric] - a[metric] : a[metric] - b[metric];
-    });
-  const predictions = filtered.filter((r) => r.prediction !== undefined && r.model === model),
-    computed = performance(predictions);
   return (
-    <>
-      <Heading
-        title={forecast ? 'Forecasting Center' : 'Model Laboratory'}
-        sub="Transparent temporal validation. Predictions always remain distinct from observations."
-      />
-      <Filters />
-      <div className="notice">
-        <Info size={16} /> Persistence outperformed Random Forest on 2025 MAE. Training: 2021–2023 →
-        selection: 2024 → refit through 2024 → untouched test: 2025.
-      </div>
-      <div className="tabs">
-        {[
-          'Overview',
-          'Performance',
-          'Residuals',
-          'District Errors',
-          'Feature Importance',
-          'Validation Strategy',
-          'Model Metadata',
-        ].map((t) => (
-          <button className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)}>
-            {t}
-          </button>
-        ))}
-      </div>
-      {['Overview', 'Performance'].includes(tab) ? (
-        <div className="two-col">
-          <Panel
-            title="Study model leaderboard"
-            sub="Ranking uses only available values for the selected metric."
-            action={
-              <select value={metric} onChange={(e) => setMetric(e.target.value)}>
-                <option value="mae">MAE · lower is better</option>
-                <option value="rmse">RMSE · lower is better</option>
-                <option value="r2">R² · higher is better</option>
-              </select>
-            }
-          >
-            <table>
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Model</th>
-                  <th>{metric.toUpperCase()}</th>
-                  <th>Period</th>
-                </tr>
-              </thead>
-              <tbody>
-                {available.map((m, i) => (
-                  <tr key={m.model}>
-                    <td>{m[metric] === null ? '—' : i + 1}</td>
-                    <td>
-                      <button className="text-link" onClick={() => setModel(m.model)}>
-                        {m.model}
-                      </button>
-                    </td>
-                    <td>{fmt(m[metric], metric === 'r2' ? 3 : 0)}</td>
-                    <td>{m.year}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Provenance field="study model metrics" />
-          </Panel>
-          <Panel title="Observed vs. predicted" sub={`${model} · loaded district results`}>
-            {predictions.length ? (
-              <Trend data={predictions} />
-            ) : (
-              <Empty
-                title="Prediction files not connected"
-                detail="Import verified outputs with prediction and model fields. Aggregate metrics are not district predictions."
-              />
-            )}
-          </Panel>
-        </div>
-      ) : tab === 'Feature Importance' ? (
-        <Panel title="Feature importance">
-          <p className="body-copy">
-            Prior malaria burden was the leading permutation predictor in the supplied study.
-            Numerical importance values and other ranks were not supplied.
-          </p>
-          <Empty title="Detailed importance files not connected" />
-        </Panel>
-      ) : tab === 'Validation Strategy' ? (
-        <Panel title="Temporal validation">
-          <div className="timeline">
-            {[
-              '2021–2023 · Training',
-              '2024 · Model selection',
-              'Through 2024 · Refit',
-              '2025 · Untouched test',
-            ].map((x) => (
-              <div key={x}>
-                <Check size={20} />
-                {x}
-              </div>
-            ))}
-          </div>
-          <p className="body-copy">
-            Supiori was excluded from the balanced eight-district forecasting panel because its 2024
-            outcome was unavailable. The spatial assessment includes nine districts.
-          </p>
-        </Panel>
-      ) : tab === 'Model Metadata' ? (
-        <Panel title="Model metadata">
-          <p className="body-copy">
-            Selected model: {model}. Hyperparameters, training artifacts, feature matrices, and
-            executable trained models were not supplied. Client-side retraining is unavailable; no
-            models are trained on invented data.
-          </p>
-          <Button
-            onClick={() =>
-              download('model-metadata.json', {
-                model,
-                year,
-                lifecycle: ['2021–2023 training', '2024 selection', '2025 test'],
-                status: 'Supplied aggregate only',
-              })
-            }
-          >
-            Export metadata
-          </Button>
-        </Panel>
-      ) : (
-        <Panel title={tab} sub="Calculated from explicitly labeled model predictions.">
-          {predictions.length ? (
-            <>
-              <div className="notice">
-                MAE {fmt(computed?.mae)} · RMSE {fmt(computed?.rmse)} · R² {fmt(computed?.r2, 3)} ·
-                n={computed?.n}
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>District</th>
-                    <th>Observed</th>
-                    <th>Prediction</th>
-                    <th>Residual (prediction − observed)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {predictions.map((r) => (
-                    <tr key={r.district}>
-                      <td>{r.district}</td>
-                      <td>{fmt(r.cases)}</td>
-                      <td>{fmt(r.prediction)}</td>
-                      <td>{fmt(r.prediction! - r.cases)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          ) : (
-            <Empty title="Validation observations not connected" />
-          )}
-        </Panel>
-      )}
-    </>
+    <Suspense fallback={<Empty title="Loading forecasting workbench…" />}>
+      <ForecastWorkbench study={models} filters={<Filters />} laboratory={!forecast} />
+    </Suspense>
   );
 }
 function DataCenter() {
