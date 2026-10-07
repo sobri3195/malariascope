@@ -66,7 +66,6 @@ import {
   download,
   incidence,
   normalize,
-  performance,
   risk,
   toCSV,
   validate,
@@ -1465,175 +1464,17 @@ function Scenario() {
     </Suspense>
   );
 }
-function Reports({ models, summary, spatial }: { models: any[]; summary: any; spatial: any }) {
-  const { state, update, filtered, rows, year, district, model, signals } = useData();
-  const [type, setType] = useState('Regional Summary'),
-    [generated, setGenerated] = useState(false),
-    [sections, setSections] = useState(['Observations', 'Alerts', 'Readiness']);
-  const preset: Record<string, string[]> = {
-    'Regional Summary': ['Observations', 'Charts', 'Map', 'Alerts'],
-    'District Intelligence Report': ['Observations', 'Charts', 'Risk table'],
-    'Risk Intelligence Report': ['Risk table', 'Map', 'Alerts'],
-    'Model Performance Report': ['Model metrics', 'Charts'],
-    'Spatial Analysis Report': ['Spatial evidence', 'Map'],
-    'Data Quality Report': ['Quality', 'Observations'],
-    'Force Health Readiness Report': ['Readiness', 'Alerts'],
-  };
-  const report = {
-    title: type,
-    year,
-    district,
-    model,
-    source: state.active || 'Supplied study summary',
-    observations: sections.includes('Observations') ? filtered : undefined,
-    alerts: sections.includes('Alerts')
-      ? signals.filter(
-          (a) =>
-            a.year === year &&
-            (district === 'All districts' || normalize(a.district) === normalize(district)),
-        )
-      : undefined,
-    readiness: sections.includes('Readiness') ? state.checklist : undefined,
-    classification: safety,
-    suppliedSummary: state.active ? undefined : summary,
-    modelMetrics: sections.includes('Model metrics')
-      ? {
-          study: models.filter((m) => m.year === year),
-          loaded: performance(filtered.filter((r) => r.model === model)),
-        }
-      : undefined,
-    spatialEvidence: sections.includes('Spatial evidence') ? spatial : undefined,
-    risk: sections.includes('Risk table')
-      ? filtered.map((r) => ({
-          district: r.district,
-          incidence: incidence(r),
-          risk: risk(r, state.thresholds),
-          thresholds: state.thresholds,
-        }))
-      : undefined,
-    quality: sections.includes('Quality')
-      ? validate(rows as unknown as Record<string, unknown>[]).issues
-      : undefined,
-  };
+const ResearchReportBuilder = lazy(() => import('./ResearchReportBuilder'));
+function Reports(props: {
+  models: any[];
+  summary: any;
+  spatial: any;
+  provenance: Record<string, any>;
+}) {
   return (
-    <>
-      <Heading
-        title="Reports"
-        sub="Generate transparent, print-friendly local analytical reports."
-      />
-      <Panel title="Report builder">
-        <div className="toolbar">
-          <select
-            aria-label="Report type"
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value);
-              setSections(preset[e.target.value] || []);
-              setGenerated(false);
-            }}
-          >
-            {[
-              'Regional Summary',
-              'District Intelligence Report',
-              'Risk Intelligence Report',
-              'Model Performance Report',
-              'Spatial Analysis Report',
-              'Data Quality Report',
-              'Force Health Readiness Report',
-            ].map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-          {[
-            'Observations',
-            'Alerts',
-            'Readiness',
-            'Charts',
-            'Map',
-            'Risk table',
-            'Model metrics',
-            'Spatial evidence',
-            'Quality',
-          ].map((s) => (
-            <label className="check" key={s}>
-              <input
-                type="checkbox"
-                checked={sections.includes(s)}
-                onChange={(e) =>
-                  setSections(e.target.checked ? [...sections, s] : sections.filter((x) => x !== s))
-                }
-              />
-              {s}
-            </label>
-          ))}
-          <Button
-            primary
-            onClick={() => {
-              setGenerated(true);
-              update({}, 'Report generated', type);
-            }}
-          >
-            Generate report
-          </Button>
-        </div>
-        <Filters />
-      </Panel>
-      {generated && (
-        <Panel title={type} sub={`${district} · ${year} · source: ${report.source}`}>
-          <div className="toolbar no-print">
-            <Button onClick={() => window.print()}>Print / Save as PDF</Button>
-            <Button onClick={() => download('analytical-report.json', report)}>Export JSON</Button>
-            <Button onClick={() => download('report-observations.csv', toCSV(filtered), true)}>
-              Export CSV
-            </Button>
-          </div>
-          <p className="report-safety">{safety}</p>
-          {sections.includes('Observations') && <Table rows={filtered} />}
-          <h3 className="body-copy">Evidence limitations</h3>
-          <p className="body-copy">
-            User imports are schema validated and not independently verified. Predictions are not
-            observations. Missing data remain unavailable. Readiness entries reflect local checklist
-            review.
-          </p>
-          {sections.includes('Alerts') && <pre>{JSON.stringify(report.alerts, null, 2)}</pre>}
-          {sections.includes('Readiness') && <pre>{JSON.stringify(report.readiness, null, 2)}</pre>}
-          {!state.active && (
-            <div className="body-copy">
-              <h3>Supplied study evidence · not district observations</h3>
-              <p>
-                {fmt(summary?.totalCases)} reported cases across {summary?.districtYears}{' '}
-                district-years in the balanced panel. Annual aggregate for {year}:{' '}
-                {fmt(summary?.annual.find((r: any) => r.year === year)?.cases)} cases. Underlying
-                district records were not supplied.
-              </p>
-            </div>
-          )}
-          {sections.includes('Charts') && (
-            <Trend
-              data={rows
-                .filter(
-                  (r) =>
-                    district === 'All districts' || normalize(r.district) === normalize(district),
-                )
-                .sort((a, b) => a.year - b.year)}
-            />
-          )}
-          {sections.includes('Map') && (
-            <Suspense fallback={<Empty title="Loading report map…" />}>
-              <MapView />
-            </Suspense>
-          )}
-          {sections.includes('Risk table') && <pre>{JSON.stringify(report.risk, null, 2)}</pre>}
-          {sections.includes('Model metrics') && (
-            <pre>{JSON.stringify(report.modelMetrics, null, 2)}</pre>
-          )}
-          {sections.includes('Spatial evidence') && (
-            <pre>{JSON.stringify(report.spatialEvidence, null, 2)}</pre>
-          )}
-          {sections.includes('Quality') && <pre>{JSON.stringify(report.quality, null, 2)}</pre>}
-        </Panel>
-      )}
-    </>
+    <Suspense fallback={<p>Loading report builder…</p>}>
+      <ResearchReportBuilder {...props} />
+    </Suspense>
   );
 }
 function SettingsPage() {
@@ -2308,7 +2149,12 @@ function App() {
             <Route
               path="/reports"
               element={
-                <Reports models={data.models} summary={data.summary} spatial={data.spatial} />
+                <Reports
+                  models={data.models}
+                  summary={data.summary}
+                  spatial={data.spatial}
+                  provenance={data.provenance}
+                />
               }
             />
             <Route path="/alerts" element={<Alerts />} />
