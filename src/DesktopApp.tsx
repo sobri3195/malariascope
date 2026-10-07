@@ -28,6 +28,7 @@ import {
   Target,
   Upload,
   Wind,
+  Watch,
   X,
   Trash2,
   Play,
@@ -1967,6 +1968,10 @@ function App() {
               <NavLink to="/presentation">
                 <Play size={16} />
                 Presentation mode
+              </NavLink>
+              <NavLink to="/smartwatch">
+                <Watch size={16} />
+                MALARIASCOPE Watch
               </NavLink>
               <div className="local-user">
                 <span>RA</span>
