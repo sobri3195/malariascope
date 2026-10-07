@@ -30,6 +30,7 @@ export type State = {
   readinessDistricts?: string[];
   districtBookmarks?: string[];
   thresholds: number[];
+  analyticalScenarios?: import('./scenario-engine').SavedScenario[];
   riskScenario?: import('./risk-engine').RiskScenario;
   snapshots: {
     id: string;

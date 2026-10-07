@@ -1457,84 +1457,12 @@ function ForceHealth() {
     </Suspense>
   );
 }
+const AnalyticalScenarioSimulator = lazy(() => import('./AnalyticalScenarioSimulator'));
 function Scenario() {
-  const { state, update } = useStore();
-  const [baseline, setBaseline] = useState(0),
-    [population, setPopulation] = useState(1000),
-    [trend, setTrend] = useState(0),
-    [rain, setRain] = useState(0),
-    [temp, setTemp] = useState(0);
-  const cases = baseline * (1 + trend / 100),
-    r: Row = { district: 'Exploratory scenario', year: 2025, cases, population };
   return (
-    <>
-      <Heading
-        title="Scenario Explorer"
-        sub="Explore assumptions without modifying observation datasets."
-      />
-      <div className="notice amber-notice">Exploratory Scenario — Not Observed Data</div>
-      <div className="two-col">
-        <Panel title="Scenario assumptions">
-          {[
-            ['Baseline burden', baseline, setBaseline],
-            ['Population', population, setPopulation],
-            ['Malaria trend (%)', trend, setTrend],
-            ['Rainfall anomaly (SD)', rain, setRain],
-            ['Temperature anomaly (°C)', temp, setTemp],
-          ].map(([label, value, set]: any) => (
-            <label className="form-row" key={label}>
-              {label}
-              <input
-                type="number"
-                value={value}
-                min={label === 'Population' ? 1 : label === 'Baseline burden' ? 0 : undefined}
-                onChange={(e) =>
-                  set(
-                    label === 'Population'
-                      ? Math.max(1, +e.target.value)
-                      : label === 'Baseline burden'
-                        ? Math.max(0, +e.target.value)
-                        : label === 'Malaria trend (%)'
-                          ? Math.max(-100, +e.target.value)
-                          : +e.target.value,
-                  )
-                }
-              />
-            </label>
-          ))}
-          <Button
-            primary
-            onClick={() => {
-              download('exploratory-scenario.json', {
-                classification: 'Exploratory Scenario — Not Observed Data',
-                baseline,
-                population,
-                trend,
-                rain,
-                temp,
-                cases,
-                risk: risk(r, state.thresholds),
-              });
-              update({}, 'Scenario exported', 'Exploratory assumptions; no observed data changed');
-            }}
-          >
-            Save scenario separately
-          </Button>
-        </Panel>
-        <Panel title="Analytical sensitivity">
-          <div className="scenario-result">
-            <span>EXPLORATORY RISK</span>
-            <h1>{risk(r, state.thresholds)}</h1>
-            <strong>{fmt(incidence(r), 2)} per 1,000</strong>
-          </div>
-          <p className="body-copy">
-            Scenario cases = baseline × (1 + trend / 100). Risk follows configured incidence
-            thresholds. Rainfall and temperature assumptions are recorded but do not alter output
-            because no validated climate coefficient was supplied.
-          </p>
-        </Panel>
-      </div>
-    </>
+    <Suspense fallback={<p>Loading simulator…</p>}>
+      <AnalyticalScenarioSimulator />
+    </Suspense>
   );
 }
 function Reports({ models, summary, spatial }: { models: any[]; summary: any; spatial: any }) {

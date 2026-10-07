@@ -1,0 +1,107 @@
+.simulator {
+  max-width: 1600px;
+  margin: auto;
+}
+.simulator .panel {
+  padding: 20px;
+  margin: 18px 0;
+}
+.exploratory-panel {
+  border: 2px dashed #7c3aed !important;
+  background: linear-gradient(135deg, #f5f3ff, #fff) !important;
+  color: #1e1b4b;
+}
+.scenario-label {
+  font-weight: 700;
+  color: #6d28d9;
+  font-size: 12px;
+}
+.scenario-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.scenario-metrics strong {
+  font-size: 24px;
+}
+.scenario-table {
+  overflow: auto;
+}
+.scenario-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.scenario-table th,
+.scenario-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd6fe;
+  vertical-align: top;
+}
+.scenario-table caption {
+  text-align: left;
+  color: #6d28d9;
+  font-weight: bold;
+  padding: 12px;
+}
+.scenario-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+.saved-scenario {
+  border-top: 1px solid #ddd6fe;
+  padding: 16px 0;
+}
+.effect-bar {
+  height: 8px;
+  background: #7c3aed;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+.simulator button {
+  padding: 10px 14px;
+  border: 1px solid #7c3aed;
+  border-radius: 6px;
+  color: #5b21b6;
+  background: #fff;
+  cursor: pointer;
+}
+.simulator button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.simulator input,
+.simulator select {
+  max-width: 100%;
+  padding: 8px;
+}
+.simulator dd {
+  margin-bottom: 14px;
+}
+.simulator fieldset {
+  min-width: 0;
+}
+.simulator .form-row {
+  gap: 12px;
+}
+.simulator :focus-visible {
+  outline: 3px solid #7c3aed;
+  outline-offset: 3px;
+}
+@media (max-width: 800px) {
+  .scenario-columns {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+  .simulator .form-row {
+    display: grid;
+  }
+  .simulator .panel {
+    padding: 14px;
+  }
+  .simulator h1 {
+    font-size: 25px;
+  }
+}
