@@ -32,10 +32,10 @@ import {
   incidence360,
   rollingMean,
   readinessDomains,
-  readinessStatus,
   type Record360,
   type SpatialContext,
 } from './district-intelligence';
+import { buildReadinessMatrix } from './readiness-engine';
 import './district-360.css';
 const tabs = [
   'Overview',
@@ -294,6 +294,34 @@ export default function DistrictIntelligence360({
     bookmark = (state.districtBookmarks || []).some((d) => normalize(d) === normalize(district)),
     key = `${normalize(district)}:${year}`,
     checklist = state.districtChecklists?.[key] || {};
+  const readinessMatrix = useMemo(
+    () =>
+      buildReadinessMatrix({
+        datasets: joined.datasets,
+        records: joined.records,
+        active: state.active,
+        year,
+        model,
+        checklists: state.districtChecklists || {},
+        metadata: state.readinessMetadata,
+        manualDistricts: state.readinessDistricts,
+        thresholds: state.thresholds,
+      }),
+    [
+      joined.datasets,
+      joined.records,
+      state.active,
+      year,
+      model,
+      state.districtChecklists,
+      state.readinessMetadata,
+      state.readinessDistricts,
+      state.thresholds,
+    ],
+  );
+  const readiness = readinessMatrix.districts.find(
+    (d) => normalize(d.district) === normalize(district),
+  );
   const history = data.history.filter((r) => r.year <= year),
     current = data.current,
     sourceTrust =
@@ -401,7 +429,9 @@ export default function DistrictIntelligence360({
       comparisons,
       readiness: Object.entries(readinessDomains).map(([domain, items]) => ({
         domain,
-        status: readinessStatus(domain, items, checklist, data.riskLevel),
+        status:
+          readiness?.cells.find((cell) => cell.legacy === domain)?.state || 'INSUFFICIENT DATA',
+        assessment: readiness?.cells.find((cell) => cell.legacy === domain),
         checklist: Object.fromEntries(items.map((i) => [i, checklist[i] || 'NOT REVIEWED'])),
       })),
       alerts: data.signals,
@@ -452,8 +482,9 @@ export default function DistrictIntelligence360({
           <p>No additional elevated-risk signals can be established from the loaded evidence.</p>
         )}
         <small>
-          Classification uses derived or explicitly supplied incidence. Predictions, neighborhood indicators, and
-          checklist interpretation remain separate. Inputs: {sourceTrust.toLowerCase()}.
+          Classification uses derived or explicitly supplied incidence. Predictions, neighborhood
+          indicators, and checklist interpretation remain separate. Inputs:{' '}
+          {sourceTrust.toLowerCase()}.
         </small>
       </div>
     </Panel>
@@ -731,7 +762,11 @@ export default function DistrictIntelligence360({
                   />
                   <Value
                     label="LATEST SURVEILLANCE YEAR"
-                    value={data.latestSurveillanceYear === null ? na : String(data.latestSurveillanceYear)}
+                    value={
+                      data.latestSurveillanceYear === null
+                        ? na
+                        : String(data.latestSurveillanceYear)
+                    }
                     note="Latest loaded year; does not enter earlier-year analysis"
                   />
                   <Value
@@ -1025,8 +1060,15 @@ export default function DistrictIntelligence360({
                     <Panel
                       key={domain}
                       title={domain}
-                      sub={readinessStatus(domain, items, checklist, data.riskLevel)}
+                      sub={
+                        readiness?.cells.find((cell) => cell.legacy === domain)?.state ||
+                        'INSUFFICIENT DATA'
+                      }
                     >
+                      <p className="body-copy">
+                        {readiness?.cells.find((cell) => cell.legacy === domain)?.reason ||
+                          'Readiness evidence unavailable for this district and source scope.'}
+                      </p>
                       {items.map((item) => (
                         <div className="checklist-row" key={item}>
                           <span>{item}</span>
@@ -1036,6 +1078,17 @@ export default function DistrictIntelligence360({
                             onChange={(e) =>
                               update(
                                 {
+                                  readinessMetadata: {
+                                    ...state.readinessMetadata,
+                                    [key]: {
+                                      ...state.readinessMetadata?.[key],
+                                      [item]: {
+                                        status: e.target.value,
+                                        note: state.readinessMetadata?.[key]?.[item]?.note || '',
+                                        updatedAt: new Date().toISOString(),
+                                      },
+                                    },
+                                  },
                                   districtChecklists: {
                                     ...state.districtChecklists,
                                     [key]: { ...checklist, [item]: e.target.value },
@@ -1059,9 +1112,11 @@ export default function DistrictIntelligence360({
                         </div>
                       ))}
                       <p className="fine-print">
-                        All applicable items available → READY. Limited/unavailable items →
-                        ATTENTION. Elevated incidence with unconfirmed diagnostics → ATTENTION. No
-                        reviewed evidence → INSUFFICIENT DATA; otherwise REVIEW.
+                        READY describes locally documented applicable availability, not verified
+                        capacity. All NOT APPLICABLE → INSUFFICIENT DATA. All applicable items
+                        available → READY. Limited/unavailable items → ATTENTION. Elevated incidence
+                        with unconfirmed diagnostics → ATTENTION. No reviewed evidence →
+                        INSUFFICIENT DATA; otherwise REVIEW.
                       </p>
                     </Panel>
                   ))}
