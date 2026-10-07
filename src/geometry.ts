@@ -1,4 +1,4 @@
-import { normalize, type Row } from './analytics';
+import { normalize, type Row } from './analytics.ts';
 export function resolveFeatureRow(feature: any, rows: Row[]) {
   const code = feature.properties?.district_code || feature.properties?.code;
   const coded = code
@@ -7,7 +7,9 @@ export function resolveFeatureRow(feature: any, rows: Row[]) {
   if (coded.length === 1) return coded[0];
   if (coded.length > 1) return null;
   const name = String(feature.properties?.district || feature.properties?.name || '');
-  const named = rows.filter((r) => normalize(r.district) === normalize(name));
+  const named = rows.filter(
+    (r) => normalize(r.district) === normalize(name) && (!code || !r.district_code),
+  );
   return named.length === 1 ? named[0] : null;
 }
 export function validateGeometry(g: any) {
@@ -21,6 +23,20 @@ export function validateGeometry(g: any) {
       !['Polygon', 'MultiPolygon'].includes(feature.geometry?.type)
     )
       throw Error('Administrative geometry must contain Polygon or MultiPolygon Features.');
+    const properties = feature.properties || {};
+    if (
+      Object.keys(properties).some((key) =>
+        /military|troop|deployment|tactical|route/i.test(key),
+      ) ||
+      ['district', 'name', 'type', 'kind', 'landuse', 'building', 'amenity'].some((key) =>
+        /military|troop|deployment|barracks|garrison|naval|army base|tactical/i.test(
+          String(properties[key] || ''),
+        ),
+      )
+    )
+      throw Error(
+        'Only administrative district polygons are supported; operational and military geometries are excluded.',
+      );
     const name = feature.properties?.district || feature.properties?.name;
     if (typeof name !== 'string' || !normalize(name))
       throw Error('Every feature needs a nonempty district or name property.');

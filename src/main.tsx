@@ -81,7 +81,7 @@ const District360 = lazy(() => import('./DistrictIntelligence360'));
 const SpatialLab = lazy(() => import('./SpatialLab'));
 const modules: [string, string, React.ElementType][] = [
   ['dashboard', 'Command Dashboard', Grid2X2],
-  ['risk-map', 'GIS Risk Map', MapIcon],
+  ['risk-map', 'Geospatial Hotspot Intelligence', MapIcon],
   ['surveillance', 'Surveillance Center', Activity],
   ['district-intelligence', 'District Intelligence 360°', Target],
   ['climate', 'Climate Intelligence', Wind],
@@ -2691,8 +2691,8 @@ function GIS() {
   return (
     <>
       <Heading
-        title="GIS Risk Map"
-        sub="Explore public geographic context and imported district-level layers."
+        title="Geospatial Hotspot Intelligence"
+        sub="Compare district evidence through time, inspect spatial context, and explore traceable map layers."
       >
         <Button onClick={() => window.print()}>Print map view</Button>
       </Heading>
