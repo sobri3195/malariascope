@@ -13,6 +13,7 @@ export type Dataset = {
   id: string;
   name: string;
   rows: Row[];
+  sourceRows?: Record<string, unknown>[];
   source: string;
   checksum: string;
   created: string;
