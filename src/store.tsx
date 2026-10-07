@@ -26,6 +26,8 @@ export type State = {
   alertStates: Record<string, { status: string; note: string }>;
   checklist: Record<string, string>;
   districtChecklists?: Record<string, Record<string, string>>;
+  readinessMetadata?: import('./readiness-engine').ReadinessMetadata;
+  readinessDistricts?: string[];
   districtBookmarks?: string[];
   thresholds: number[];
   riskScenario?: import('./risk-engine').RiskScenario;

@@ -77,6 +77,7 @@ import './styles.css';
 import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import { validateGeometry } from './geometry';
 const MapView = lazy(() => import('./Map'));
+const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
 const ScientificIntegrityCenter = lazy(() => import('./ScientificIntegrityCenter'));
 const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
 const ForecastWorkbench = lazy(() => import('./ForecastWorkbench'));
@@ -93,7 +94,7 @@ const modules: [string, string, React.ElementType][] = [
   ['spatial-analysis', 'Spatial Analysis', Layers],
   ['early-warning', 'Early Warning Center', Bell],
   ['risk-intelligence', 'Explainable Risk Engine 2.0', ShieldCheck],
-  ['force-health', 'Force Health Readiness', ShieldCheck],
+  ['force-health', 'Force Health Readiness Matrix', ShieldCheck],
   ['scenario', 'Scenario Explorer', SlidersHorizontal],
   ['data-center', 'Data Center', Database],
   ['data-quality', 'Scientific Integrity Center', Check],
@@ -1449,104 +1450,11 @@ function Alerts() {
 function Risk() {
   return <ExplainableRiskEngine filters={<Filters />} />;
 }
-const domains: Record<string, string[]> = {
-  'Surveillance awareness': [
-    'Latest surveillance dataset available',
-    'District-level data complete',
-    'Trend reviewed',
-    'High-risk districts identified',
-  ],
-  'Diagnostic-resource review': [
-    'Diagnostic capability documented',
-    'Testing availability reviewed',
-    'Stock-status dataset connected',
-  ],
-  'Preventive-resource planning': [
-    'Prevention-resource dataset reviewed',
-    'Education material status',
-    'Vector-control coordination status',
-  ],
-  'Staffing preparedness': ['Staffing capacity reviewed'],
-  'Referral preparedness': [
-    'Referral facility list available',
-    'Referral contact information available',
-  ],
-  'Evacuation preparedness': [
-    'Medical evacuation preparedness reviewed',
-    'Receiving-facility information available',
-  ],
-  'Communication preparedness': ['Communication preparedness reviewed'],
-  'Data readiness': ['Data provenance reviewed', 'Data quality reviewed'],
-};
 function ForceHealth() {
-  const { state, update, filtered } = useData();
-  const high = filtered.some((r) => ['HIGH', 'VERY HIGH'].includes(risk(r, state.thresholds)));
   return (
-    <>
-      <Heading
-        title="Force Health Readiness"
-        sub="Non-operational, locally documented preparedness review."
-      />
-      <div className="notice amber-notice">
-        Decision Support — Not Autonomous Clinical or Operational Recommendations
-      </div>
-      <div className="two-col">
-        {Object.entries(domains).map(([domain, items]) => {
-          const values = items.map((i) => state.checklist[i] || 'NOT REVIEWED');
-          const status = values.every((v) => v === 'AVAILABLE' || v === 'NOT APPLICABLE')
-            ? 'READY'
-            : values.some((v) => v === 'UNAVAILABLE' || v === 'LIMITED') ||
-                (high && domain === 'Diagnostic-resource review')
-              ? 'ATTENTION'
-              : values.every((v) => v === 'NOT REVIEWED')
-                ? 'INSUFFICIENT DATA'
-                : 'REVIEW';
-          return (
-            <Panel
-              key={domain}
-              title={domain}
-              action={
-                <Badge
-                  tone={status === 'READY' ? 'teal' : status === 'ATTENTION' ? 'amber' : 'neutral'}
-                >
-                  {status}
-                </Badge>
-              }
-            >
-              {items.map((item) => (
-                <div className="checklist-row" key={item}>
-                  <span>{item}</span>
-                  <select
-                    aria-label={item}
-                    value={state.checklist[item] || 'NOT REVIEWED'}
-                    onChange={(e) =>
-                      update(
-                        { checklist: { ...state.checklist, [item]: e.target.value } },
-                        'Readiness checklist updated',
-                        item,
-                      )
-                    }
-                  >
-                    {['NOT REVIEWED', 'AVAILABLE', 'LIMITED', 'UNAVAILABLE', 'NOT APPLICABLE'].map(
-                      (x) => (
-                        <option key={x}>{x}</option>
-                      ),
-                    )}
-                  </select>
-                </div>
-              ))}
-              <p className="fine-print">
-                {status === 'READY'
-                  ? 'All applicable checklist items marked available.'
-                  : status === 'ATTENTION'
-                    ? 'Limited or unavailable resources, or elevated burden with unconfirmed diagnostics, require human review.'
-                    : 'Incomplete checklist evidence; resource availability is not inferred.'}
-              </p>
-            </Panel>
-          );
-        })}
-      </div>
-    </>
+    <Suspense fallback={<Empty title="Loading readiness evidence…" />}>
+      <ForceHealthReadinessMatrix />
+    </Suspense>
   );
 }
 function Scenario() {

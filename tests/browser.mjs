@@ -37,9 +37,11 @@ await page.reload();
 if ((await page.getByLabel('Status for Test District').first().inputValue()) !== 'ACKNOWLEDGED')
   throw Error('Acknowledgement not persisted');
 await page.goto(base+'/force-health');
-await page.getByLabel('Diagnostic capability documented').selectOption('AVAILABLE');
+await page.getByLabel('Readiness district',{exact:true}).selectOption('Test District');
+await page.getByLabel('Readiness domain',{exact:true}).selectOption('diagnostics');
+await page.getByLabel('Diagnostic capability documented',{exact:true}).selectOption('AVAILABLE');
 await page.reload();
-if ((await page.getByLabel('Diagnostic capability documented').inputValue()) !== 'AVAILABLE')
+if ((await page.getByLabel('Diagnostic capability documented',{exact:true}).inputValue()) !== 'AVAILABLE')
   throw Error('Checklist not persisted');
 await page.goto(base+'/data-center');
 await page
