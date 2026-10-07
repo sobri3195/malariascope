@@ -1,6 +1,6 @@
 import { riskModes, type RiskMode } from './risk-engine.ts';
 import { forecastModels } from './forecasting.ts';
-import { layerOptions } from './map-intelligence.ts';
+import { layerOptions } from './map-options.ts';
 import type { State } from './store.tsx';
 export const workspaceViews = [
   'dashboard',
