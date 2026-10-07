@@ -4,6 +4,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { Provider } from './store';
 const Desktop = lazy(() => import('./DesktopApp'));
 const Mobile = lazy(() => import('./mobile/MobileApp'));
+const Watch = lazy(() => import('./watch/WatchApp'));
 class ApplicationBoundary extends React.Component<
   { children: React.ReactNode },
   { failed: boolean }
@@ -40,7 +41,13 @@ function ApplicationRouter() {
         </main>
       }
     >
-      {pathname === '/mobile' || pathname.startsWith('/mobile/') ? <Mobile /> : <Desktop />}
+      {pathname === '/smartwatch' || pathname === '/smartwatch/' ? (
+        <Watch />
+      ) : pathname === '/mobile' || pathname.startsWith('/mobile/') ? (
+        <Mobile />
+      ) : (
+        <Desktop />
+      )}
     </Suspense>
   );
 }

@@ -701,6 +701,7 @@ export default function MobilePages({ page }: { page: string }) {
       <h1>More research tools</h1>
       <Card title="Mobile workspace">
         <div className="m-actions">
+          <Link to="/smartwatch">MALARIASCOPE Watch</Link>
           {[
             ...actions,
             ['surveillance', 'Surveillance Cards'],
