@@ -75,8 +75,9 @@ import {
 } from './analytics';
 import './styles.css';
 import AdvancedEarlyWarning from './AdvancedEarlyWarning';
-import { validateGeometry, resolveFeatureRow } from './geometry';
+import { validateGeometry } from './geometry';
 const MapView = lazy(() => import('./Map'));
+const ScientificIntegrityCenter = lazy(() => import('./ScientificIntegrityCenter'));
 const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
 const ForecastWorkbench = lazy(() => import('./ForecastWorkbench'));
 const District360 = lazy(() => import('./DistrictIntelligence360'));
@@ -95,7 +96,7 @@ const modules: [string, string, React.ElementType][] = [
   ['force-health', 'Force Health Readiness', ShieldCheck],
   ['scenario', 'Scenario Explorer', SlidersHorizontal],
   ['data-center', 'Data Center', Database],
-  ['data-quality', 'Data Quality', Check],
+  ['data-quality', 'Scientific Integrity Center', Check],
   ['reports', 'Reports', FileText],
   ['alerts', 'Alert Center', Bell],
   ['audit', 'Audit & Activity Log', History],
@@ -1021,6 +1022,7 @@ function Models({ models, forecast = false }: { models: any[]; forecast?: boolea
 }
 function DataCenter() {
   const { state, update } = useStore();
+  const [sourceRows, setSourceRows] = useState<Record<string, unknown>[]>([]);
   const [preview, setPreview] = useState<Row[]>([]),
     [issues, setIssues] = useState<Issue[]>([]),
     [name, setName] = useState(''),
@@ -1029,6 +1031,7 @@ function DataCenter() {
     [message, setMessage] = useState('');
   async function file(f: File) {
     setMessage('');
+    setSourceRows([]);
     setPreview([]);
     setGeo(null);
     setIssues([]);
@@ -1069,6 +1072,7 @@ function DataCenter() {
       if (!input.every((r) => r && typeof r === 'object' && !Array.isArray(r)))
         throw Error('Every observation must be an object.');
       const result = validate(input);
+      setSourceRows(input);
       setPreview(result.rows);
       setIssues(result.issues);
       setMessage(`${result.rows.length} valid rows · ${result.issues.length} validation issues`);
@@ -1105,6 +1109,7 @@ function DataCenter() {
       id,
       name,
       rows: preview,
+      sourceRows,
       checksum,
       source: 'User-selected local file · independently unverified',
       classification: 'USER IMPORT',
@@ -1285,118 +1290,10 @@ function DataCenter() {
   );
 }
 function Quality() {
-  const { rows, state } = useStore();
-  const issues = rows.length ? validate(rows as unknown as Record<string, unknown>[]).issues : [];
-  const gaps: Issue[] = [];
-  for (const district of new Set(rows.map((r) => r.district))) {
-    const years = rows.filter((r) => r.district === district).map((r) => r.year);
-    for (let y = Math.min(...years); y <= Math.max(...years); y++)
-      if (!years.includes(y))
-        gaps.push({
-          row: 0,
-          severity: 'WARNING',
-          message: `${district}: missing ${y} observation`,
-        });
-  }
-  if (state.geometry)
-    for (const district of new Set(rows.map((r) => r.district))) {
-      const row = rows.find((r) => r.district === district)!;
-      if (!state.geometry.features.some((f: any) => resolveFeatureRow(f, [row])))
-        gaps.push({
-          row: 0,
-          severity: 'WARNING',
-          message: `${district}: no matching administrative feature`,
-        });
-    }
-  const latestClimate = Math.max(
-    ...rows
-      .filter((r) => r.rainfall !== undefined || r.temperature !== undefined)
-      .map((r) => r.year),
-  );
-  if (Number.isFinite(latestClimate) && (state.selection?.year || 2025) - latestClimate > 1)
-    gaps.push({
-      row: 0,
-      severity: 'WARNING',
-      message: `Climate dataset is older than the selected analysis year by more than one year (latest ${latestClimate})`,
-    });
-  const all = [...issues, ...gaps];
-  const missing = rows.filter((r) => !r.population).length;
   return (
-    <>
-      <Heading title="Data Quality" sub="Check the active dataset and preserve uncertainty.">
-        <Button
-          onClick={() =>
-            download('quality-report.json', {
-              dataset: state.active,
-              rows: rows.length,
-              issues: all,
-              populationMissing: missing,
-            })
-          }
-        >
-          Export quality report
-        </Button>
-      </Heading>
-      <div className="metrics">
-        <Metric
-          label="VALIDATED OBSERVATIONS"
-          value={String(rows.length)}
-          hint="Active dataset"
-          icon={Check}
-          onClick={() => {}}
-        />
-        <Metric
-          label="DETECTED ISSUES"
-          value={String(all.length)}
-          hint="Schema errors and temporal gaps"
-          icon={AlertTriangle}
-          onClick={() => {}}
-        />
-        <Metric
-          label="POPULATION COMPLETENESS"
-          value={rows.length ? `${fmt(((rows.length - missing) / rows.length) * 100, 1)}%` : '—'}
-          hint="Rows with population / all rows × 100"
-          icon={Database}
-          onClick={() => {}}
-        />
-        <Metric
-          label="REQUIRED-FIELD QUALITY"
-          value={
-            rows.length
-              ? `${fmt(((rows.length - new Set(issues.map((i) => i.row)).size) / rows.length) * 100, 1)}%`
-              : '—'
-          }
-          hint="Rows without schema issue / all rows × 100"
-          icon={ShieldCheck}
-          onClick={() => {}}
-        />
-      </div>
-      <Panel title="Detected issues">
-        {rows.length ? (
-          <>
-            <div className="notice">
-              District identity is normalized for case, punctuation, and spaces. Ambiguous duplicate
-              names require manual confirmation. GIS matches depend on imported feature names.
-            </div>
-            {all.length ? (
-              all.map((i, n) => (
-                <div className="issue-row" key={n}>
-                  <Badge tone="amber">{i.severity}</Badge>
-                  {i.message}
-                </div>
-              ))
-            ) : (
-              <p className="body-copy">
-                No schema issues or internal temporal gaps found. Completeness outside the loaded
-                period cannot be inferred.
-              </p>
-            )}
-          </>
-        ) : (
-          <Empty title="No surveillance dataset connected" />
-        )}
-      </Panel>
-    </>
+    <Suspense fallback={<Empty title="Inspecting scientific integrity…" />}>
+      <ScientificIntegrityCenter />
+    </Suspense>
   );
 }
 function EarlyWarning() {

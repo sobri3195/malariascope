@@ -1,0 +1,217 @@
+.integrity-panel-body {
+  padding: 18px;
+}
+.integrity-panel-body p,
+.integrity-panel-body li {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.integrity-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 18px 0;
+}
+.integrity-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 190px;
+  min-width: 0;
+  font-size: 11px;
+}
+.integrity-controls select,
+.integrity-controls input {
+  max-width: 100%;
+}
+.integrity-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+.integrity-metrics > section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+}
+.integrity-metrics strong {
+  font-size: 21px;
+  display: block;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.integrity-metrics p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.integrity-severity-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+}
+.integrity-severity-counts > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.integrity-severity {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 5px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.integrity-info {
+  background: #e8f2f6;
+  color: #34677b;
+}
+.integrity-warning {
+  background: #faefd9;
+  color: #84562b;
+}
+.integrity-error {
+  background: #f8e0dd;
+  color: #9c4136;
+}
+.integrity-blocking {
+  background: #923a36;
+  color: white;
+}
+.integrity-summary {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 12px;
+}
+.integrity-summary dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.integrity-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.integrity-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  padding: 14px;
+  background: #f3f7f6;
+  border-radius: 6px;
+}
+.integrity-panel details {
+  font-size: 12px;
+  margin-top: 16px;
+}
+.integrity-panel summary {
+  cursor: pointer;
+  color: var(--teal);
+}
+.integrity-formula {
+  padding: 16px;
+  background: #edf6f3;
+  border-radius: 6px;
+  line-height: 1.7;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  margin: 16px 0;
+}
+.integrity-panel table {
+  min-width: 720px;
+}
+.integrity-panel th,
+.integrity-panel td {
+  white-space: normal;
+  min-width: 75px;
+}
+.integrity-panel td {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.integrity-panel h3 {
+  font-size: 14px;
+  margin-top: 20px;
+}
+.integrity-fields,
+.integrity-eligibility {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.integrity-fields > div {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.integrity-fields > div > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+.integrity-fields progress {
+  display: block;
+  width: 100%;
+  height: 10px;
+  accent-color: #168478;
+}
+.integrity-eligibility article {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.integrity-yes {
+  color: #168478;
+}
+.integrity-no {
+  color: #9c4136;
+}
+@media (max-width: 1050px) {
+  .integrity-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .integrity-metrics,
+  .integrity-fields,
+  .integrity-eligibility {
+    grid-template-columns: 1fr;
+  }
+  .integrity-summary {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .integrity-summary dd {
+    margin-bottom: 10px;
+  }
+  .integrity-panel-body {
+    padding: 14px;
+  }
+  .integrity-tabs {
+    overflow: auto;
+  }
+  .integrity-tabs button {
+    white-space: nowrap;
+    font-size: 10px;
+  }
+  .integrity-controls .button {
+    width: 100%;
+  }
+}
