@@ -8,7 +8,9 @@ import {
   type ReactNode,
 } from 'react';
 import { defaults, evaluate, type Row, type Rule } from './analytics';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { safeRiskMode, validYear } from './workspace-context';
+import { riskModes, type RiskMode } from './risk-engine';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 export type Dataset = {
   id: string;
   name: string;
@@ -32,6 +34,7 @@ export type State = {
   thresholds: number[];
   analyticalScenarios?: import('./scenario-engine').SavedScenario[];
   riskScenario?: import('./risk-engine').RiskScenario;
+  riskMode?: RiskMode;
   snapshots: {
     id: string;
     name: string;
@@ -39,7 +42,12 @@ export type State = {
     district: string;
     model: string;
     layer: string;
+    mapLayers?: string[];
     date: string;
+    view?: string;
+    riskMode?: RiskMode;
+    datasetVersion?: string;
+    riskScenario?: State['riskScenario'];
     dataset?: string;
     thresholds?: number[];
     filters?: State['filters'];
@@ -89,36 +97,91 @@ const Context = createContext<{
   setDistrict: (s: string) => void;
   model: string;
   setModel: (s: string) => void;
+  riskMode: RiskMode;
+  setRiskMode: (mode: RiskMode) => void;
 }>(null!);
 const EMPTY_ROWS: Row[] = [];
 export function Provider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(load);
   const route = useLocation();
+  const navigationType = useNavigationType();
+  const [state, setState] = useState(() => {
+    const initialState = load(),
+      query = new URLSearchParams(route.search),
+      dataset = query.get('dataset'),
+      mode = query.get('riskMode');
+    if (dataset !== null && (dataset === '' || initialState.datasets.some((d) => d.id === dataset)))
+      initialState.active = dataset;
+    if (mode && riskModes.includes(mode as RiskMode)) initialState.riskMode = mode as RiskMode;
+    return initialState;
+  });
   const navigate = useNavigate();
   const navRef = useRef(navigate);
   navRef.current = navigate;
   const params = new URLSearchParams(route.search);
-  const [year, setYear] = useState(Number(params.get('year')) || state.selection?.year || 2025),
+  const [year, setYear] = useState(
+      validYear(Number(params.get('year')))
+        ? Number(params.get('year'))
+        : validYear(state.selection?.year)
+          ? state.selection!.year
+          : 2025,
+    ),
     [district, setDistrict] = useState(
       params.get('district') || state.selection?.district || 'All districts',
     ),
-    [model, setModel] = useState(params.get('model') || state.selection?.model || 'Persistence');
+    [model, setModel] = useState(
+      ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(
+        params.get('model') ?? '',
+      )
+        ? params.get('model')!
+        : ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(
+              state.selection?.model ?? '',
+            )
+          ? state.selection!.model
+          : 'Persistence',
+    );
+  const riskMode = safeRiskMode(state.riskMode);
+  function setRiskMode(mode: RiskMode) {
+    if (riskModes.includes(mode)) update({ riskMode: mode }, 'Risk mode changed', mode);
+  }
   useEffect(() => {
+    // Never replay a delayed URL write over a newer local filter selection.
+    // Browser back/forward and externally supplied links remain authoritative.
+    if (route.state?.workspaceContextSync && navigationType !== 'POP') return;
     const p = new URLSearchParams(route.search);
     const y = Number(p.get('year'));
-    if (y >= 1900 && y <= 2100) setYear(y);
+    if (validYear(y)) setYear(y);
     const d = p.get('district');
     if (d) setDistrict(d);
     const m = p.get('model');
     if (m && ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(m))
       setModel(m);
-  }, [route.search]);
+    const risk = p.get('riskMode'),
+      dataset = p.get('dataset');
+    setState((prev) => {
+      const nextRisk =
+        risk && riskModes.includes(risk as RiskMode)
+          ? (risk as RiskMode)
+          : safeRiskMode(prev.riskMode);
+      const nextDataset =
+        dataset !== null && (dataset === '' || prev.datasets.some((d) => d.id === dataset))
+          ? dataset
+          : prev.active;
+      return nextRisk === safeRiskMode(prev.riskMode) && nextDataset === prev.active
+        ? prev
+        : { ...prev, riskMode: nextRisk, active: nextDataset };
+    });
+  }, [route.search, route.key, navigationType, route.state]);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     p.set('year', String(year));
     p.set('district', district);
     p.set('model', model);
-    navRef.current({ search: p.toString() }, { replace: true });
+    p.set('riskMode', riskMode);
+    p.set('dataset', state.active);
+    navRef.current(
+      { pathname: window.location.pathname, search: p.toString() },
+      { replace: true, state: { workspaceContextSync: true } },
+    );
     setState((prev) => {
       const next = { ...prev, selection: { year, district, model } };
       try {
@@ -128,7 +191,7 @@ export function Provider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  }, [year, district, model]);
+  }, [year, district, model, riskMode, state.active]);
   function update(s: Partial<State>, event?: string, details = '') {
     setState((prev) => {
       const next = {
@@ -141,8 +204,11 @@ export function Provider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem('malariascope-v1', JSON.stringify(next));
       } catch {
-        alert(
-          'Browser storage is full. Export your data and remove unused datasets. Changes remain in this session.',
+        window.dispatchEvent(
+          new CustomEvent('malariascope-notice', {
+            detail:
+              'Browser storage is full. Changes remain in this session. Export a copy before reloading.',
+          }),
         );
       }
       return next;
@@ -170,6 +236,14 @@ export function Provider({ children }: { children: ReactNode }) {
       const now = new Date().toISOString();
       const next = {
         ...prev,
+        audit: [
+          {
+            time: now,
+            event: 'Analytical alert generated',
+            details: `${additions.length} new rule-based analytical alert(s)`,
+          },
+          ...prev.audit,
+        ].slice(0, 500),
         alertCreated: {
           ...prev.alertCreated,
           ...Object.fromEntries(additions.map((a) => [a.id, prev.alertCreated?.[a.id] || now])),
@@ -195,11 +269,18 @@ export function Provider({ children }: { children: ReactNode }) {
         rows,
         signals,
         year,
-        setYear,
+        setYear: (n) => {
+          if (validYear(n)) setYear(n);
+        },
         district,
         setDistrict,
         model,
-        setModel,
+        setModel: (s) => {
+          if (['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(s))
+            setModel(s);
+        },
+        riskMode,
+        setRiskMode,
       }}
     >
       {children}

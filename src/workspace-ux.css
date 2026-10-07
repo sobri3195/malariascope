@@ -1,0 +1,347 @@
+.ux-context {
+  background: #fff;
+  border: 1px solid #c9ded7;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 0 0 18px;
+}
+.ux-context-grid {
+  display: grid;
+  grid-template-columns: 90px minmax(120px, 1fr) minmax(150px, 1.2fr) minmax(120px, 1fr) minmax(
+      140px,
+      1.2fr
+    );
+  gap: 12px;
+}
+.ux-context label {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  color: #45675c;
+  display: grid;
+  gap: 7px;
+}
+.ux-context select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #c9ded7;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 12px;
+  background: #f9fcfa;
+  color: #173a2e;
+}
+.ux-context-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 11px;
+}
+.ux-context-footer nav {
+  overflow-wrap: anywhere;
+}
+.ux-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ux-actions button,
+.ux-context-footer button {
+  border: 1px solid #c9ded7;
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px;
+  color: #235244;
+  cursor: pointer;
+}
+.ux-scope-note {
+  font-size: 10px;
+  color: #607b70;
+  margin: 12px 0 0;
+}
+.ux-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1700;
+  background: #102b3059;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 10vh 18px;
+}
+.ux-command,
+.ux-inspector {
+  background: white;
+  color: #213e33;
+  border: 1px solid #cedbd5;
+  box-shadow: 0 20px 80px #172a3433;
+  padding: 22px;
+  max-height: 80vh;
+  overflow: auto;
+  border-radius: 12px;
+}
+.ux-command {
+  width: min(620px, 100%);
+}
+.ux-command header,
+.ux-inspector header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ux-command header button,
+.ux-inspector header button {
+  background: white;
+  border: 1px solid #c9ded7;
+  border-radius: 6px;
+  font-size: 22px;
+  padding: 2px 9px;
+}
+.ux-command input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #a9c5b9;
+  border-radius: 8px;
+  font-size: 15px;
+  margin: 10px 0;
+}
+.ux-command [role='listbox'] {
+  max-height: 48vh;
+  overflow: auto;
+}
+.ux-command [role='option'] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  text-align: left;
+  padding: 12px;
+  border: 0;
+  border-radius: 5px;
+  background: white;
+  color: #244337;
+  cursor: pointer;
+}
+.ux-command [aria-selected='true'] {
+  background: #e5f2ec;
+  outline: 1px solid #afcfbe;
+}
+.ux-command small {
+  color: #6b8177;
+}
+.ux-command > p {
+  font-size: 11px;
+  color: #658075;
+}
+.ux-inspector {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  max-height: 100dvh;
+  width: min(480px, 95vw);
+  border-radius: 0;
+  padding: 24px;
+}
+.ux-inspector label {
+  display: grid;
+  gap: 7px;
+}
+.ux-inspector select,
+.ux-inspector input,
+.ux-snapshot-manager input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #c9ded7;
+  border-radius: 6px;
+}
+.ux-inspector p,
+.ux-inspector dd {
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.ux-inspector article {
+  border-top: 1px solid #d9e4de;
+  padding: 15px 0;
+}
+.ux-inspector dt {
+  font-size: 11px;
+  font-weight: 700;
+}
+.ux-inspector dd {
+  margin: 5px 0 14px;
+}
+.ux-activity {
+  padding-left: 20px;
+}
+.ux-activity li {
+  border-bottom: 1px solid #d9e4de;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+}
+.ux-activity time {
+  font-size: 10px;
+  color: #6c8178;
+}
+.ux-notifications {
+  position: fixed;
+  right: 18px;
+  bottom: 20px;
+  z-index: 1850;
+  width: min(380px, calc(100vw - 36px));
+  pointer-events: none;
+}
+.ux-toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  box-shadow: 0 4px 25px #13352b22;
+  border: 1px solid #b8d3c7;
+  border-left: 4px solid #25836c;
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  pointer-events: auto;
+}
+.ux-toast strong {
+  font-size: 12px;
+}
+.ux-toast p {
+  font-size: 11px;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.ux-toast button {
+  background: white;
+  border: 0;
+  font-size: 18px;
+  cursor: pointer;
+}
+.ux-snapshot-manager {
+  padding: 16px;
+}
+.ux-snapshot-manager > label {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.ux-snapshot {
+  border-top: 1px solid #d9e4de;
+  padding: 14px 0;
+  margin: 10px 0;
+}
+.ux-snapshot p {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.ux-skeleton {
+  padding: 24px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #d7e3dc;
+}
+.ux-skeleton div {
+  height: 60px;
+  margin: 15px 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f1f6f3, #e0ece5, #f1f6f3);
+  background-size: 200% 100%;
+  animation: ux-shimmer 1.6s ease-in-out infinite;
+}
+.ux-skeleton div:nth-last-child(1) {
+  height: 160px;
+}
+.ux-context :focus-visible,
+.ux-inspector :focus-visible,
+.ux-command :focus-visible {
+  outline: 3px solid #27836d;
+  outline-offset: 2px;
+}
+.ux-command [role='option']:focus-visible {
+  outline-offset: -2px;
+}
+@keyframes ux-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (max-width: 1100px) {
+  .ux-context-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .ux-context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ux-context-grid > label:last-child {
+    grid-column: 1/-1;
+  }
+  .ux-context {
+    padding: 12px;
+  }
+  .ux-context-footer {
+    gap: 10px;
+  }
+  .ux-notifications {
+    bottom: 80px;
+  }
+  .ux-inspector {
+    width: 100vw;
+  }
+  .ux-backdrop {
+    padding: 7vh 10px;
+  }
+  .ux-command {
+    max-height: 82dvh;
+    padding: 16px;
+  }
+  .ux-context-footer button {
+    padding: 7px;
+  }
+  .main {
+    padding-bottom: 90px !important;
+  }
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(64px + env(safe-area-inset-bottom));
+  }
+  .ux-toast {
+    max-height: 140px;
+    overflow: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ux-skeleton div {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+.reduced .ux-skeleton div {
+  animation: none;
+}
+.reduced *,
+.reduced *::before,
+.reduced *::after {
+  scroll-behavior: auto !important;
+}
+@media print {
+  .ux-context,
+  .ux-backdrop,
+  .ux-notifications {
+    display: none !important;
+  }
+}

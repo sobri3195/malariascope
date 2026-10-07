@@ -320,9 +320,8 @@ function FormulaInspector({
   );
 }
 export default function ExplainableRiskEngine({ filters }: { filters: ReactNode }) {
-  const { state, update, year, district, model } = useStore();
-  const [mode, setMode] = useState<RiskMode>('OBSERVED RISK'),
-    [scope, setScope] = useState('ALL'),
+  const { state, update, year, district, model, riskMode: mode, setRiskMode: setMode } = useStore();
+  const [scope, setScope] = useState('ALL'),
     [selected, setSelected] = useState<string | null>(null),
     [weightError, setWeightError] = useState('');
   const scenario = readRiskScenario(state.riskScenario),

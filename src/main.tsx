@@ -39,8 +39,6 @@ import {
   Wind,
   X,
   Trash2,
-  Copy,
-  Save,
   Play,
   AlertTriangle,
   ExternalLink,
@@ -74,6 +72,8 @@ import {
 } from './analytics';
 import './styles.css';
 import AdvancedEarlyWarning from './AdvancedEarlyWarning';
+import WorkspaceUX, { SnapshotManager, WorkspaceSkeleton } from './WorkspaceUX';
+import { textEntry } from './workspace-context';
 import { validateGeometry } from './geometry';
 const MapView = lazy(() => import('./Map'));
 const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
@@ -602,7 +602,7 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
           }
           className="map-panel"
         >
-          <Suspense fallback={<Empty title="Loading geographic workspace…" />}>
+          <Suspense fallback={<WorkspaceSkeleton label="Loading geographic workspace…" />}>
             <MapView />
           </Suspense>
           <div className="panel-foot">
@@ -938,7 +938,7 @@ function Surveillance() {
 }
 function District({ summary }: { summary: any }) {
   return (
-    <Suspense fallback={<Empty title="Loading District Intelligence 360°…" />}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading District Intelligence 360°…" />}>
       <District360 filters={<Filters />} summary={summary} />
     </Suspense>
   );
@@ -1015,7 +1015,7 @@ function Climate() {
 }
 function Models({ models, forecast = false }: { models: any[]; forecast?: boolean }) {
   return (
-    <Suspense fallback={<Empty title="Loading forecasting workbench…" />}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading forecasting workbench…" />}>
       <ForecastWorkbench study={models} filters={<Filters />} laboratory={!forecast} />
     </Suspense>
   );
@@ -1053,6 +1053,11 @@ function DataCenter() {
         setMessage(
           `${g.features.length} administrative features validated. Names require matching surveillance records.`,
         );
+        update(
+          {},
+          'Validation completed',
+          `${f.name}: ${g.features.length} administrative polygons checked`,
+        );
         return;
       }
       let input: Record<string, unknown>[];
@@ -1072,6 +1077,11 @@ function DataCenter() {
       if (!input.every((r) => r && typeof r === 'object' && !Array.isArray(r)))
         throw Error('Every observation must be an object.');
       const result = validate(input);
+      update(
+        {},
+        'Validation completed',
+        `${f.name}: ${result.rows.length} accepted rows; ${result.issues.length} issue(s)`,
+      );
       setSourceRows(input);
       setPreview(result.rows);
       setIssues(result.issues);
@@ -1291,7 +1301,7 @@ function DataCenter() {
 }
 function Quality() {
   return (
-    <Suspense fallback={<Empty title="Inspecting scientific integrity…" />}>
+    <Suspense fallback={<WorkspaceSkeleton label="Inspecting scientific integrity" />}>
       <ScientificIntegrityCenter />
     </Suspense>
   );
@@ -1451,7 +1461,7 @@ function Risk() {
 }
 function ForceHealth() {
   return (
-    <Suspense fallback={<Empty title="Loading readiness evidence…" />}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading readiness evidence…" />}>
       <ForceHealthReadinessMatrix />
     </Suspense>
   );
@@ -1459,7 +1469,7 @@ function ForceHealth() {
 const AnalyticalScenarioSimulator = lazy(() => import('./AnalyticalScenarioSimulator'));
 function Scenario() {
   return (
-    <Suspense fallback={<p>Loading simulator…</p>}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading simulator" />}>
       <AnalyticalScenarioSimulator />
     </Suspense>
   );
@@ -1472,41 +1482,14 @@ function Reports(props: {
   provenance: Record<string, any>;
 }) {
   return (
-    <Suspense fallback={<p>Loading report builder…</p>}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading report builder" />}>
       <ResearchReportBuilder {...props} />
     </Suspense>
   );
 }
 function SettingsPage() {
-  const { state, update, year, setYear, district, setDistrict, model, setModel, rows } = useStore();
-  const [name, setName] = useState('Analytical snapshot');
+  const { state, update, year, setYear } = useStore();
   const [error, setError] = useState('');
-  function snapshot() {
-    update(
-      {
-        snapshots: [
-          ...state.snapshots,
-          {
-            id: crypto.randomUUID(),
-            name,
-            year,
-            district,
-            model,
-            layer: state.layer,
-            date: new Date().toISOString(),
-            dataset: state.active,
-            filters: state.filters,
-            thresholds: state.thresholds,
-            risk: rows
-              .filter((r) => r.year === year)
-              .map((r) => ({ district: r.district, risk: risk(r, state.thresholds) })),
-          },
-        ],
-      },
-      'Snapshot created',
-      name,
-    );
-  }
   return (
     <>
       <Heading title="System Settings" sub="Configure local behavior and save analytical states." />
@@ -1643,79 +1626,7 @@ function SettingsPage() {
           title="Save Analytical Snapshot"
           sub="Application state, not new scientific evidence."
         >
-          <div className="toolbar">
-            <input
-              aria-label="Snapshot name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={100}
-            />
-            <Button primary onClick={snapshot}>
-              <Save size={15} /> Save snapshot
-            </Button>
-          </div>
-          {state.snapshots.map((s) => (
-            <div className="snapshot" key={s.id}>
-              <input
-                aria-label="Rename snapshot"
-                value={s.name}
-                onChange={(e) =>
-                  update({
-                    snapshots: state.snapshots.map((x) =>
-                      x.id === s.id ? { ...x, name: e.target.value } : x,
-                    ),
-                  })
-                }
-              />
-              <span>
-                {s.year} · {s.model}
-              </span>
-              <button
-                className="text-link"
-                onClick={() => {
-                  setYear(s.year);
-                  setModel(s.model);
-                  setDistrict(s.district);
-                  update(
-                    {
-                      layer: s.layer,
-                      active:
-                        s.dataset && state.datasets.some((d) => d.id === s.dataset)
-                          ? s.dataset
-                          : '',
-                      filters: s.filters,
-                      thresholds: s.thresholds || state.thresholds,
-                    },
-                    'Snapshot loaded',
-                    s.name,
-                  );
-                }}
-              >
-                Load
-              </button>
-              <button
-                className="icon-btn"
-                aria-label="Duplicate snapshot"
-                onClick={() =>
-                  update({
-                    snapshots: [
-                      ...state.snapshots,
-                      { ...s, id: crypto.randomUUID(), name: s.name + ' copy' },
-                    ],
-                  })
-                }
-              >
-                <Copy size={15} />
-              </button>
-              <button
-                className="icon-btn"
-                aria-label="Delete snapshot"
-                onClick={() => update({ snapshots: state.snapshots.filter((x) => x.id !== s.id) })}
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
+          <SnapshotManager />
         </Panel>
       </div>
       <Panel title="Local storage">
@@ -1783,7 +1694,7 @@ function Audit() {
 }
 function Spatial({ spatial }: { spatial: any }) {
   return (
-    <Suspense fallback={<Empty title="Loading spatial analysis…" />}>
+    <Suspense fallback={<WorkspaceSkeleton label="Loading spatial analysis…" />}>
       <SpatialLab evidence={spatial} />
     </Suspense>
   );
@@ -1882,7 +1793,7 @@ function GIS() {
         <Button onClick={() => window.print()}>Print map view</Button>
       </Heading>
       <Filters />
-      <Suspense fallback={<Empty />}>
+      <Suspense fallback={<WorkspaceSkeleton label="Loading geospatial workspace" />}>
         <MapView large />
       </Suspense>
       <Panel
@@ -1906,6 +1817,15 @@ function Presentation({ models, spatial }: { models: any[]; spatial: any }) {
   ];
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
+      if (
+        e.defaultPrevented ||
+        textEntry(e.target) ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        document.querySelector('[aria-modal="true"]')
+      )
+        return;
       if (e.key === 'ArrowRight') setSlide((s) => Math.min(5, s + 1));
       if (e.key === 'ArrowLeft') setSlide((s) => Math.max(0, s - 1));
     };
@@ -1962,12 +1882,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
   }
 }
 function App() {
-  const location = useLocation(),
-    navigate = useNavigate();
-  const { state, rows, signals } = useStore();
-  const [mobile, setMobile] = useState(false),
-    [search, setSearch] = useState(false),
-    [q, setQ] = useState('');
+  const location = useLocation();
+  const { state, signals } = useStore();
+  const [mobile, setMobile] = useState(false);
   const [data, setData] = useState<{
       summary: any;
       models: any[];
@@ -1991,12 +1908,7 @@ function App() {
   }, []);
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setSearch((s) => !s);
-      }
       if (e.key === 'Escape') {
-        setSearch(false);
         setMobile(false);
       }
     };
@@ -2008,7 +1920,6 @@ function App() {
   const count = signals.filter(
     (a) => !['RESOLVED', 'ACKNOWLEDGED'].includes(state.alertStates[a.id]?.status || 'NEW'),
   ).length;
-  const results = modules.filter((m) => m[1].toLowerCase().includes(q.toLowerCase()));
   return (
     <div className={`${present ? 'presentation-shell' : ''} ${state.reduced ? 'reduced' : ''}`}>
       <a className="skip-link" href="#main">
@@ -2016,7 +1927,7 @@ function App() {
       </a>
       {!present && (
         <>
-          <aside className={`sidebar ${mobile ? 'mobile-open' : ''}`}>
+          <aside id="workspace-navigation" className={`sidebar ${mobile ? 'mobile-open' : ''}`}>
             <NavLink to="/dashboard" className="brand">
               <span className="brand-symbol">
                 <Compass size={27} />
@@ -2085,6 +1996,8 @@ function App() {
               <button
                 className="icon-btn hamburger"
                 aria-label="Open navigation"
+                aria-controls="workspace-navigation"
+                aria-expanded={mobile}
                 onClick={() => setMobile(!mobile)}
               >
                 <Menu size={20} />
@@ -2095,7 +2008,10 @@ function App() {
               <strong>{modules.find((m) => m[0] === path)?.[1] || 'Dashboard'}</strong>
             </div>
             <div className="topbar-actions">
-              <button className="search-trigger" onClick={() => setSearch(true)}>
+              <button
+                className="search-trigger"
+                onClick={() => window.dispatchEvent(new Event('malariascope-command'))}
+              >
                 <Search size={15} />
                 <span>Search workspace</span>
                 <kbd>⌘ K</kbd>
@@ -2113,19 +2029,24 @@ function App() {
           </header>
         </>
       )}
-      <main id="main" className="main">
+      <main id="main" className="main" tabIndex={-1}>
+        <WorkspaceUX
+          modules={modules}
+          models={data?.models ?? []}
+          provenance={data?.provenance ?? {}}
+        />
         <div className="safety-banner">
           <ShieldCheck size={16} />
           <span>{safety}</span>
           <Badge>RESEARCH PROTOTYPE</Badge>
         </div>
         {error ? (
-          <div className="notice">
+          <div className="notice" role="alert" aria-label="Research evidence load error">
             {error}
             <Button onClick={() => window.location.reload()}>Retry loading</Button>
           </div>
         ) : !data ? (
-          <Empty title="Loading supplied research evidence…" />
+          <WorkspaceSkeleton label="Loading supplied research evidence" />
         ) : (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -2209,85 +2130,15 @@ function App() {
               {l}
             </NavLink>
           ))}
-          <button onClick={() => setMobile(!mobile)}>
+          <button
+            aria-controls="workspace-navigation"
+            aria-expanded={mobile}
+            onClick={() => setMobile(!mobile)}
+          >
             <Menu size={19} />
             More
           </button>
         </nav>
-      )}
-      {search && (
-        <div className="modal-backdrop" onClick={() => setSearch(false)}>
-          <div
-            className="modal search-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Search workspace"
-            onKeyDown={(e) => dialogKeys(e, () => setSearch(false))}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="search-box">
-              <Search size={20} />
-              <input
-                autoFocus
-                aria-label="Global search"
-                placeholder="Search modules, districts, datasets…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              <button
-                aria-label="Close search"
-                className="icon-btn"
-                onClick={() => setSearch(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {results.map(([r, l, I]) => (
-              <button
-                className="search-result"
-                key={r}
-                onClick={() => {
-                  navigate(`/${r}`);
-                  setSearch(false);
-                }}
-              >
-                <I size={17} />
-                {l}
-                <ArrowUpRight size={14} />
-              </button>
-            ))}
-            {Array.from(new Set(rows.map((r) => r.district)))
-              .filter((d) => d.toLowerCase().includes(q.toLowerCase()))
-              .map((d) => (
-                <button
-                  className="search-result"
-                  key={d}
-                  onClick={() => {
-                    navigate(`/district-intelligence?district=${encodeURIComponent(d)}`);
-                    setSearch(false);
-                  }}
-                >
-                  <Target size={17} />
-                  {d}
-                </button>
-              ))}
-            {state.datasets
-              .filter((d) => d.name.toLowerCase().includes(q.toLowerCase()))
-              .map((d) => (
-                <button
-                  className="search-result"
-                  key={d.id}
-                  onClick={() => {
-                    navigate('/data-center');
-                    setSearch(false);
-                  }}
-                >
-                  <Database size={17} />
-                  {d.name}
-                </button>
-              ))}
-          </div>
-        </div>
       )}
     </div>
   );

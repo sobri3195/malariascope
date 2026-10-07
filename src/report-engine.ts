@@ -19,6 +19,7 @@ import { buildReadinessMatrix } from './readiness-engine.ts';
 import { matchedFeatures, geometryBounds, featureIdentity } from './map-intelligence.ts';
 import { moran } from './moran.ts';
 import { category, validThresholds } from './scenario-engine.ts';
+import { safeRiskMode } from './workspace-context.ts';
 import type { State } from './store.tsx';
 export const reportTypes = [
   'Executive Intelligence Summary',
@@ -1033,6 +1034,7 @@ export function buildResearchReport(input: ReportInput) {
         model: r.model,
         incidenceThresholds: thresholds,
         riskMethod: 'Observed incidence only',
+        globalRiskMode: safeRiskMode(state.riskMode),
         forecastMetric: 'MAE',
         forecastCohort: 'Common loaded validation pairs',
         spatialPermutations: 999,
@@ -1046,6 +1048,7 @@ export function buildResearchReport(input: ReportInput) {
         end: r.end,
         model: r.model,
         risk: r.risk,
+        riskMode: safeRiskMode(state.riskMode),
         region: r.region,
       },
       activeDataset: state.active,
