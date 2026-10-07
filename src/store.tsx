@@ -27,6 +27,7 @@ export type State = {
   districtChecklists?: Record<string, Record<string, string>>;
   districtBookmarks?: string[];
   thresholds: number[];
+  riskScenario?: import('./risk-engine').RiskScenario;
   snapshots: {
     id: string;
     name: string;

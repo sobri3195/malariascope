@@ -1,0 +1,240 @@
+.risk-panel-body {
+  padding: 18px;
+}
+.risk-panel-body p {
+  line-height: 1.65;
+  font-size: 12px;
+  color: var(--muted);
+}
+.risk-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  margin: 18px 0;
+}
+.risk-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 220px;
+  font-size: 12px;
+  min-width: 0;
+}
+.risk-controls select {
+  max-width: 100%;
+}
+.risk-controls > div {
+  flex: 1 1 220px;
+  font-size: 12px;
+}
+.risk-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.risk-experimental {
+  padding: 18px;
+  border: 2px solid #ba7650;
+  border-radius: 8px;
+  background: #fff0df;
+  color: #814523;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 18px 0;
+}
+.risk-experimental p {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+.risk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 15px 0;
+}
+.risk-weights {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.risk-weights label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.risk-weights input {
+  width: 100%;
+}
+.risk-permission {
+  color: #814523 !important;
+}
+.risk-formula {
+  padding: 14px;
+  background: #edf6f3;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.risk-category {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 8px;
+  display: inline-block;
+  border-radius: 5px;
+  background: #edf4f3;
+  white-space: nowrap;
+}
+.risk-high {
+  background: #fae9d3;
+  color: #87562c;
+}
+.risk-very-high {
+  background: #f6dedd;
+  color: #923936;
+}
+.risk-insufficient-data {
+  background: #edf0f1;
+  color: #5a6a6d;
+}
+.modal.risk-inspector {
+  width: min(1040px, calc(100vw - 32px));
+  max-width: 1040px;
+  max-height: 90vh;
+  overflow: auto;
+}
+.risk-inspector h2 {
+  padding-right: 25px;
+  line-height: 1.4;
+}
+.risk-inspector h3 {
+  margin-top: 22px;
+  font-size: 14px;
+}
+.risk-inspector p,
+.risk-inspector li {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.risk-inspector table {
+  min-width: 650px;
+}
+.risk-inspector pre {
+  font-size: 11px;
+  background: #f4f7f7;
+  padding: 14px;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.risk-inspector details {
+  margin: 12px 0;
+  font-size: 12px;
+}
+.risk-inspector summary {
+  cursor: pointer;
+  color: var(--teal);
+}
+.risk-inspector .risk-summary {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 12px;
+}
+.risk-inspector .risk-summary dt {
+  font-weight: 600;
+  color: var(--muted);
+}
+.risk-inspector .risk-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.risk-inspector .risk-summary > div {
+  display: contents;
+}
+.risk-contributions {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 18px 0;
+}
+.risk-contribution {
+  margin: 15px 0;
+}
+.risk-contribution > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+.risk-contribution span {
+  color: var(--muted);
+}
+.risk-contribution progress {
+  display: block;
+  width: 100%;
+  height: 12px;
+  appearance: none;
+  border: 0;
+}
+.risk-contribution progress::-webkit-progress-bar {
+  background: #e9efee;
+  border-radius: 6px;
+}
+.risk-contribution progress::-webkit-progress-value {
+  background: #168478;
+  border-radius: 6px;
+}
+.risk-contribution progress::-moz-progress-bar {
+  background: #168478;
+  border-radius: 6px;
+}
+.risk-missing {
+  display: block;
+  font-size: 11px;
+  padding: 7px;
+  background: #f6e9dc;
+}
+.risk-checksum {
+  overflow-wrap: anywhere;
+  max-width: 160px;
+}
+@media (max-width: 1000px) {
+  .risk-config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .risk-inspector .risk-summary {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .risk-inspector .risk-summary dd {
+    margin-bottom: 10px;
+  }
+  .risk-inspector {
+    padding: 18px !important;
+  }
+  .risk-panel-body {
+    padding: 14px;
+  }
+  .risk-experimental {
+    font-size: 11px;
+  }
+  .risk-actions .button {
+    width: 100%;
+  }
+  .risk-inspector h2 {
+    font-size: 18px;
+  }
+}

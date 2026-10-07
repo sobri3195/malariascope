@@ -77,6 +77,7 @@ import './styles.css';
 import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import { validateGeometry, resolveFeatureRow } from './geometry';
 const MapView = lazy(() => import('./Map'));
+const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
 const ForecastWorkbench = lazy(() => import('./ForecastWorkbench'));
 const District360 = lazy(() => import('./DistrictIntelligence360'));
 const SpatialLab = lazy(() => import('./SpatialLab'));
@@ -90,7 +91,7 @@ const modules: [string, string, React.ElementType][] = [
   ['model-benchmarking', 'Model Laboratory', FlaskConical],
   ['spatial-analysis', 'Spatial Analysis', Layers],
   ['early-warning', 'Early Warning Center', Bell],
-  ['risk-intelligence', 'Risk Intelligence', ShieldCheck],
+  ['risk-intelligence', 'Explainable Risk Engine 2.0', ShieldCheck],
   ['force-health', 'Force Health Readiness', ShieldCheck],
   ['scenario', 'Scenario Explorer', SlidersHorizontal],
   ['data-center', 'Data Center', Database],
@@ -1549,232 +1550,7 @@ function Alerts() {
   );
 }
 function Risk() {
-  const { filtered, rows, state, update, year, model } = useData();
-  const [mode, setMode] = useState('OBSERVED RISK'),
-    [weights, setWeights] = useState([1, 1, 0]),
-    [spatialValues, setSpatialValues] = useState<Record<string, number | null>>({}),
-    [error, setError] = useState(''),
-    [detail, setDetail] = useState<Row | null>(null);
-  useEffect(() => {
-    setSpatialValues({});
-    setError('');
-  }, [state.active, state.geometry, year]);
-  async function neighbors() {
-    try {
-      if (!state.geometry) throw Error('District administrative geometry is not connected.');
-      const { spatialInput } = await import('./spatial');
-      const data = rows.filter((r) => r.year === year),
-        input = spatialInput(state.geometry, data);
-      const values = Object.fromEntries(
-        input.names.map((name, i) => {
-          const inc = input.neighbors[i].map((j) => {
-            const r = data.find((r) => normalize(r.district) === normalize(input.names[j]));
-            return r ? incidence(r) : null;
-          });
-          return [
-            normalize(name),
-            inc.length && inc.every((v) => v !== null)
-              ? inc.reduce<number>((a, v) => a + (v ?? 0), 0) / inc.length
-              : null,
-          ];
-        }),
-      );
-      setSpatialValues(values);
-      setError('');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }
-  function score(r: Row) {
-    const observed = incidence(r),
-      prediction =
-        r.prediction !== undefined && r.population && r.model === model
-          ? (r.prediction / r.population) * 1000
-          : null,
-      spatial = spatialValues[normalize(r.district)] ?? null;
-    if (mode === 'OBSERVED RISK') return observed;
-    if (mode === 'MODEL-ASSISTED RISK') return prediction;
-    if (mode === 'SPATIAL RISK') return spatial;
-    const values = [observed, prediction, spatial],
-      total = weights.reduce((a, v) => a + v, 0);
-    if (!total || values.some((v, i) => weights[i] > 0 && v === null)) return null;
-    return values.reduce<number>((a, v, i) => a + (v ?? 0) * weights[i], 0) / total;
-  }
-  function category(v: number | null) {
-    return v === null
-      ? 'INSUFFICIENT DATA'
-      : risk({ district: '', year, cases: v, population: 1000 }, state.thresholds);
-  }
-  const formula =
-    mode === 'OBSERVED RISK'
-      ? 'observed cases ÷ population × 1,000'
-      : mode === 'MODEL-ASSISTED RISK'
-        ? 'model prediction ÷ population × 1,000'
-        : mode === 'SPATIAL RISK'
-          ? 'mean observed incidence of queen-contiguous neighbors'
-          : `(${weights[0]} × observed incidence + ${weights[1]} × predicted incidence + ${weights[2]} × neighbor incidence) ÷ ${weights.reduce((a, v) => a + v, 0)}`;
-  return (
-    <>
-      <Heading
-        title="Risk Intelligence"
-        sub="Explainable research classification with visible formulas and thresholds."
-      />
-      <Filters />
-      <div className="toolbar">
-        <select aria-label="Risk mode" value={mode} onChange={(e) => setMode(e.target.value)}>
-          {['OBSERVED RISK', 'MODEL-ASSISTED RISK', 'SPATIAL RISK', 'COMPOSITE RESEARCH RISK'].map(
-            (x) => (
-              <option key={x}>{x}</option>
-            ),
-          )}
-        </select>
-        <Badge tone="teal">
-          {mode === 'MODEL-ASSISTED RISK' ? 'MODEL PREDICTION' : 'DERIVED ANALYTICS'}
-        </Badge>
-      </div>
-      <Panel
-        title="How is this risk calculated?"
-        action={<Provenance field="risk formula and inputs" />}
-      >
-        <div className="formula">{formula}</div>
-        <div className="toolbar">
-          {state.thresholds.map((t, i) => (
-            <label key={i}>
-              {['MODERATE ≥', 'HIGH ≥', 'VERY HIGH ≥'][i]}
-              <input
-                aria-label={`${['Moderate', 'High', 'Very high'][i]} risk threshold`}
-                type="number"
-                min="0"
-                value={t}
-                onChange={(e) => {
-                  const ts = state.thresholds.map((v, n) => (n === i ? +e.target.value : v));
-                  if (ts.every((v, n) => v >= 0 && (n === 0 || v > ts[n - 1])))
-                    update({ thresholds: ts }, 'Risk thresholds changed', ts.join(', '));
-                }}
-              />
-            </label>
-          ))}
-        </div>
-        {mode === 'COMPOSITE RESEARCH RISK' && (
-          <div className="toolbar">
-            {[
-              'Observed incidence weight',
-              'Predicted incidence weight',
-              'Neighbor incidence weight',
-            ].map((name, i) => (
-              <label key={name}>
-                {name}
-                <input
-                  type="number"
-                  min="0"
-                  step=".1"
-                  value={weights[i]}
-                  onChange={(e) =>
-                    setWeights(weights.map((v, n) => (n === i ? Math.max(0, +e.target.value) : v)))
-                  }
-                />
-              </label>
-            ))}
-          </div>
-        )}
-        {(mode === 'SPATIAL RISK' || (mode === 'COMPOSITE RESEARCH RISK' && weights[2] > 0)) && (
-          <Button onClick={() => void neighbors()}>Calculate neighborhood incidence</Button>
-        )}
-        <p className="body-copy">
-          Below the moderate threshold = LOW. Missing required inputs = INSUFFICIENT DATA. These
-          configurable research formulas and cutoffs have not been clinically or operationally
-          validated. Composite weights are explicit user assumptions; they are not learned
-          coefficients.
-        </p>
-        {error && <div className="notice amber-notice">{error}</div>}
-      </Panel>
-      <Panel title={mode} sub={`Year ${year} · active imported observations`}>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>District</th>
-                <th>Research score / 1,000</th>
-                <th>Risk result</th>
-                <th>Evidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.district}>
-                  <td>{r.district}</td>
-                  <td>{fmt(score(r), 2)}</td>
-                  <td>
-                    <Badge
-                      tone={
-                        ['HIGH', 'VERY HIGH'].includes(category(score(r))) ? 'amber' : 'neutral'
-                      }
-                    >
-                      {category(score(r))}
-                    </Badge>
-                  </td>
-                  <td>
-                    <button className="text-link" onClick={() => setDetail(r)}>
-                      How was this risk calculated?
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!filtered.length && <Empty title="District observations not connected" />}
-        </div>
-      </Panel>
-      {detail && (
-        <div className="modal-backdrop" onClick={() => setDetail(null)}>
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Risk calculation"
-            onKeyDown={(e) => dialogKeys(e, () => setDetail(null))}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              autoFocus
-              aria-label="Close calculation"
-              className="close"
-              onClick={() => setDetail(null)}
-            >
-              <X size={20} />
-            </button>
-            <h2>{detail.district} · risk calculation</h2>
-            <dl>
-              <dt>Mode</dt>
-              <dd>{mode}</dd>
-              <dt>Observed cases</dt>
-              <dd>{fmt(detail.cases)}</dd>
-              <dt>Population</dt>
-              <dd>{fmt(detail.population)}</dd>
-              <dt>Prediction</dt>
-              <dd>{fmt(detail.prediction)}</dd>
-              <dt>Neighbor incidence</dt>
-              <dd>{fmt(spatialValues[normalize(detail.district)], 2)}</dd>
-              <dt>Formula</dt>
-              <dd>{formula}</dd>
-              <dt>Thresholds</dt>
-              <dd>{state.thresholds.join(' / ')} per 1,000</dd>
-              <dt>Score & result</dt>
-              <dd>
-                {fmt(score(detail), 2)} · {category(score(detail))}
-              </dd>
-              <dt>Provenance</dt>
-              <dd>
-                {state.datasets.find((d) => d.id === state.active)?.name} · USER IMPORT · {year} ·
-                derived or model-assisted research interpretation
-              </dd>
-            </dl>
-            <Button onClick={() => setDetail(null)}>Close</Button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <ExplainableRiskEngine filters={<Filters />} />;
 }
 const domains: Record<string, string[]> = {
   'Surveillance awareness': [
@@ -2280,6 +2056,7 @@ function SettingsPage() {
                   rules: defaults,
                   reduced: false,
                   profile: 'RESEARCHER',
+                  riskScenario: undefined,
                 },
                 'Settings reset',
               )
