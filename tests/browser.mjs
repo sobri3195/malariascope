@@ -29,7 +29,8 @@ await page.getByLabel('Global year').selectOption('2025');
 if (!(await page.locator('.metric').first().innerText()).includes('900'))
   throw Error('Import total incorrect');
 await page.goto(base+'/early-warning');
-await page.locator('.rule-row').first().locator('input[type=number]').fill('150');
+await page.getByLabel('Rule threshold', { exact:true }).first().fill('150');
+await page.getByRole('button', { name:'Save rule', exact:true }).first().click();
 await page.goto(base+'/alerts');
 await page.getByLabel('Status for Test District').first().selectOption('ACKNOWLEDGED');
 await page.reload();
