@@ -1,0 +1,293 @@
+.hotspot-workspace {
+  min-width: 0;
+}
+.hotspot-toolbar,
+.hotspot-time,
+.hotspot-export {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.hotspot-toolbar,
+.hotspot-time {
+  padding: 15px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.hotspot-toolbar label,
+.hotspot-time label,
+.hotspot-export label {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.hotspot-toolbar label {
+  flex: 1 1 160px;
+}
+.hotspot-toolbar .hotspot-check,
+.hotspot-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+.hotspot-time label {
+  flex: 1 1 250px;
+}
+.hotspot-time input {
+  width: 100%;
+}
+.hotspot-time span,
+.hotspot-time small,
+.hotspot-export small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.hotspot-maps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.hotspot-maps.comparison {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hotspot-pane {
+  min-width: 0;
+}
+.hotspot-map-frame {
+  position: relative;
+  height: 540px;
+  isolation: isolate;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e7ecea;
+}
+.hotspot-canvas-wrap {
+  position: relative;
+  height: 100%;
+}
+.hotspot-canvas-wrap .leaflet-interactive {
+  transition:
+    fill 180ms ease,
+    fill-opacity 180ms ease,
+    stroke 180ms ease;
+}
+.hotspot-canvas-wrap.no-animation .leaflet-interactive {
+  transition: none;
+}
+.hotspot-year-b {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  z-index: 500;
+}
+.hotspot-map-error {
+  position: absolute;
+  left: 12px;
+  top: 55px;
+  z-index: 500;
+  background: #fff6e7;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 9px;
+  max-width: 70%;
+}
+.hotspot-map-frame .map-legend {
+  max-width: calc(100% - 26px);
+  bottom: 32px;
+}
+.hotspot-map-frame .map-legend > div {
+  flex-wrap: wrap;
+  gap: 7px 12px;
+}
+.hotspot-map-frame .map-controls {
+  max-height: calc(100% - 65px);
+  overflow: auto;
+  max-width: calc(100% - 70px);
+}
+.hotspot-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+.hotspot-stats div {
+  min-width: 0;
+  padding: 14px;
+  border-right: 1px solid var(--border);
+}
+.hotspot-stats div:last-child {
+  border-right: 0;
+}
+.hotspot-stats span {
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 8px;
+}
+.hotspot-stats strong {
+  display: block;
+  font-size: 17px;
+  color: var(--navy);
+  overflow-wrap: anywhere;
+}
+.hotspot-stats small {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.comparison .hotspot-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hotspot-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+.hotspot-context-grid .panel {
+  min-width: 0;
+  margin: 0;
+}
+.hotspot-context-body {
+  padding: 16px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.hotspot-context-body dl {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.hotspot-context-body dt {
+  color: var(--muted);
+}
+.hotspot-context-body dd {
+  margin: 0;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.hotspot-context-body a {
+  overflow-wrap: anywhere;
+}
+.hotspot-workspace.compact .hotspot-map-frame {
+  height: 325px;
+  border: 0;
+  border-radius: 0;
+}
+.hotspot-workspace.compact .hotspot-map-frame .map-controls {
+  width: 220px;
+}
+.hotspot-workspace:fullscreen {
+  background: #f5f7f8;
+  padding: 18px;
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+}
+.hotspot-workspace:fullscreen .hotspot-map-frame {
+  height: 65vh;
+}
+.hotspot-workspace:fullscreen.compact .hotspot-map-frame {
+  height: calc(100vh - 36px);
+}
+@media (max-width: 1000px) {
+  .hotspot-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .hotspot-context-grid {
+    grid-template-columns: 1fr;
+  }
+  .hotspot-maps.comparison {
+    grid-template-columns: 1fr;
+  }
+  .comparison .hotspot-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .hotspot-map-frame {
+    height: 440px;
+  }
+  .hotspot-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hotspot-toolbar label {
+    flex: auto;
+  }
+  .hotspot-time span,
+  .hotspot-time small {
+    flex: 1 1 100%;
+  }
+  .hotspot-time label {
+    flex-basis: 200px;
+  }
+  .hotspot-stats,
+  .comparison .hotspot-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hotspot-context-body dl {
+    grid-template-columns: 1fr;
+  }
+  .hotspot-context-body {
+    padding: 12px;
+  }
+  .hotspot-export .button {
+    flex: 1 1 auto;
+  }
+  .hotspot-stats strong {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hotspot-canvas-wrap .leaflet-interactive {
+    transition: none;
+  }
+}
+@media print {
+  .hotspot-toolbar,
+  .hotspot-time,
+  .map-controls,
+  .map-zoom,
+  .hotspot-export,
+  .hotspot-facilities {
+    display: none !important;
+  }
+  .hotspot-maps.comparison {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hotspot-map-frame {
+    break-inside: avoid;
+  }
+  .hotspot-context-grid {
+    display: block;
+  }
+}
+.hotspot-workspace input[type='range'],
+.hotspot-workspace input[type='checkbox'] {
+  accent-color: var(--teal);
+}
+.hotspot-export label.hotspot-check {
+  flex-direction: row;
+  align-items: center;
+}
+.map-panel .hotspot-workspace.compact {
+  margin: 0 15px;
+  border: 1px solid #e6edeb;
+  border-radius: 6px;
+  overflow: hidden;
+}
