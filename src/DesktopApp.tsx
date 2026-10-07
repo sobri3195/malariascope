@@ -1,3 +1,11 @@
+import DataReadiness from './DataReadiness';
+import {
+  validateScientific,
+  sourceSchemas,
+  type ScientificKind,
+  type ScientificRecord,
+} from './scientific-sources';
+import { validateFacilitySnapshot } from './public-healthcare';
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { NavLink, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -1014,6 +1022,10 @@ function Models({ models, forecast = false }: { models: any[]; forecast?: boolea
 }
 function DataCenter() {
   const { state, update } = useStore();
+  const [kind, setKind] = useState<'observed' | ScientificKind>('observed');
+  const [scientificPreview, setScientificPreview] = useState<ScientificRecord[]>([]);
+  const [declaredSource, setDeclaredSource] = useState('');
+  const [declaredLicense, setDeclaredLicense] = useState('');
   const [sourceRows, setSourceRows] = useState<Record<string, unknown>[]>([]);
   const [preview, setPreview] = useState<Row[]>([]),
     [issues, setIssues] = useState<Issue[]>([]),
@@ -1023,6 +1035,7 @@ function DataCenter() {
     [message, setMessage] = useState('');
   async function file(f: File) {
     setMessage('');
+    setScientificPreview([]);
     setSourceRows([]);
     setPreview([]);
     setGeo(null);
@@ -1038,6 +1051,14 @@ function DataCenter() {
           .join(''),
       );
       const json = /\.(geojson|json)$/i.test(f.name) ? JSON.parse(text) : null;
+      if (json?.facilities) {
+        const snapshot = validateFacilitySnapshot(json);
+        update({ facilitySnapshot: snapshot }, 'Public facility snapshot imported', f.name);
+        setMessage(
+          `${snapshot.facilities.length} validated public facilities loaded; restricted records excluded.`,
+        );
+        return;
+      }
       if (/\.geojson$/i.test(f.name) || json?.type === 'FeatureCollection') {
         const g = json;
         validateGeometry(g);
@@ -1068,6 +1089,20 @@ function DataCenter() {
       } else throw Error('Supported file types: CSV, JSON, GeoJSON.');
       if (!input.every((r) => r && typeof r === 'object' && !Array.isArray(r)))
         throw Error('Every observation must be an object.');
+      if (!input.length) {
+        setMessage(
+          'District surveillance records not connected. Zero observations; headers are not a dataset.',
+        );
+        return;
+      }
+      if (kind !== 'observed') {
+        const records = validateScientific(kind, input);
+        setScientificPreview(records);
+        setMessage(
+          `${records.length} separate ${kind} records validated; no observed cases created.`,
+        );
+        return;
+      }
       const result = validate(input);
       update(
         {},
@@ -1087,6 +1122,32 @@ function DataCenter() {
   }
   const blocked = issues.some((i) => i.severity === 'ERROR' || i.message.startsWith('Duplicate'));
   function commit() {
+    if (scientificPreview.length && kind !== 'observed') {
+      update(
+        {
+          scientificSources: [
+            ...(state.scientificSources || []),
+            {
+              id: crypto.randomUUID(),
+              kind,
+              name,
+              records: scientificPreview,
+              source: declaredSource || 'User-selected local file; independently unverified',
+              checksum,
+              created: new Date().toISOString(),
+              classification: 'USER IMPORT',
+            },
+          ],
+        },
+        'Supplemental dataset imported',
+        name,
+      );
+      setScientificPreview([]);
+      setMessage(
+        'Separate analytical source loaded for GIS. Observations and scenarios remain unchanged.',
+      );
+      return;
+    }
     if (geo) {
       update(
         {
@@ -1096,6 +1157,18 @@ function DataCenter() {
             checksum,
             created: new Date().toISOString(),
             classification: 'USER IMPORT',
+            source: declaredSource || 'User-selected local administrative GeoJSON',
+            license: declaredLicense || 'Not specified',
+            crs: 'EPSG:4326',
+            administrativeLevel: 'district (declared by importer)',
+            districtIdentifiers: geo.features.map((f: any) =>
+              String(
+                f.properties.district_code ||
+                  f.properties.code ||
+                  f.properties.district ||
+                  f.properties.name,
+              ),
+            ),
           },
         },
         'GIS boundaries imported',
@@ -1127,6 +1200,7 @@ function DataCenter() {
   }
   return (
     <>
+      <DataReadiness />
       <Heading title="Data Center" sub="Connect, validate, and manage local research datasets.">
         <Button
           onClick={() =>
@@ -1142,6 +1216,64 @@ function DataCenter() {
       </Heading>
       <div className="two-col">
         <Panel title="Connect a dataset" sub="Select → preview → validate → load into session">
+          <label className="body-copy">
+            Dataset role
+            <select
+              aria-label="Dataset role"
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value as typeof kind);
+                setPreview([]);
+                setScientificPreview([]);
+                setGeo(null);
+                setMessage('Select the file again for this schema.');
+              }}
+            >
+              <option value="observed">Observed malaria records</option>
+              {Object.keys(sourceSchemas).map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="body-copy">
+            Declared source URL / citation
+            <input
+              aria-label="Declared source"
+              value={declaredSource}
+              onChange={(e) => setDeclaredSource(e.target.value)}
+            />
+          </label>
+          <label className="body-copy">
+            Declared license
+            <input
+              aria-label="Declared license"
+              value={declaredLicense}
+              onChange={(e) => setDeclaredLicense(e.target.value)}
+            />
+          </label>
+          <details className="body-copy">
+            <summary>Separate scientific templates and geometry schema</summary>
+            {['district-malaria', ...Object.keys(sourceSchemas)].map((k) => (
+              <p key={k}>
+                <a href={`/data/templates/${k}-template.csv`} download>
+                  {k} template
+                </a>
+              </p>
+            ))}
+            <p>
+              GeoJSON: EPSG:4326 FeatureCollection; Polygon/MultiPolygon with district/name,
+              optional district_code, canonical_name, normalized_name, aliases (array). Country
+              geometry is rejected. Source/license declarations and file checksum are retained.
+            </p>
+            <p>
+              Model output requires trainingPeriod, validationPeriod, outputClassification.
+              Supplemental inputs currently feed GIS only; other modules retain their connected
+              observation datasets. Imported risk outputs are retained separately and never replace
+              default risk calculations.
+            </p>
+          </details>
           <label className="upload">
             <Upload size={32} />
             <strong>Choose a local research file</strong>
@@ -1166,8 +1298,12 @@ function DataCenter() {
           <Button
             onClick={() => {
               void fetch('/data/district-malaria.csv')
-                .then((r) => r.blob())
-                .then((b) => file(new File([b], 'district-malaria.csv')));
+                .then((r) => {
+                  if (!r.ok) throw Error('Surveillance file unavailable');
+                  return r.blob();
+                })
+                .then((b) => file(new File([b], 'district-malaria.csv')))
+                .catch((e) => setMessage(String(e)));
             }}
           >
             Inspect /public/data/ surveillance file
@@ -1194,7 +1330,7 @@ function DataCenter() {
           {preview.length > 0 && <Table rows={preview.slice(0, 5)} />}
           <button
             className="button primary"
-            disabled={blocked || (!preview.length && !geo)}
+            disabled={blocked || (!preview.length && !geo && !scientificPreview.length)}
             onClick={commit}
           >
             <Check size={16} /> Load validated data
@@ -1286,6 +1422,30 @@ function DataCenter() {
               ))}
             </tbody>
           </table>
+        </div>
+      </Panel>
+      <Panel title="Separate scientific source registry">
+        <div className="body-copy">
+          {(state.scientificSources || []).map((source) => (
+            <p key={source.id}>
+              {source.name} · {source.kind} · {source.records.length} records · USER IMPORT ·{' '}
+              {source.checksum}
+              <button
+                className="button"
+                onClick={() =>
+                  update(
+                    {
+                      scientificSources: state.scientificSources?.filter((s) => s.id !== source.id),
+                    },
+                    'Supplemental source removed',
+                    source.name,
+                  )
+                }
+              >
+                Remove source
+              </button>
+            </p>
+          ))}
         </div>
       </Panel>
     </>
@@ -1885,18 +2045,36 @@ function App() {
     } | null>(null),
     [error, setError] = useState('');
   useEffect(() => {
-    void Promise.all(
-      ['research-summary', 'model-performance', 'spatial-analysis', 'data-provenance'].map((n) =>
-        fetch(`/data/${n}.json`).then((r) => {
-          if (!r.ok) throw Error(`Unable to load ${n}`);
-          return r.json();
-        }),
-      ),
-    )
-      .then(([summary, models, spatial, provenance]) =>
-        setData({ summary, models, spatial, provenance }),
-      )
-      .catch((e) => setError(String(e)));
+    const controller = new AbortController();
+    const names = ['research-summary', 'model-performance', 'spatial-analysis', 'data-provenance'];
+    void Promise.allSettled(
+      names.map(async (n) => {
+        const response = await fetch(`/data/${n}.json`, { signal: controller.signal });
+        if (!response.ok) throw Error(`Unable to load ${n}`);
+        const value = await response.json();
+        if (!value || (n === 'model-performance' && !Array.isArray(value)))
+          throw Error(`Invalid ${n}`);
+        return value;
+      }),
+    ).then((results) => {
+      if (controller.signal.aborted) return;
+      const value = (index: number, fallback: any) =>
+        results[index].status === 'fulfilled'
+          ? (results[index] as PromiseFulfilledResult<any>).value
+          : fallback;
+      setData({
+        summary: value(0, { annual: [], incidence: {}, source: 'Not connected' }),
+        models: value(1, []),
+        spatial: value(2, {}),
+        provenance: value(3, {}),
+      });
+      const unavailable = names.filter((_, i) => results[i].status === 'rejected');
+      if (unavailable.length)
+        setError(
+          `Public evidence unavailable: ${unavailable.join(', ')}. Loaded local evidence remains accessible.`,
+        );
+    });
+    return () => controller.abort();
   }, []);
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
@@ -2036,12 +2214,14 @@ function App() {
           <span>{safety}</span>
           <Badge>RESEARCH PROTOTYPE</Badge>
         </div>
-        {error ? (
+        {location.pathname === '/dashboard' && <DataReadiness />}
+        {error && (
           <div className="notice" role="alert" aria-label="Research evidence load error">
             {error}
             <Button onClick={() => window.location.reload()}>Retry loading</Button>
           </div>
-        ) : !data ? (
+        )}
+        {!data ? (
           <WorkspaceSkeleton label="Loading supplied research evidence" />
         ) : (
           <Routes>

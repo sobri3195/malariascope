@@ -212,7 +212,10 @@ export function validate(input: Record<string, unknown>[]) {
   return { rows, issues };
 }
 export function incidence(r: Row) {
-  return Number.isFinite(r.cases) && Number.isFinite(r.population) && r.population! > 0
+  return Number.isFinite(r.cases) &&
+    r.cases >= 0 &&
+    Number.isFinite(r.population) &&
+    r.population! > 0
     ? (r.cases / r.population!) * 1000
     : null;
 }

@@ -1,0 +1,26 @@
+{
+  "source": "Names explicitly present in supplied study specification; not a complete administrative registry",
+  "districts": [
+    {
+      "canonicalName": "Mamberamo Raya",
+      "code": null,
+      "aliases": [
+        "Kabupaten Mamberamo Raya",
+        "Mamberamo-Raya"
+      ],
+      "geometryCode": null,
+      "studyPanel": null,
+      "spatialAssessment": null
+    },
+    {
+      "canonicalName": "Supiori",
+      "code": null,
+      "aliases": [
+        "Kabupaten Supiori"
+      ],
+      "geometryCode": null,
+      "studyPanel": false,
+      "spatialAssessment": null
+    }
+  ]
+}

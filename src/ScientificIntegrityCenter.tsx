@@ -1,3 +1,4 @@
+import DataReadiness from './DataReadiness';
 import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from './store';
@@ -257,6 +258,7 @@ export default function ScientificIntegrityCenter() {
         issue filters change the view only. Eligibility follows analysis year/model; quality scores
         cover the full source dataset. No rows are corrected, dropped, or imputed.
       </div>
+      <DataReadiness />
       <div className="integrity-severity-counts" aria-label="Integrity issue totals">
         {severities.map((s) => (
           <div key={s}>

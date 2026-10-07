@@ -1,0 +1,19 @@
+{
+  "districtGeometry": {
+    "status": "NOT CONNECTED",
+    "path": null,
+    "reason": "No licensed, provenance-verifiable study district geometry supplied. Import administrative GeoJSON through Data Center."
+  },
+  "contextGeometry": {
+    "path": "/data/geography/papua-context.geojson",
+    "source": "Natural Earth public-domain country outlines, distributed by datasets/geo-countries",
+    "classification": "Public source country outline; not district boundaries",
+    "license": "Public domain",
+    "url": "https://github.com/datasets/geo-countries",
+    "retrieved": "2026-10-07",
+    "sha256": "a7be025bdd48bb15ce732bc27823de3a88a3e5967852aa83d01c028d642c27d1",
+    "administrativeLevel": "country context only",
+    "crs": "EPSG:4326",
+    "districtIdentifiers": []
+  }
+}

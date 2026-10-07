@@ -2038,3 +2038,54 @@ pre {
 .page-heading p {
   color: #687d83;
 }
+.data-readiness {
+  background: #fff;
+  border: 1px solid #dce5e8;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.data-readiness summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: #173f51;
+  min-height: 24px;
+}
+.readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.readiness-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid #e2e9eb;
+  padding: 12px;
+  border-radius: 6px;
+}
+.readiness-grid small {
+  color: #526775;
+  line-height: 1.5;
+}
+.readiness-status {
+  font-size: 10px;
+  font-weight: 650;
+  color: #465c68;
+}
+.status-connected {
+  color: #17735e;
+}
+.status-invalid {
+  color: #aa3f42;
+}
+.status-partial,
+.status-summary-only {
+  color: #856013;
+}
+.data-readiness p {
+  font-size: 11px;
+  color: #526775;
+}

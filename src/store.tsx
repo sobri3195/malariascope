@@ -22,6 +22,10 @@ export type Dataset = {
   classification?: import('./district-intelligence').Classification;
 };
 export type State = {
+  scientificSources?: import('./scientific-sources').ScientificSource[];
+  facilitySnapshot?: import('./public-healthcare').FacilitySnapshot;
+  mapContext?: 'local' | 'osm';
+  mapOpacity?: number;
   datasets: Dataset[];
   active: string;
   rules: Rule[];
@@ -56,7 +60,17 @@ export type State = {
   audit: { time: string; event: string; details: string }[];
   profile: string;
   geometry: any | null;
-  geometrySource?: { name: string; checksum: string; created: string; classification: string };
+  geometrySource?: {
+    name: string;
+    checksum: string;
+    created: string;
+    classification: string;
+    source?: string;
+    license?: string;
+    crs?: string;
+    administrativeLevel?: string;
+    districtIdentifiers?: string[];
+  };
   layer: string;
   reduced: boolean;
   filters?: { risk: string; region: string; mode: string; start?: number; end?: number };
