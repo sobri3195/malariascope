@@ -279,6 +279,7 @@ export default function ResearchReportBuilder({
     datasets: state.datasets,
     active: state.active,
     thresholds: state.thresholds,
+    riskMode: state.riskMode,
     rules: state.rules,
     geometry: state.geometry,
     geometrySource: state.geometrySource,
