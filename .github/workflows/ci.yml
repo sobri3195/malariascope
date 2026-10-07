@@ -14,3 +14,19 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: GIS network-failure acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run preview -- --port 4173 > /tmp/malariascope-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..40}; do
+            if curl --fail --silent http://127.0.0.1:4173/data/research-summary.json > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --fail --silent http://127.0.0.1:4173/risk-map > /dev/null
+          export APP_URL=http://127.0.0.1:4173
+          export CHROMIUM_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())')"
+          node tests/gis-reliability.mjs

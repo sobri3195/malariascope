@@ -1,18 +1,9 @@
 import { normalize, type Row } from './analytics.ts';
+import { featureDistrictIdentity, resolveDistrict } from './district-registry.ts';
 export function resolveFeatureRow(feature: any, rows: Row[]) {
-  const code = feature.properties?.district_code || feature.properties?.code;
-  const coded = code
-    ? rows.filter((r) => r.district_code && String(r.district_code) === String(code))
-    : [];
-  if (coded.length === 1) return coded[0];
-  if (coded.length > 1) return null;
-  const name = String(feature.properties?.district || feature.properties?.name || '');
-  const named = rows.filter(
-    (r) => normalize(r.district) === normalize(name) && (!code || !r.district_code),
-  );
-  return named.length === 1 ? named[0] : null;
+  return resolveDistrict(featureDistrictIdentity(feature), rows).row;
 }
-export function validateGeometry(g: any) {
+export function validateGeometry(g: any, context = false) {
   if (g?.type !== 'FeatureCollection' || !Array.isArray(g.features) || !g.features.length)
     throw Error('GeoJSON requires a nonempty FeatureCollection.');
   if (g.features.length > 2000) throw Error('Maximum 2,000 administrative features per file.');
@@ -25,10 +16,29 @@ export function validateGeometry(g: any) {
       throw Error('Administrative geometry must contain Polygon or MultiPolygon Features.');
     const properties = feature.properties || {};
     if (
+      !context &&
+      (['country', 'admin0', '0'].includes(
+        String(properties.admin_level ?? properties.administrativeLevel ?? '').toLowerCase(),
+      ) ||
+        properties['ISO3166-1-Alpha-3'])
+    )
+      throw Error('Country context geometry cannot be imported as district analytical boundaries.');
+    if (
       Object.keys(properties).some((key) =>
         /military|troop|deployment|tactical|route/i.test(key),
       ) ||
-      ['district', 'name', 'type', 'kind', 'landuse', 'building', 'amenity'].some((key) =>
+      [
+        'district',
+        'name',
+        'canonical_name',
+        'normalized_name',
+        'aliases',
+        'type',
+        'kind',
+        'landuse',
+        'building',
+        'amenity',
+      ].some((key) =>
         /military|troop|deployment|barracks|garrison|naval|army base|tactical/i.test(
           String(properties[key] || ''),
         ),

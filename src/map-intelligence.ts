@@ -82,6 +82,7 @@ export function mapValue(
     if (
       row.model !== model ||
       !Number.isFinite(row.prediction) ||
+      row.prediction! < 0 ||
       !Number.isFinite(row.population) ||
       row.population! <= 0
     )
@@ -89,7 +90,18 @@ export function mapValue(
     const v = (row.prediction! / row.population!) * 1000;
     return v >= thresholds[2] ? 3 : v >= thresholds[1] ? 2 : v >= thresholds[0] ? 1 : 0;
   }
-  if (layer === 'prediction') return metric(row, rows, 'predicted_cases', { model });
+  if (layer === 'prediction')
+    return Number.isFinite(row.prediction) && row.prediction! >= 0
+      ? metric(row, rows, 'predicted_cases', { model })
+      : null;
+  if (
+    ['residual', 'signed_residual'].includes(layer) &&
+    (!Number.isFinite(row.cases) ||
+      row.cases < 0 ||
+      !Number.isFinite(row.prediction) ||
+      row.prediction! < 0)
+  )
+    return null;
   if (layer === 'residual') return metric(row, rows, 'residual', { model });
   if (layer === 'signed_residual') return metric(row, rows, 'model_residual', { model });
   if (layer === 'completeness') return metric(row, rows, 'data_completeness', { model });
@@ -97,6 +109,13 @@ export function mapValue(
   if (layer === 'rainfall_anomaly' || layer === 'temperature_anomaly')
     return metric(row, rows, layer);
   const key = layer === 'boundaries' ? 'cases' : (layer as keyof Row);
+  if (
+    ['cases', 'population', 'rainfall', 'humidity'].includes(String(key)) &&
+    (Number(row[key]) < 0 ||
+      (key === 'population' && Number(row[key]) <= 0) ||
+      (key === 'humidity' && Number(row[key]) > 100))
+  )
+    return null;
   return Number.isFinite(row[key]) ? (row[key] as number) : null;
 }
 export function commonBreaks(values: (number | null)[], classification: string) {
@@ -204,4 +223,33 @@ export function comparisonRows(
       delta: !categorical && valueA !== null && valueB !== null ? valueB - valueA : null,
     };
   });
+}
+
+export function layerAvailability(
+  features: MapFeature[],
+  rows: Row[],
+  year: number,
+  layer: string,
+  model: string,
+  thresholds: number[],
+  clusters: Record<string, string> = {},
+) {
+  if (layer === 'boundaries')
+    return { available: true, count: features.length, reason: 'Local geographic context' };
+  if (!features.length)
+    return { available: false, count: 0, reason: 'District geometry not connected' };
+  const matched = matchedFeatures(
+    features,
+    rows.filter((r) => r.year === year),
+  );
+  const count = matched.filter(
+    ({ row }) => mapValue(row, layer, rows, model, thresholds, clusters) !== null,
+  ).length;
+  return {
+    available: count > 0,
+    count,
+    reason: count
+      ? `${count} / ${features.length} districts with available values; missing districts are gray.`
+      : 'Layer unavailable — required dataset not connected.',
+  };
 }

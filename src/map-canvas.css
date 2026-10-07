@@ -1,0 +1,34 @@
+.hotspot-canvas-wrap {
+  position: relative;
+}
+.hotspot-canvas-wrap .leaflet-container {
+  background: #eef3f6;
+}
+.gis-provider-status {
+  position: absolute;
+  left: 12px;
+  bottom: 5px;
+  z-index: 500;
+  background: #fff;
+  color: #213b42;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  max-width: calc(100% - 150px);
+}
+.hotspot-map-error {
+  position: absolute;
+  left: 12px;
+  top: 55px;
+  z-index: 500;
+  background: #fff6e7;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 11px;
+  max-width: 70%;
+}
+.mobile-app .gis-provider-status {
+  bottom: 26px;
+  max-width: calc(100% - 24px);
+  font-size: 11px;
+}

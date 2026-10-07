@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import './map-canvas.css';
 import {
   featureName,
   featureIdentity,
@@ -25,6 +26,7 @@ export type MapHandle = {
   ) => string | null;
 };
 export type CanvasProps = {
+  context?: 'local' | 'osm';
   geometry: any;
   administrative: boolean;
   rows: Row[];
@@ -130,7 +132,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
             return `<circle cx="${xy.x}" cy="${xy.y}" r="4" fill="#29739b" stroke="white" stroke-width="1"><title>${esc(f.name)}</title></circle>`;
           })
           .join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.x}" height="${size.y + footerHeight}" viewBox="0 0 ${size.x} ${size.y + footerHeight}"><title>${esc(title)}</title><desc>${esc(metadata)} Basemap tiles omitted; vector administrative data only.</desc><rect width="100%" height="100%" fill="#eef3f2"/><defs><clipPath id="viewport"><rect width="${size.x}" height="${size.y}"/></clipPath></defs><g clip-path="url(#viewport)">${features.map(path).join('')}${facilities}</g><rect y="${size.y}" width="100%" height="${footerHeight}" fill="white"/><text x="15" y="${size.y + 24}" font-family="sans-serif" font-size="14" fill="#213b42">${esc(title)}</text>${legend.map((item, i) => `<rect x="15" y="${size.y + 35 + i * 17}" width="9" height="9" fill="${item.color}"/><text x="31" y="${size.y + 43 + i * 17}" font-family="sans-serif" font-size="10">${esc(item.label)}</text>`).join('')}<text x="15" y="${size.y + footerHeight - 13}" font-family="sans-serif" font-size="9">MALARIASCOPE · Analytical decision support · © OSM contributors · vector export without basemap</text></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.x}" height="${size.y + footerHeight}" viewBox="0 0 ${size.x} ${size.y + footerHeight}"><title>${esc(title)}</title><desc>${esc(metadata)} Basemap tiles omitted; vector administrative data only.</desc><rect width="100%" height="100%" fill="#eef3f2"/><defs><clipPath id="viewport"><rect width="${size.x}" height="${size.y}"/></clipPath></defs><g clip-path="url(#viewport)">${features.map(path).join('')}${facilities}</g><rect y="${size.y}" width="100%" height="${footerHeight}" fill="white"/><text x="15" y="${size.y + 24}" font-family="sans-serif" font-size="14" fill="#213b42">${esc(title)}</text>${legend.map((item, i) => `<rect x="15" y="${size.y + 35 + i * 17}" width="9" height="9" fill="${item.color}"/><text x="31" y="${size.y + 43 + i * 17}" font-family="sans-serif" font-size="10">${esc(item.label)}</text>`).join('')}<text x="15" y="${size.y + footerHeight - 13}" font-family="sans-serif" font-size="9">MALARIASCOPE · Analytical decision support · vector export without basemap</text></svg>`;
       },
     }),
     [],
@@ -144,12 +146,6 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
     }).setView([-3.2, 138.4], 6);
     map.current = m;
     L.control.scale({ imperial: false }).addTo(m);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap contributors © CARTO',
-      maxZoom: 18,
-    })
-      .on('tileerror', () => setError('Basemap unavailable; analytical vectors remain usable.'))
-      .addTo(m);
     const move = () => {
       const center = m.getCenter(),
         b = m.getBounds();
@@ -169,6 +165,31 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       map.current = null;
     };
   }, []);
+  const [onlineStatus, setOnlineStatus] = useState('ONLINE CONTEXT UNAVAILABLE');
+  useEffect(() => {
+    const m = map.current;
+    setError('');
+    if (!m || props.context !== 'osm') return;
+    let failed = false;
+    setOnlineStatus('ONLINE CONTEXT UNAVAILABLE');
+    const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+      maxZoom: 19,
+    })
+      .on('tileerror', () => {
+        failed = true;
+        setOnlineStatus('ONLINE CONTEXT UNAVAILABLE');
+        setError('Online basemap unavailable — analytical vector layers remain available.');
+      })
+      .on('tileload', () => {
+        if (!failed) setOnlineStatus('ONLINE CONTEXT AVAILABLE');
+      })
+      .addTo(m);
+    return () => {
+      tiles.remove();
+    };
+  }, [props.context]);
   useEffect(() => {
     const m = map.current;
     if (!m || !props.camera) return;
@@ -297,7 +318,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       content.append(
         title,
         document.createElement('br'),
-        document.createTextNode(`Public ${facility.type} · current OSM snapshot`),
+        document.createTextNode(`Public ${facility.type} · source snapshot`),
         document.createElement('br'),
         link,
       );
@@ -312,6 +333,10 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
   return (
     <div className={`hotspot-canvas-wrap ${props.reduced ? 'no-animation' : ''}`}>
       <div ref={div} className="map-canvas" aria-label={props.label} />
+      <span className="gis-provider-status" role="status">
+        {props.context === 'osm' ? onlineStatus : 'LOCAL VECTOR MAP'}
+        {!props.administrative ? ' · DISTRICT GEOMETRY NOT CONNECTED' : ''}
+      </span>
       {error && <span className="hotspot-map-error">{error}</span>}
     </div>
   );

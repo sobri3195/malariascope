@@ -12,7 +12,9 @@ import {
   palette,
   clusterPalette,
   clusterNames,
+  layerAvailability,
 } from '../map-intelligence';
+import { gisRows } from '../scientific-sources';
 import { layerOptions } from '../map-options';
 import { Card, Sheet, useMobile } from './MobileApp';
 import { DistrictFacts } from './MobilePages';
@@ -26,7 +28,7 @@ const modes = [
   ['completeness', 'Data Completeness'],
 ] as const;
 export default function MobileMap() {
-  const { state, year, setYear, district, setDistrict, model } = useStore(),
+  const { state, update, year, setYear, district, setDistrict, model } = useStore(),
     { evidence } = useMobile();
   const [fallback, setFallback] = useState<any>(null),
     [error, setError] = useState(''),
@@ -47,20 +49,25 @@ export default function MobileMap() {
   useEffect(() => {
     if (valid) return;
     const controller = new AbortController();
-    void fetch('/data/boundaries.geojson', { signal: controller.signal })
+    void fetch('/data/geography/papua-context.geojson', { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw Error('Context geometry unavailable');
         return r.json();
       })
-      .then(setFallback)
+      .then((data) => setFallback(validateGeometry(data, true)))
       .catch((e) => {
         if (!controller.signal.aborted) setError(String(e));
       });
     return () => controller.abort();
   }, [valid]);
   const rows = useMemo(
-    () => evidence.history.map(observed).filter((r) => r !== null),
-    [evidence.history],
+    () =>
+      gisRows(
+        evidence.history.map(observed).filter((r) => r !== null),
+        state.scientificSources || [],
+        model,
+      ),
+    [evidence.history, state.scientificSources, model],
   );
   const graph = useMemo(() => (valid ? adjacencyGraph(valid.features) : {}), [valid]);
   const context = useMemo(
@@ -72,6 +79,15 @@ export default function MobileMap() {
       .filter((r) => r.year === year)
       .map((r) => mapValue(r, layer, rows, model, state.thresholds, context.clusters)),
     'quantile',
+  );
+  const availability = layerAvailability(
+    valid?.features || [],
+    rows,
+    year,
+    layer,
+    model,
+    state.thresholds,
+    context.clusters,
   );
   const years = [
     ...new Set([
@@ -101,6 +117,14 @@ export default function MobileMap() {
   return (
     <>
       <h1>Risk Map</h1>
+      <p className="m-warning">
+        Retrospective research intelligence — not an operational deployment map.
+      </p>
+      {!availability.available && (
+        <p role="status" className="m-warning">
+          {availability.reason}. No data is not LOW risk.
+        </p>
+      )}
       <div className="m-map-filters">
         <label>
           Year
@@ -172,6 +196,7 @@ export default function MobileMap() {
         {valid || fallback ? (
           <MapCanvas
             ref={handle}
+            context={state.mapContext ?? 'local'}
             geometry={valid ?? fallback}
             administrative={!!valid}
             rows={rows}
@@ -180,7 +205,7 @@ export default function MobileMap() {
             model={model}
             thresholds={state.thresholds}
             breaks={breaks}
-            opacity={0.8}
+            opacity={state.mapOpacity ?? 0.8}
             visible
             clusters={context.clusters}
             selectedIdentity={context.targetIdentity}
@@ -229,6 +254,67 @@ export default function MobileMap() {
       {advanced && (
         <Sheet title="Advanced map controls" onClose={() => setAdvanced(false)}>
           <label>
+            Map source
+            <select
+              aria-label="Map source"
+              value={state.mapContext ?? 'local'}
+              onChange={(e) => update({ mapContext: e.target.value as 'local' | 'osm' })}
+            >
+              <option value="local">Local vector map</option>
+              <option value="osm">OpenStreetMap context — online</option>
+            </select>
+          </label>
+          <label>
+            Layer opacity
+            <input
+              aria-label="Layer opacity"
+              type="range"
+              min="0"
+              max="1"
+              step=".05"
+              value={state.mapOpacity ?? 0.8}
+              onChange={(e) => update({ mapOpacity: Number(e.target.value) })}
+            />
+          </label>
+          <details>
+            <summary>View Layer Provenance</summary>
+            <p>
+              {layer} · {year} · {model}. Incidence = cases / population × 1,000. Risk thresholds:{' '}
+              {state.thresholds.join(', ')}. Anomalies: historical z-score. Missing values are
+              withheld.
+            </p>
+            <p>
+              Geometry:{' '}
+              {JSON.stringify(
+                state.geometrySource || {
+                  source: 'Natural Earth country context',
+                  license: 'Public domain',
+                  metadata: '/data/geography/geometry-metadata.json',
+                },
+              )}
+            </p>
+            <p>
+              Sources:{' '}
+              {JSON.stringify(
+                state.datasets.map(({ rows: _rows, sourceRows: _sourceRows, ...meta }) => meta),
+              )}
+            </p>
+            <p>
+              Supplemental sources:{' '}
+              {JSON.stringify(
+                (state.scientificSources || []).map(({ records: _records, ...meta }) => meta),
+              )}
+            </p>
+          </details>
+          <button
+            onClick={() => {
+              setDistrict('All districts');
+              setSelected(null);
+            }}
+          >
+            Clear selection
+          </button>
+          <label>
             Metric layer
             <select
               aria-label="Advanced mobile layer"
@@ -243,8 +329,8 @@ export default function MobileMap() {
             </select>
           </label>
           <p>
-            Pinch to zoom; tap a district polygon for evidence. Basemap tiles may require
-            connectivity; loaded administrative polygons remain visible offline.
+            Pinch to zoom; tap a district polygon for evidence. Local vectors need no external
+            tiles. OpenStreetMap is optional online context; tiles are never cached offline.
           </p>
           <button
             onClick={() => {

@@ -88,17 +88,6 @@
   left: 13px;
   z-index: 500;
 }
-.hotspot-map-error {
-  position: absolute;
-  left: 12px;
-  top: 55px;
-  z-index: 500;
-  background: #fff6e7;
-  border-radius: 4px;
-  padding: 7px;
-  font-size: 9px;
-  max-width: 70%;
-}
 .hotspot-map-frame .map-legend {
   max-width: calc(100% - 26px);
   bottom: 32px;
@@ -290,4 +279,45 @@
   border: 1px solid #e6edeb;
   border-radius: 6px;
   overflow: hidden;
+}
+.gis-disclaimer {
+  font-size: 11px;
+  color: #49616b;
+  margin: 10px 0;
+}
+.layer-provenance {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.layer-provenance dd {
+  margin: 0 0 8px;
+}
+@media (max-width: 600px) {
+  .hotspot-map-frame .map-controls {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    width: auto;
+    max-height: 58%;
+    border-radius: 12px 12px 0 0;
+    z-index: 700;
+  }
+  .hotspot-workspace .map-zoom button,
+  .hotspot-workspace .map-pill,
+  .hotspot-workspace .map-controls button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .hotspot-workspace .map-controls select,
+  .hotspot-workspace .map-controls input:not([type='checkbox']) {
+    min-height: 44px;
+    max-width: 100%;
+  }
+  .hotspot-workspace .district-drawer {
+    max-height: 80%;
+    overflow: auto;
+    max-width: calc(100% - 70px);
+  }
 }

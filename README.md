@@ -50,7 +50,7 @@ The import preview checks required fields, numeric values, valid years, positive
 
 For static replacement, put authorized datasets under `public/data/`, inspect them through the import workflow, and preserve source documentation in `data-provenance.json`. Never replace aggregates with fabricated district rows. Core workflows do not require a remote API.
 
-Country outlines in `boundaries.geojson` come from the Natural Earth public-domain dataset distributed by datasets/geo-countries. They are geographic context, **not district administrative boundaries**. The CARTO basemap uses public OpenStreetMap tiles and requires network access; local outlines remain available if tiles fail. Replace district geometry through Data Center with a FeatureCollection of Polygon/MultiPolygon features and a `district` or `name` property. Names are normalized for spacing, punctuation, and capitalization. Geometry district_code/code identifiers are matched to observation district_code first, then normalized names. Regency naming variants are resolved; city and regency identities remain distinct. Ambiguous duplicates require manual resolution.
+Country outlines in `boundaries.geojson` come from the Natural Earth public-domain dataset distributed by datasets/geo-countries. They are geographic context, **not district administrative boundaries**. Local analytical vectors render on a neutral canvas without an external basemap. OpenStreetMap tiles are optional online context; failure never removes vectors. Replace district geometry through Data Center with a FeatureCollection of Polygon/MultiPolygon features and a `district` or `name` property. Names are normalized for spacing, punctuation, and capitalization. Geometry district_code/code identifiers are matched to observation district_code first, then normalized names. Regency naming variants are resolved; city and regency identities remain distinct. Ambiguous duplicates require manual resolution.
 
 ## Analytics and model limitations
 
@@ -265,3 +265,80 @@ Notifications preview existing district-year analytical alerts. VIEW opens Alert
 This is a browser presentation companion, not a patient monitor, diagnostic device or troop-tracking system. The required research-prototype/aggregate-intelligence disclaimer remains outside the watch. No new scientific datasets, wearable backend or dependency is introduced. Existing Vercel SPA rewrites cover `/smartwatch` and direct refreshes.
 
 Validation: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test`, and `APP_URL=http://127.0.0.1:4173 node tests/watch.mjs` against a production preview. The watch suite covers all screens, source-derived risk, filters, actual alerts, notification dismissal, readiness, missing inputs, private-field exclusion, direct refresh, screen persistence, keyboard/swipe/autoplay/reduced motion, 320px phones, tablet/landscape sizing and shared desktop state. Browser fixtures are synthetic and never enter public research files.
+
+
+## No API key map architecture
+
+Before this audit, Leaflet requested CARTO tiles on every canvas. Now the default is
+**LOCAL VECTOR MAP**: administrative polygons and analytical fills use locally loaded GeoJSON,
+with a Papua-first camera. No GIS tokens or secrets are needed. The optional
+**OpenStreetMap context — online** source uses standard `tile.openstreetmap.org` tiles with visible
+attribution. No tiles are prefetched, bulk downloaded or cached for offline use. Overpass is an
+optional public healthcare refresh; failure preserves the map and any loaded snapshot.
+
+`/data/geography/papua-context.geojson` contains the existing Natural Earth country outlines,
+not study districts. `/data/geography/geometry-metadata.json` records source, URL, public-domain
+license, retrieval date, EPSG:4326 and SHA-256. Verified study district geometry is still **not
+connected**. No substitute polygons are manufactured. The original `/data/boundaries.geojson`
+remains available for older consumers. `/data/district-registry.json` lists only explicitly supplied
+names, without invented codes or panel membership; it is not a complete administrative registry.
+The resolver bundles this registry at build time. Replace entries only with documented administrative
+identifiers and rebuild; `geometryCode` can map geometry identifiers to canonical surveillance codes.
+
+Replace district geometry by importing a GeoJSON FeatureCollection through Data Center.
+Features require Polygon/MultiPolygon closed, nonzero-area EPSG:4326 rings and `district` or `name`.
+Optional identity properties: `district_code`/`code`, `canonical_name`, `normalized_name`, `aliases`
+(string array). Add source URL/citation and license using the import controls. Country-tagged,
+restricted, military, invalid-coordinate and duplicate-identity geometries are rejected.
+Code joins precede aliases/normalized names. Ambiguous candidates are withheld and request a
+manual geographic match; no automatic fuzzy match is used. Geometry imports activate analytical
+map joins immediately, but validation does not establish independent source verification.
+
+Data Center provides header-only CSV templates under `/data/templates/`:
+
+| Dataset role | Required fields | Optional fields |
+| --- | --- | --- |
+| Observed malaria | district, year, cases | district_code, population, incidence, rainfall, temperature, humidity, prediction, model (legacy combined imports) |
+| Population | district, year, population | district_code |
+| Climate observations | district, year, at least one of rainfall/temperature/humidity | district_code and remaining climate variables |
+| Model predictions | district, year, model, prediction, trainingPeriod, validationPeriod, outputClassification | district_code |
+| District risk | district, year, risk, score, method, outputClassification | district_code |
+
+District is nonempty text (maximum 100 characters), years are integers 1900–2100, observed cases
+are nonnegative integers, population is positive, rainfall/prediction are nonnegative, humidity
+is 0–100, and temperature is finite. Model names are Persistence, Ridge Regression, Random Forest,
+Gradient Boosting. Risk categories are LOW, MODERATE, HIGH, VERY HIGH. Separate sources reject
+empty rows, duplicates and missing metadata. Anomalies are calculated from annual history (minimum
+three preceding periods with nonzero variance), rather than accepting an undocumented anomaly basis.
+
+Choose the dataset role before selecting a file. Observations continue through the existing registry.
+Supplemental population/climate/prediction inputs are stored in a separate registry, currently used
+**only by GIS**. Conflicting supplementary values are withheld; the selected observed source takes
+precedence. Model-only geography can display predictions but never acquires fabricated cases,
+incidence or observed risk. Imported risk outputs are retained for source inspection and do not
+replace the verified default formula. Scenario data remain separate from both registries.
+
+A static facility snapshot can be imported as JSON or replaced at `/data/public-facilities.json`.
+It requires `source`, `license`, ISO `retrieved`, optional ISO `dataPeriod`, and `facilities` containing
+`id` (`node/123`, `way/123` or `relation/123`), `name`, `type` (hospital/clinic/doctors), `lat`, `lon`,
+and matching `https://www.openstreetmap.org/{id}` URL. Only valid public records within the Papua
+extent are retained; restricted/military records are excluded again on import. The bundled file
+has zero facilities and honestly reports NOT CONNECTED. Live refresh remains optional.
+
+DATA READINESS is available on Dashboard, GIS, Data Center and Scientific Integrity Center.
+Header-only surveillance is NOT CONNECTED, supplied summary/spatial findings are SUMMARY ONLY,
+and partial supplied model metrics stay PARTIAL. Missing metrics are never zero. Scientific
+Integrity scoring continues to inspect observational datasets; separate source imports are schema
+validated and listed separately, not silently included in an observational quality denominator.
+
+Layer controls expose provenance, source versions, period, calculation, geometry metadata and
+supplemental output classifications. Missing layer inputs show an unavailable message and gray
+no-data polygons, distinct from LOW risk. Existing layer controls, comparison, neighbors, SVG/JSON
+exports and worker Moran analysis remain available; adjacency now also runs in a worker on desktop.
+Year/layer/opacity/selection changes update existing Leaflet layers, not the map instance.
+
+Validation adds `APP_URL=http://127.0.0.1:4173 node tests/gis-reliability.mjs` to the existing suites.
+It blocks all external services, exercises OSM/Overpass failures, checks local polygons and empty
+surveillance, separate predictions, provenance, invalid geometry, mobile controls and direct refreshes.
+Vercel rewrites preserve `/data/` and `/data/geography/`; deployed browser verification may require
+Vercel SSO. Local deep-route checks do not prove authenticated deployed-route behavior.

@@ -1,11 +1,13 @@
 /* Dedicated /mobile scope; caches public research assets, never uploaded records. */
-const CACHE = 'malariascope-mobile-v1';
+const CACHE = 'malariascope-mobile-v2';
 const PUBLIC = [
   '/data/research-summary.json',
   '/data/model-performance.json',
   '/data/spatial-analysis.json',
   '/data/data-provenance.json',
   '/data/boundaries.geojson',
+  '/data/geography/papua-context.geojson',
+  '/data/geography/geometry-metadata.json',
 ];
 const allowed = (url) =>
   url.origin === self.location.origin &&

@@ -10,6 +10,7 @@ import {
   clusterPalette,
   palette,
   layerOptions,
+  layerAvailability,
   modes,
   featureIdentity,
   featureName,
@@ -22,10 +23,17 @@ import {
   type Bounds,
   type MapFeature,
 } from './map-intelligence';
-import { fetchPublicFacilities, type FacilitySnapshot } from './public-healthcare';
+import {
+  validateFacilitySnapshot,
+  fetchPublicFacilities,
+  type FacilitySnapshot,
+} from './public-healthcare';
 import type { Adjacency, hotspotContext } from './hotspot-spatial';
 import type { moran } from './moran';
 import './hotspot.css';
+import DataReadiness from './DataReadiness';
+import { gisRows } from './scientific-sources';
+import { featureDistrictIdentity, resolveDistrict } from './district-registry';
 type MoranResult = ReturnType<typeof moran>;
 const EMPTY_FEATURES: MapFeature[] = [];
 const EMPTY_CLUSTERS: Record<string, string> = {};
@@ -35,7 +43,21 @@ const format = (v: number | null | undefined) =>
     ? 'Data not available'
     : v.toLocaleString('en-GB', { maximumFractionDigits: 2 });
 export default function MapView({ large = false }: { large?: boolean }) {
-  const { state, rows, year, setYear, district, setDistrict, model, update } = useStore();
+  const {
+    state,
+    rows: observedRows,
+    signals,
+    year,
+    setYear,
+    district,
+    setDistrict,
+    model,
+    update,
+  } = useStore();
+  const rows = useMemo(
+    () => gisRows(observedRows, state.scientificSources || [], model),
+    [observedRows, state.scientificSources, model],
+  );
   const root = useRef<HTMLDivElement>(null),
     mapA = useRef<MapHandle>(null),
     mapB = useRef<MapHandle>(null),
@@ -44,7 +66,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
     [error, setError] = useState(''),
     [controls, setControls] = useState(false),
     [visible, setVisible] = useState(true),
-    [opacity, setOpacity] = useState(0.7),
+    [opacity, setOpacity] = useState(state.mapOpacity ?? 0.7),
     [classification, setClassification] = useState('quantile'),
     [compare, setCompare] = useState(false),
     [yearB, setYearB] = useState<number | null>(null),
@@ -66,7 +88,9 @@ export default function MapView({ large = false }: { large?: boolean }) {
     [permutations, setPermutations] = useState(999);
   const workerRef = useRef<Worker | null>(null),
     contextKeyRef = useRef('');
-  const [facilitySnapshot, setFacilitySnapshot] = useState<FacilitySnapshot | null>(null),
+  const [facilitySnapshot, setFacilitySnapshot] = useState<FacilitySnapshot | null>(
+      state.facilitySnapshot ?? null,
+    ),
     [showFacilities, setShowFacilities] = useState(false),
     [facilityBusy, setFacilityBusy] = useState(false),
     [facilityError, setFacilityError] = useState('');
@@ -96,13 +120,13 @@ export default function MapView({ large = false }: { large?: boolean }) {
   useEffect(() => {
     let live = true;
     if (!validated.geometry)
-      void fetch('/data/boundaries.geojson')
+      void fetch('/data/geography/papua-context.geojson')
         .then((r) => {
           if (!r.ok) throw Error('Country outline unavailable.');
           return r.json();
         })
         .then((data) => {
-          if (live) setFallback(data);
+          if (live) setFallback(validateGeometry(data, true));
         })
         .catch((e) => {
           if (live) setError(String(e));
@@ -119,20 +143,36 @@ export default function MapView({ large = false }: { large?: boolean }) {
     return () => media.removeEventListener('change', change);
   }, []);
   useEffect(() => {
-    let live = true;
     setSpatialError('');
-    if (validated.geometry)
-      void import('./hotspot-spatial')
-        .then((module) => {
-          const graph = module.adjacencyGraph(validated.geometry.features);
-          if (live)
-            setGraphState({ geometry: validated.geometry, graph, compute: module.hotspotContext });
-        })
-        .catch((e) => {
-          if (live) setSpatialError(e instanceof Error ? e.message : String(e));
-        });
+    setGraphState(null);
+    if (!validated.geometry) return;
+    const worker = new Worker(new URL('./hotspot.worker.ts', import.meta.url), { type: 'module' });
+    let live = true;
+    worker.onmessage = (event) => {
+      if (event.data.error) setSpatialError(event.data.error);
+      else
+        void import('./hotspot-spatial')
+          .then((module) => {
+            if (live)
+              setGraphState({
+                geometry: validated.geometry,
+                graph: event.data.graph,
+                compute: module.hotspotContext,
+              });
+          })
+          .catch((e) => {
+            if (live) setSpatialError(String(e));
+          });
+      worker.terminate();
+    };
+    worker.onerror = () => {
+      setSpatialError('District adjacency calculation failed.');
+      worker.terminate();
+    };
+    worker.postMessage({ geometry: validated.geometry });
     return () => {
       live = false;
+      worker.terminate();
     };
   }, [validated.geometry]);
   const ctxA = useMemo(
@@ -168,6 +208,21 @@ export default function MapView({ large = false }: { large?: boolean }) {
   );
   const clustersA = ctxA?.clusters || EMPTY_CLUSTERS,
     clustersB = ctxB?.clusters || EMPTY_CLUSTERS;
+  const availability = layerAvailability(
+    features,
+    rows,
+    year,
+    layer,
+    model,
+    state.thresholds,
+    clustersA,
+  );
+  const ambiguousMatches = features.filter((f) =>
+    resolveDistrict(
+      featureDistrictIdentity(f),
+      rows.filter((r) => r.year === year),
+    ).status.startsWith('Manual'),
+  );
   // Classification is pooled across both complete map cohorts, not recalculated on pan.
   const comparisons = useMemo(
     () =>
@@ -335,10 +390,15 @@ export default function MapView({ large = false }: { large?: boolean }) {
       const snapshot = await fetchPublicFacilities(controller.signal);
       if (!controller.signal.aborted) {
         setFacilitySnapshot(snapshot);
+        update({ facilitySnapshot: snapshot }, 'Public facility snapshot saved', snapshot.source);
         setShowFacilities(true);
       }
     } catch (e) {
-      if (!controller.signal.aborted) setFacilityError(e instanceof Error ? e.message : String(e));
+      if (!controller.signal.aborted)
+        setFacilityError(
+          'Live public facility service unavailable. ' +
+            (e instanceof Error ? e.message : String(e)),
+        );
     } finally {
       if (!controller.signal.aborted) setFacilityBusy(false);
     }
@@ -396,7 +456,11 @@ export default function MapView({ large = false }: { large?: boolean }) {
         geometrySource: state.geometrySource || {
           source: 'Natural Earth public-domain country outlines; not district geometry',
           license: 'Public domain',
+          checksum: 'a7be025bdd48bb15ce732bc27823de3a88a3e5967852aa83d01c028d642c27d1',
         },
+        supplementalSources: (state.scientificSources || []).map(
+          ({ records: _records, ...metadata }) => metadata,
+        ),
         thresholds: state.thresholds,
         classification,
         comparisonYears: compare ? [year, otherYear] : null,
@@ -443,6 +507,9 @@ export default function MapView({ large = false }: { large?: boolean }) {
       geometrySource: state.geometrySource || {
         source: 'Natural Earth country outlines; not district geometry',
       },
+      supplementalSources: (state.scientificSources || []).map(
+        ({ records: _records, ...metadata }) => metadata,
+      ),
       viewport: boundsA,
       statisticsA: statsA,
       statisticsB: compare ? statsB : null,
@@ -510,6 +577,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
   const canvas = (pane: 'A' | 'B') => (
     <MapCanvas
       ref={pane === 'A' ? mapA : mapB}
+      context={state.mapContext ?? 'local'}
       geometry={geometry}
       administrative={administrative}
       rows={rows}
@@ -539,6 +607,21 @@ export default function MapView({ large = false }: { large?: boolean }) {
       ref={root}
       className={`hotspot-workspace ${large ? 'expanded' : 'compact'} ${fullscreen ? 'is-fullscreen' : ''}`}
     >
+      <p className="gis-disclaimer">
+        Retrospective research intelligence — not an operational deployment map.
+      </p>
+      {large && <DataReadiness />}
+      {layer !== 'boundaries' && !availability.available && (
+        <p className="notice" role="status">
+          {availability.reason}. No data is not LOW risk.
+        </p>
+      )}
+      {!!ambiguousMatches.length && (
+        <p className="notice" role="alert">
+          Manual geographic match required. {ambiguousMatches.map(featureName).join(', ')}; values
+          withheld.
+        </p>
+      )}
       {large && (
         <>
           <div className="hotspot-toolbar">
@@ -555,6 +638,17 @@ export default function MapView({ large = false }: { large?: boolean }) {
                 {modes.map(([label, id]) => (
                   <option key={id} value={id}>
                     {label}
+                    {!layerAvailability(
+                      features,
+                      rows,
+                      year,
+                      id,
+                      model,
+                      state.thresholds,
+                      clustersA,
+                    ).available
+                      ? ' — unavailable'
+                      : ''}
                   </option>
                 ))}
               </select>
@@ -569,6 +663,17 @@ export default function MapView({ large = false }: { large?: boolean }) {
                 {layerOptions.map(([id, label]) => (
                   <option value={id} key={id}>
                     {label}
+                    {!layerAvailability(
+                      features,
+                      rows,
+                      year,
+                      id,
+                      model,
+                      state.thresholds,
+                      clustersA,
+                    ).available
+                      ? ' — unavailable'
+                      : ''}
                   </option>
                 ))}
               </select>
@@ -684,7 +789,118 @@ export default function MapView({ large = false }: { large?: boolean }) {
               </button>
             </div>
             {controls && (
-              <div className="map-controls">
+              <div className="map-controls" aria-label="GIS layer controls">
+                <button className="button" onClick={() => setControls(false)}>
+                  Close controls
+                </button>
+                <label>
+                  Map source
+                  <select
+                    aria-label="Map source"
+                    value={state.mapContext ?? 'local'}
+                    onChange={(e) => update({ mapContext: e.target.value as 'local' | 'osm' })}
+                  >
+                    <option value="local">Local vector map</option>
+                    <option value="osm">OpenStreetMap context — online</option>
+                  </select>
+                </label>
+                <label>
+                  District search
+                  <input
+                    aria-label="District search"
+                    list="gis-districts"
+                    value={district === 'All districts' ? '' : district}
+                    onChange={(e) => {
+                      setDistrict(e.target.value || 'All districts');
+                      setDrawer(!!e.target.value);
+                    }}
+                  />
+                </label>
+                <datalist id="gis-districts">
+                  {features.map((f) => (
+                    <option key={featureIdentity(f)} value={featureName(f)} />
+                  ))}
+                </datalist>
+                <button
+                  className="button"
+                  onClick={() => {
+                    setDistrict('All districts');
+                    setDrawer(false);
+                  }}
+                >
+                  Clear selection
+                </button>
+                <button className="button" onClick={() => mapA.current?.reset()}>
+                  Fit to study area
+                </button>
+                <details className="layer-provenance">
+                  <summary>View Layer Provenance</summary>
+                  <dl>
+                    <dt>Source Dataset</dt>
+                    <dd>{currentDataset?.name || 'Not connected'}</dd>
+                    <dt>Dataset Version</dt>
+                    <dd>{currentDataset?.checksum || 'Not available'}</dd>
+                    <dt>Observation Period</dt>
+                    <dd>
+                      {year} · {model}
+                    </dd>
+                    <dt>Geography</dt>
+                    <dd>
+                      {administrative ? 'Imported administrative polygons' : 'Country context only'}
+                    </dd>
+                    <dt>Observed / Predicted / Derived</dt>
+                    <dd>
+                      {['prediction', 'prediction_risk'].includes(layer)
+                        ? 'PREDICTED'
+                        : [
+                              'risk',
+                              'cluster',
+                              'residual',
+                              'signed_residual',
+                              'completeness',
+                              'incidence',
+                              'rainfall_anomaly',
+                              'temperature_anomaly',
+                            ].includes(layer)
+                          ? 'DERIVED'
+                          : 'OBSERVED / CONTEXT'}
+                    </dd>
+                    <dt>Calculation</dt>
+                    <dd>
+                      {layerLabel}; incidence = cases / population × 1,000; risk thresholds{' '}
+                      {state.thresholds.join(', ')}; anomalies = historical z-score; residual =
+                      predicted − observed; cluster = exploratory queen-contiguity quadrant;
+                      completeness = known inputs / 6 × 100.
+                    </dd>
+                    <dt>Geometry Source / License / Checksum</dt>
+                    <dd>
+                      {JSON.stringify(
+                        state.geometrySource || {
+                          source: 'Natural Earth via datasets/geo-countries',
+                          url: 'https://github.com/datasets/geo-countries',
+                          license: 'Public domain',
+                          checksum:
+                            'a7be025bdd48bb15ce732bc27823de3a88a3e5967852aa83d01c028d642c27d1',
+                          crs: 'EPSG:4326',
+                          administrativeLevel: 'country context only',
+                          metadata: '/data/geography/geometry-metadata.json',
+                        },
+                      )}
+                    </dd>
+                    <dt>Supplemental source versions</dt>
+                    <dd>
+                      {JSON.stringify(
+                        (state.scientificSources || []).map(
+                          ({ records: _records, ...metadata }) => metadata,
+                        ),
+                      )}
+                    </dd>
+                  </dl>
+                  <p>
+                    Source metadata is declared by the importer; schema validation does not
+                    independently verify provenance. Scenarios never enter GIS observations.
+                  </p>
+                </details>
                 <label className="check">
                   <input
                     type="checkbox"
@@ -727,7 +943,10 @@ export default function MapView({ large = false }: { large?: boolean }) {
                     max="1"
                     step=".05"
                     value={opacity}
-                    onChange={(e) => setOpacity(+e.target.value)}
+                    onChange={(e) => {
+                      setOpacity(+e.target.value);
+                      update({ mapOpacity: +e.target.value });
+                    }}
                   />
                 </label>
                 <button
@@ -782,6 +1001,48 @@ export default function MapView({ large = false }: { large?: boolean }) {
                 <dl>
                   <dt>Cases</dt>
                   <dd>{format(selected?.cases)}</dd>
+                  <dt>Population</dt>
+                  <dd>{format(selected?.population)}</dd>
+                  <dt>Prediction</dt>
+                  <dd>
+                    {valueLabel(
+                      mapValue(selected, 'prediction', rows, model, state.thresholds),
+                      'prediction',
+                    )}
+                  </dd>
+                  <dt>Residual</dt>
+                  <dd>
+                    {valueLabel(
+                      mapValue(selected, 'signed_residual', rows, model, state.thresholds),
+                      'signed_residual',
+                    )}
+                  </dd>
+                  <dt>Climate Availability</dt>
+                  <dd>
+                    {['rainfall', 'temperature', 'humidity']
+                      .filter((f) => Number.isFinite(selected?.[f as keyof typeof selected]))
+                      .join(', ') || 'Not connected'}
+                  </dd>
+                  <dt>Alert Count</dt>
+                  <dd>
+                    {
+                      signals.filter(
+                        (a) => normalize(a.district) === normalize(district) && a.year === year,
+                      ).length
+                    }
+                  </dd>
+                  <dt>Data Completeness</dt>
+                  <dd>
+                    {valueLabel(
+                      mapValue(selected, 'completeness', rows, model, state.thresholds),
+                      'completeness',
+                    )}
+                  </dd>
+                  <dt>Data Provenance</dt>
+                  <dd>
+                    {currentDataset?.source || 'Not connected'} ·{' '}
+                    {currentDataset?.checksum || 'No version'}
+                  </dd>
                   <dt>Incidence / 1,000</dt>
                   <dd>{selected ? format(incidence(selected)) : 'Data not available'}</dd>
                   <dt>Observed risk</dt>
@@ -1044,7 +1305,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
                   </thead>
                   <tbody>
                     {comparisons.map((r) => (
-                      <tr key={r.district}>
+                      <tr key={r.identity}>
                         <td>
                           <button className="text-link" onClick={() => setDistrict(r.district)}>
                             {r.district}
@@ -1099,6 +1360,26 @@ export default function MapView({ large = false }: { large?: boolean }) {
                   Show public healthcare facilities
                 </label>
               </div>
+              <button
+                className="button"
+                onClick={() => {
+                  void fetch('/data/public-facilities.json')
+                    .then((r) => {
+                      if (!r.ok) throw Error('Static snapshot unavailable');
+                      return r.json();
+                    })
+                    .then((body) => {
+                      const snapshot = validateFacilitySnapshot(body);
+                      setFacilitySnapshot(snapshot);
+                      setShowFacilities(true);
+                      update({ facilitySnapshot: snapshot });
+                      setFacilityError('');
+                    })
+                    .catch((e) => setFacilityError(String(e)));
+                }}
+              >
+                Load static public facility snapshot
+              </button>
               {facilityError && <p role="alert">{facilityError}</p>}
               {facilitySnapshot ? (
                 <p>

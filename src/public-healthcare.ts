@@ -106,3 +106,43 @@ export async function fetchPublicFacilities(signal: AbortSignal): Promise<Facili
     signal.removeEventListener('abort', abort);
   }
 }
+
+export function validateFacilitySnapshot(body: any): FacilitySnapshot {
+  if (!Array.isArray(body?.facilities) || !body.facilities.length)
+    throw Error('Public facility snapshot not connected — zero facilities.');
+  if (body.facilities.length > 3000) throw Error('Maximum 3,000 public facilities.');
+  for (const key of ['source', 'license', 'retrieved'])
+    if (typeof body[key] !== 'string' || !body[key].trim())
+      throw Error(`Facility snapshot requires ${key}.`);
+  if (!Number.isFinite(Date.parse(body.retrieved)))
+    throw Error('Invalid facility retrieval timestamp.');
+  const elements = body.facilities.flatMap((f: any) => {
+    if (Object.keys(f).some((k) => /military|troop|deployment|tactical|route/i.test(k))) return [];
+    const match = typeof f.id === 'string' ? /^(node|way|relation)\/(\d+)$/.exec(f.id) : null;
+    if (!match || f.url !== `https://www.openstreetmap.org/${f.id}`) return [];
+    return [
+      {
+        type: match[1],
+        id: Number(match[2]),
+        lat: f.lat,
+        lon: f.lon,
+        tags: { amenity: f.type, name: f.name, access: f.access || 'yes' },
+      },
+    ];
+  });
+  const facilities = publicFacilities({ elements }, facilityRegion);
+  if (!facilities.length)
+    throw Error('No valid, unrestricted public healthcare records in snapshot.');
+  return {
+    facilities,
+    source: body.source,
+    license: body.license,
+    retrieved: body.retrieved,
+    dataPeriod:
+      typeof body.dataPeriod === 'string' && Number.isFinite(Date.parse(body.dataPeriod))
+        ? body.dataPeriod
+        : null,
+    bounds: facilityRegion,
+    truncated: body.truncated === true,
+  };
+}

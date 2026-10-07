@@ -35,7 +35,7 @@ import {
 import './forecast.css';
 const modes = ['Model Comparison', 'District Forecast Inspection', 'Error Analysis'] as const;
 const num = (n: number | null | undefined, digits = 2) =>
-  n == null ? 'Data not available' : n.toLocaleString('en-GB', { maximumFractionDigits: digits });
+  n == null ? 'Metric not available' : n.toLocaleString('en-GB', { maximumFractionDigits: digits });
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="panel forecast-panel">
