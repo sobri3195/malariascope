@@ -105,3 +105,27 @@ Comparisons include the loaded Papua-workspace median, highest-incidence distric
 Generate District Intelligence Report captures all summary metrics, rule explanations, spatial context, comparisons, alerts, readiness review, data-quality issues, historical records, and field-level provenance. The captured report supports JSON download and print/save as PDF without a backend. It is separate from scientific datasets and clears when its district/year/model/source context changes.
 
 Run `node tests/district-360.mjs` against a running development server. Set APP_URL to the preview server origin to check the production bundle. Its isolated test fixtures exercise all nine tabs, cross-source joins, verified-only filtering, anomaly math, comparisons, bookmarks, district/year checklist isolation, report JSON/printing, GIS/year synchronization, keyboard tabs, and mobile overflow. These fixtures are never included in production data.
+
+## Advanced Early-Warning Engine
+
+The Early Warning Center provides a visual IF / AND-or-OR / THEN builder with saved rule revisions, activation, priority, category, description, persistence, and episode suppression. Six editable templates cover High Burden, Rapid Increase, Climate Anomaly, Model Deviation, Data Gap, and Persistent High Risk. New custom rules start inactive; save a rule to apply edits. Rules evaluate all loaded years in the active surveillance dataset, independently of display-year filters, while forecast metrics respect the shared selected model.
+
+Supported conditions include cases, incidence, year-over-year change, three-year rolling average, predicted cases, prediction deviation from historical burden, rainfall/temperature anomalies, incidence-based risk level, signed residual, absolute prediction error, completeness, dataset age, consecutive increases, missing fields, and climate age. Operators are `>`, `>=`, `<`, `<=`, `=`, inclusive `between`, exclusive `outside range`, and `increased by` / `decreased by` (percentage change of the selected metric versus the adjacent year, with a positive baseline).
+
+Persistence requires the full compound expression to match for one, two, or three adjacent observed annual periods. Missing years or an unmatched/unknown expression break the streak. With suppression enabled, only the first qualifying period in each uninterrupted episode emits a signal; a clear condition or missing period rearms it. Without suppression, each qualifying district-year emits one signal. Replay preserves alert identity and first-recorded timestamp rather than duplicating events. Legacy rules retain their previous per-period behavior until suppression is enabled.
+
+Rolling means require three contiguous observed years. Climate anomalies use at least three earlier valid observations and sample standard deviation, excluding future data. Prediction deviation uses the mean of up to three earlier observed periods; missing forecasts or nonpositive baselines are unavailable. Risk levels encode LOW/MODERATE/HIGH/VERY HIGH as 0/1/2/3 with global incidence thresholds. Signed residual is prediction minus observed cases. Completeness is availability of cases, population, rainfall, temperature, humidity, and selected-model prediction divided by six.
+
+Dataset age is elapsed days since registry ingestion at evaluation, **not** age of surveillance observations or source publication. It is evaluated on load or rule/source/model changes, only for the latest district-year: historical ingestion timestamps are unavailable, so dataset-age persistence and year-over-year age changes cannot be confirmed. This browser application does not run a background surveillance scheduler.
+
+The Alert Center retains immutable local snapshots with exact rule configuration, all persistence-period condition values, underlying historical observations, source identifier/name/classification/checksum, model, risk thresholds, severity, priority, category, deterministic explanation, and first-recorded timestamp. Editing, disabling, or deleting a rule preserves previous alerts, which are labeled historical when the current configuration no longer produces them. Statuses, notes, rules, and alert history persist in this browser; export alerts as JSON for a portable copy. No autonomous clinical or military recommendations are generated.
+
+Validation includes the analytical suite (`npm test`) and browser workflows:
+
+```sh
+node tests/warning-engine.mjs
+node tests/district-360.mjs
+node tests/browser.mjs
+```
+
+Start the app first; set `APP_URL` for a production preview and `CHROMIUM_PATH` when Chromium is elsewhere. Browser fixtures are isolated automated test data and are never installed as production evidence.

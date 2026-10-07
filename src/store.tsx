@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { defaults, evaluate, type Row, type Rule } from './analytics';
 import { useLocation, useNavigate } from 'react-router-dom';
 export type Dataset = {
@@ -40,6 +48,7 @@ export type State = {
   reduced: boolean;
   filters?: { risk: string; region: string; mode: string; start?: number; end?: number };
   alertCreated?: Record<string, string>;
+  alertLog?: (ReturnType<typeof evaluate>[number] & { timestamp: string })[];
   selection?: { year: number; district: string; model: string };
 };
 const initial: State = {
@@ -68,6 +77,7 @@ const Context = createContext<{
   state: State;
   update: (s: Partial<State>, event?: string, details?: string) => void;
   rows: Row[];
+  signals: ReturnType<typeof evaluate>;
   year: number;
   setYear: (n: number) => void;
   district: string;
@@ -134,34 +144,58 @@ export function Provider({ children }: { children: ReactNode }) {
     });
   }
   const rows = state.datasets.find((d) => d.id === state.active)?.rows || EMPTY_ROWS;
+  const signals = useMemo(() => {
+    const dataset = state.datasets.find((d) => d.id === state.active);
+    return evaluate(dataset?.rows || [], state.rules, state.active, {
+      datasetCreated: dataset?.created,
+      datasetName: dataset?.name,
+      source: dataset?.source,
+      checksum: dataset?.checksum,
+      classification: dataset?.classification,
+      model,
+      thresholds: state.thresholds,
+    });
+  }, [state.datasets, state.active, state.rules, state.thresholds, model]);
   useEffect(() => {
-    const signals = evaluate(
-      state.datasets.find((d) => d.id === state.active)?.rows || [],
-      state.rules,
-      state.active,
-    );
     setState((prev) => {
-      const additions = signals.filter((a) => !prev.alertCreated?.[a.id]);
+      const additions = signals.filter(
+        (a) => !(prev.alertLog || []).some((old) => old.id === a.id),
+      );
       if (!additions.length) return prev;
       const now = new Date().toISOString();
       const next = {
         ...prev,
         alertCreated: {
           ...prev.alertCreated,
-          ...Object.fromEntries(additions.map((a) => [a.id, now])),
+          ...Object.fromEntries(additions.map((a) => [a.id, prev.alertCreated?.[a.id] || now])),
         },
+        alertLog: [
+          ...(prev.alertLog || []),
+          ...additions.map((a) => ({ ...a, timestamp: prev.alertCreated?.[a.id] || now })),
+        ],
       };
       try {
         localStorage.setItem('malariascope-v1', JSON.stringify(next));
       } catch {
-        /* In-memory alerts remain available. */
+        /* Local memory remains usable. */
       }
       return next;
     });
-  }, [state.datasets, state.active, state.rules]);
+  }, [signals]);
   return (
     <Context.Provider
-      value={{ state, update, rows, year, setYear, district, setDistrict, model, setModel }}
+      value={{
+        state,
+        update,
+        rows,
+        signals,
+        year,
+        setYear,
+        district,
+        setDistrict,
+        model,
+        setModel,
+      }}
     >
       {children}
     </Context.Provider>

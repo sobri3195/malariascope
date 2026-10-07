@@ -1,4 +1,4 @@
-import { normalize, risk, metric, type Row, type Rule } from './analytics.ts';
+import { normalize, risk, evaluate, type Row, type Rule } from './analytics.ts';
 export type Classification =
   'VERIFIED' | 'PUBLIC SOURCE' | 'AUTHORIZED' | 'USER IMPORT' | 'UNVERIFIED';
 export type EvidenceDataset = {
@@ -27,6 +27,7 @@ export type Reference = {
   source: string;
   classification: Classification;
   checksum: string;
+  created?: string;
   year: number;
   field: Field;
   value: number;
@@ -129,6 +130,7 @@ export function aggregateEvidence(
             source: e.dataset.source,
             classification: e.dataset.classification || 'USER IMPORT',
             checksum: e.dataset.checksum,
+            created: e.dataset.created,
             year: e.row.year,
             field,
             value: e.row[field]!,
@@ -403,55 +405,61 @@ export function buildDistrict360(
       : ['HIGH', 'VERY HIGH'].includes(riskLevel)
         ? 'Risk is elevated under the configured incidence thresholds. The loaded evidence supports the following analytical findings.'
         : 'This district does not meet the configured HIGH or VERY HIGH incidence thresholds. Additional analytical signals, if present, do not automatically change its risk category.';
-  const observations = records.map(observed).filter((r): r is Row => r !== null);
   const sourceId =
     current?.references.find((r) => r.field === 'cases' && r.selected)?.datasetId ||
     current?.references.find((r) => r.field === 'incidence' && r.selected)?.datasetId ||
     'district-360';
-  const currentRow = current ? observed(current) : null;
-  const value = (name: Rule['metric']) =>
-    name === 'incidence'
-      ? incidence
-      : currentRow
-        ? metric(currentRow, observations, name)
-        : name === 'missing_fields' && current
-          ? ['population', 'rainfall', 'temperature'].filter(
-              (f) => current.values[f as Field] === null,
-            ).length
-          : null;
-  const condition = (c: { metric: Rule['metric']; operator: '>' | '<'; value: number }) => {
-    const v = value(c.metric);
-    return v !== null && (c.operator === '>' ? v > c.value : v < c.value);
-  };
-  const signals = current
-    ? rules
-        .filter(
-          (rule) =>
-            rule.enabled &&
-            (rule.secondary
-              ? rule.join === 'OR'
-                ? condition(rule) || condition(rule.secondary)
-                : condition(rule) && condition(rule.secondary)
-              : condition(rule)),
-        )
-        .map((rule) => {
-          const id = `${sourceId}:${rule.id}:${normalize(current.district)}:${year}`;
-          return {
-            id,
-            district: current.district,
-            year,
-            severity: rule.severity,
-            value: value(rule.metric),
-            threshold: rule.value,
-            metric: rule.metric,
-            rule: rule.id,
-            reason: `${rule.metric} ${value(rule.metric)?.toFixed(2) ?? 'unavailable'} ${rule.operator} ${rule.value}${rule.secondary ? ` ${rule.join || 'AND'} ${rule.secondary.metric} ${value(rule.secondary.metric)?.toFixed(2) ?? 'unavailable'} ${rule.secondary.operator} ${rule.secondary.value}` : ''}`,
-            status: statuses[id]?.status || 'NEW',
-            note: statuses[id]?.note || '',
-          };
-        })
-        .filter((a) => a.status !== 'RESOLVED')
-    : [];
+  const sourceRef = current?.references.find((r) => r.datasetId === sourceId && r.selected);
+  // NaN is an internal missing-value sentinel, never an invented observed case count.
+  const signalRows: Row[] = records.map((r) => ({
+    district: r.district,
+    year: r.year,
+    cases: r.values.cases ?? NaN,
+    population: r.values.population ?? undefined,
+    rainfall: r.values.rainfall ?? undefined,
+    temperature: r.values.temperature ?? undefined,
+    humidity: r.values.humidity ?? undefined,
+    prediction: r.values.prediction ?? undefined,
+    model: r.model,
+  }));
+  const signals = evaluate(signalRows, rules, sourceId, {
+    thresholds,
+    model: current?.model,
+    datasetName: sourceRef?.dataset,
+    datasetCreated: sourceRef?.created,
+    source: sourceRef?.source,
+    classification: sourceRef?.classification,
+    checksum: sourceRef?.checksum,
+    override: (row, name) => {
+      const record = records.find((r) => r.district === row.district && r.year === row.year);
+      if (name === 'incidence') return incidence360(record);
+      if (name === 'risk_level') {
+        const value = incidence360(record);
+        return value === null
+          ? null
+          : value >= thresholds[2]
+            ? 3
+            : value >= thresholds[1]
+              ? 2
+              : value >= thresholds[0]
+                ? 1
+                : 0;
+      }
+      return undefined;
+    },
+  })
+    .filter(
+      (a) => normalize(a.district) === normalize(current?.district || district) && a.year === year,
+    )
+    .map((a) => ({
+      ...a,
+      sourceReferences: records
+        .filter((r) => r.district === current?.district && r.year <= year)
+        .flatMap((r) => r.references.filter((ref) => ref.selected)),
+      status: statuses[a.id]?.status || 'NEW',
+      note: statuses[a.id]?.note || '',
+    }))
+    .filter((a) => a.status !== 'RESOLVED');
   return {
     district,
     year,

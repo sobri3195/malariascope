@@ -38,7 +38,6 @@ import {
   Upload,
   Wind,
   X,
-  Plus,
   Trash2,
   Copy,
   Save,
@@ -63,9 +62,8 @@ import {
   change,
   correlation,
   defaults,
-  ruleMetrics,
+  validCondition,
   download,
-  evaluate,
   incidence,
   normalize,
   performance,
@@ -74,9 +72,9 @@ import {
   validate,
   type Issue,
   type Row,
-  type Rule,
 } from './analytics';
 import './styles.css';
+import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import { validateGeometry, resolveFeatureRow } from './geometry';
 const MapView = lazy(() => import('./Map'));
 const District360 = lazy(() => import('./DistrictIntelligence360'));
@@ -360,7 +358,11 @@ function Filters() {
         </label>
         <label>
           Model{' '}
-          <select aria-label="Global model" value={model} onChange={(e) => setModel(e.target.value)}>
+          <select
+            aria-label="Global model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
             {['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].map((m) => (
               <option key={m}>{m}</option>
             ))}
@@ -457,9 +459,9 @@ function Filters() {
   );
 }
 function Dashboard({ summary, models }: { summary: any; models: any[] }) {
-  const { filtered, scoped, rows, state, year, district, model } = useData();
+  const { filtered, scoped, rows, state, year, district, model, signals } = useData();
   const navigate = useNavigate();
-  const alerts = evaluate(rows, state.rules, state.active).filter(
+  const alerts = signals.filter(
     (a) =>
       a.year === year &&
       (district === 'All districts' || normalize(a.district) === normalize(district)),
@@ -931,7 +933,13 @@ function Surveillance() {
     </>
   );
 }
-function District({summary}:{summary:any}){return <Suspense fallback={<Empty title="Loading District Intelligence 360°…"/>}><District360 filters={<Filters/>} summary={summary}/></Suspense>;}
+function District({ summary }: { summary: any }) {
+  return (
+    <Suspense fallback={<Empty title="Loading District Intelligence 360°…" />}>
+      <District360 filters={<Filters />} summary={summary} />
+    </Suspense>
+  );
+}
 function Climate() {
   const { rows, district } = useData();
   const [variable, setVariable] = useState<'rainfall' | 'temperature' | 'humidity'>('rainfall'),
@@ -1264,7 +1272,7 @@ function DataCenter() {
       rows: preview,
       checksum,
       source: 'User-selected local file · independently unverified',
-      classification:'USER IMPORT',
+      classification: 'USER IMPORT',
       created: new Date().toISOString(),
     };
     update(
@@ -1396,7 +1404,9 @@ function DataCenter() {
                     </small>
                   </td>
                   <td>
-                    <Badge tone={d.classification==='VERIFIED'?'teal':'amber'}>{d.classification||'USER IMPORT'}</Badge>
+                    <Badge tone={d.classification === 'VERIFIED' ? 'teal' : 'amber'}>
+                      {d.classification || 'USER IMPORT'}
+                    </Badge>
                   </td>
                   <td>
                     {d.rows.length}
@@ -1555,193 +1565,16 @@ function Quality() {
   );
 }
 function EarlyWarning() {
-  const { state, update, rows } = useStore();
-  const alerts = evaluate(rows, state.rules, state.active);
-  function edit(id: string, p: Partial<Rule>) {
-    update(
-      { rules: state.rules.map((r) => (r.id === id ? { ...r, ...p } : r)) },
-      'Analytical rule updated',
-      id,
-    );
-  }
-  return (
-    <>
-      <Heading
-        title="Early Warning Center"
-        sub="Build transparent analytical rules evaluated against loaded observations."
-      >
-        <Button
-          primary
-          onClick={() =>
-            update(
-              {
-                rules: [
-                  ...state.rules,
-                  {
-                    id: crypto.randomUUID(),
-                    metric: 'cases',
-                    operator: '>',
-                    value: 10000,
-                    enabled: true,
-                    severity: 'WATCH',
-                  },
-                ],
-              },
-              'Analytical rule created',
-            )
-          }
-        >
-          {' '}
-          <Plus size={15} /> Add rule
-        </Button>
-      </Heading>
-      <div className="notice">
-        {alerts.length} analytical signals generated from {rows.length} observations. Rules do not
-        imply clinical emergencies.
-      </div>
-      <Panel
-        title="Rule builder"
-        sub="WHEN metric operator threshold THEN generate analytical alert"
-      >
-        {state.rules.map((r) => (
-          <div className="rule-row" key={r.id}>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={r.enabled}
-                onChange={(e) => edit(r.id, { enabled: e.target.checked })}
-              />{' '}
-              WHEN
-            </label>
-            <select
-              value={r.metric}
-              onChange={(e) => edit(r.id, { metric: e.target.value as Rule['metric'] })}
-            >
-              {ruleMetrics.map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-            <select
-              value={r.operator}
-              onChange={(e) => edit(r.id, { operator: e.target.value as Rule['operator'] })}
-            >
-              <option>&gt;</option>
-              <option>&lt;</option>
-            </select>
-            <input
-              aria-label="Rule threshold"
-              type="number"
-              value={r.value}
-              onChange={(e) => edit(r.id, { value: +e.target.value })}
-            />
-            <select
-              aria-label="Additional condition"
-              value={r.secondary ? r.join || 'AND' : 'NONE'}
-              onChange={(e) =>
-                edit(
-                  r.id,
-                  e.target.value === 'NONE'
-                    ? { secondary: undefined, join: undefined }
-                    : {
-                        join: e.target.value as 'AND' | 'OR',
-                        secondary: r.secondary || { metric: 'change', operator: '>', value: 25 },
-                      },
-                )
-              }
-            >
-              <option value="NONE">No additional condition</option>
-              <option>AND</option>
-              <option>OR</option>
-            </select>
-            {r.secondary && (
-              <>
-                <select
-                  aria-label="Secondary metric"
-                  value={r.secondary.metric}
-                  onChange={(e) =>
-                    edit(r.id, {
-                      secondary: { ...r.secondary!, metric: e.target.value as Rule['metric'] },
-                    })
-                  }
-                >
-                  {ruleMetrics.map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
-                <select
-                  aria-label="Secondary operator"
-                  value={r.secondary.operator}
-                  onChange={(e) =>
-                    edit(r.id, {
-                      secondary: { ...r.secondary!, operator: e.target.value as Rule['operator'] },
-                    })
-                  }
-                >
-                  <option>&gt;</option>
-                  <option>&lt;</option>
-                </select>
-                <input
-                  aria-label="Secondary threshold"
-                  type="number"
-                  value={r.secondary.value}
-                  onChange={(e) =>
-                    edit(r.id, { secondary: { ...r.secondary!, value: +e.target.value } })
-                  }
-                />
-              </>
-            )}
-            <span>THEN</span>
-            <select value={r.severity} onChange={(e) => edit(r.id, { severity: e.target.value })}>
-              {['INFO', 'WATCH', 'MODERATE', 'HIGH', 'CRITICAL ANALYTICAL SIGNAL'].map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-            <button
-              className="icon-btn"
-              aria-label="Duplicate rule"
-              onClick={() =>
-                update(
-                  { rules: [...state.rules, { ...r, id: crypto.randomUUID() }] },
-                  'Rule duplicated',
-                )
-              }
-            >
-              <Copy size={16} />
-            </button>
-            <button
-              className="icon-btn"
-              aria-label="Delete rule"
-              onClick={() =>
-                update({ rules: state.rules.filter((x) => x.id !== r.id) }, 'Rule deleted', r.id)
-              }
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-        <div className="body-copy">
-          Units: incidence per 1,000 population; change in percent; absolute residual in cases.
-          Prediction increase compares with the latest three earlier observations; rainfall anomaly
-          uses at least three earlier climate observations and sample standard deviation.
-          Consecutive increase counts adjacent annual increases; missing_fields counts absent
-          population, rainfall, and temperature; climate_age is years since the latest loaded
-          climate observation. Missing inputs never trigger a numeric rule.
-        </div>
-        <Button onClick={() => update({ rules: defaults }, 'Default alert rules restored')}>
-          Reset defaults
-        </Button>{' '}
-        <NavLink className="text-link" to="/alerts">
-          Review generated alerts →
-        </NavLink>
-      </Panel>
-    </>
-  );
+  return <AdvancedEarlyWarning />;
 }
 function Alerts() {
-  const { state, update, rows } = useStore();
+  const { state, update, signals } = useStore();
   const [search, setSearch] = useState(''),
     [status, setStatus] = useState('ALL');
-  const alerts = evaluate(rows, state.rules, state.active)
+  const alerts = (
+    state.alertLog || signals.map((a) => ({ ...a, timestamp: state.alertCreated?.[a.id] || '' }))
+  )
+    .filter((a) => a.sourceDataset.id === state.active)
     .filter(
       (a) =>
         normalize(a.district).includes(normalize(search)) &&
@@ -1749,8 +1582,10 @@ function Alerts() {
     )
     .sort(
       (a, b) =>
+        ['URGENT', 'HIGH', 'NORMAL', 'LOW'].indexOf(a.priority) -
+          ['URGENT', 'HIGH', 'NORMAL', 'LOW'].indexOf(b.priority) ||
         ['CRITICAL ANALYTICAL SIGNAL', 'HIGH', 'MODERATE', 'WATCH', 'INFO'].indexOf(a.severity) -
-        ['CRITICAL ANALYTICAL SIGNAL', 'HIGH', 'MODERATE', 'WATCH', 'INFO'].indexOf(b.severity),
+          ['CRITICAL ANALYTICAL SIGNAL', 'HIGH', 'MODERATE', 'WATCH', 'INFO'].indexOf(b.severity),
     );
   function set(id: string, p: { status?: string; note?: string }) {
     update(
@@ -1777,8 +1612,8 @@ function Alerts() {
               alerts.map((a) => ({
                 ...a,
                 ...state.alertStates[a.id],
-                source: state.active,
-                timestamp: state.alertCreated?.[a.id],
+                source: a.sourceDataset,
+                timestamp: a.timestamp,
               })),
             )
           }
@@ -1815,15 +1650,41 @@ function Alerts() {
                   {a.district} · {a.year}
                 </h3>
                 <p>
-                  Rule: {a.reason} · source{' '}
-                  {state.datasets.find((d) => d.id === state.active)?.name || 'Not connected'}
+                  Rule: {a.exactRule} · source {a.sourceDataset.name || 'Not connected'}
                   <br />
-                  {state.alertCreated?.[a.id]
-                    ? new Date(state.alertCreated[a.id]).toLocaleString('en-GB', {
+                  {a.timestamp
+                    ? new Date(a.timestamp).toLocaleString('en-GB', {
                         timeZone: 'Asia/Bangkok',
                       }) + ' ICT'
                     : 'Timestamp unavailable'}
                 </p>
+                <p>
+                  Priority: {a.priority} · Category: {a.category}
+                </p>
+                <p>{a.explanation}</p>
+                {!signals.some((signal) => signal.id === a.id) && (
+                  <p>
+                    Retained historical alert; current rule or evidence no longer produces this
+                    signal.
+                  </p>
+                )}
+                <details>
+                  <summary>Triggering data and source evidence</summary>
+                  <p>{a.reason}</p>
+                  <pre className="warning-evidence">
+                    {JSON.stringify(
+                      {
+                        periods: a.triggeringData,
+                        observations: a.observations,
+                        dataset: a.sourceDataset,
+                        model: a.model,
+                        riskThresholds: a.riskThresholds,
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
               </div>
               <select
                 aria-label={`Status for ${a.district}`}
@@ -1854,7 +1715,7 @@ function Alerts() {
   );
 }
 function Risk() {
-  const { filtered, rows, state, update, year,model } = useData();
+  const { filtered, rows, state, update, year, model } = useData();
   const [mode, setMode] = useState('OBSERVED RISK'),
     [weights, setWeights] = useState([1, 1, 0]),
     [spatialValues, setSpatialValues] = useState<Record<string, number | null>>({}),
@@ -1893,7 +1754,9 @@ function Risk() {
   function score(r: Row) {
     const observed = incidence(r),
       prediction =
-        r.prediction !== undefined && r.population && r.model===model ? (r.prediction / r.population) * 1000 : null,
+        r.prediction !== undefined && r.population && r.model === model
+          ? (r.prediction / r.population) * 1000
+          : null,
       spatial = spatialValues[normalize(r.district)] ?? null;
     if (mode === 'OBSERVED RISK') return observed;
     if (mode === 'MODEL-ASSISTED RISK') return prediction;
@@ -2260,7 +2123,7 @@ function Scenario() {
   );
 }
 function Reports({ models, summary, spatial }: { models: any[]; summary: any; spatial: any }) {
-  const { state, update, filtered, rows, year, district, model } = useData();
+  const { state, update, filtered, rows, year, district, model, signals } = useData();
   const [type, setType] = useState('Regional Summary'),
     [generated, setGenerated] = useState(false),
     [sections, setSections] = useState(['Observations', 'Alerts', 'Readiness']);
@@ -2281,7 +2144,7 @@ function Reports({ models, summary, spatial }: { models: any[]; summary: any; sp
     source: state.active || 'Supplied study summary',
     observations: sections.includes('Observations') ? filtered : undefined,
     alerts: sections.includes('Alerts')
-      ? evaluate(rows, state.rules, state.active).filter(
+      ? signals.filter(
           (a) =>
             a.year === year &&
             (district === 'All districts' || normalize(a.district) === normalize(district)),
@@ -2530,14 +2393,13 @@ function SettingsPage() {
                           !p.rules.every(
                             (r: any) =>
                               typeof r.id === 'string' &&
-                              ruleMetrics.includes(r.metric) &&
+                              validCondition(r) &&
                               (!r.secondary ||
-                                (ruleMetrics.includes(r.secondary.metric) &&
-                                  ['>', '<'].includes(r.secondary.operator) &&
-                                  Number.isFinite(r.secondary.value) &&
-                                  ['AND', 'OR'].includes(r.join))) &&
-                              ['>', '<'].includes(r.operator) &&
-                              Number.isFinite(r.value) &&
+                                (validCondition(r.secondary) && ['AND', 'OR'].includes(r.join))) &&
+                              (!r.persistence || [1, 2, 3].includes(r.persistence)) &&
+                              (r.suppress === undefined || typeof r.suppress === 'boolean') &&
+                              (!r.priority ||
+                                ['LOW', 'NORMAL', 'HIGH', 'URGENT'].includes(r.priority)) &&
                               typeof r.enabled === 'boolean' &&
                               [
                                 'INFO',
@@ -2550,7 +2412,20 @@ function SettingsPage() {
                         )
                           throw Error('Invalid alert rules');
                         update(
-                          { thresholds: p.thresholds, rules: p.rules, reduced: !!p.reduced },
+                          {
+                            thresholds: p.thresholds,
+                            rules: p.rules.map((r: any) => ({
+                              ...r,
+                              revision:
+                                Math.max(
+                                  state.rules.find((old) => old.id === r.id)?.revision || 0,
+                                  ...(state.alertLog || [])
+                                    .filter((a) => a.rule === r.id)
+                                    .map((a) => a.ruleSnapshot.revision || 0),
+                                ) + 1,
+                            })),
+                            reduced: !!p.reduced,
+                          },
                           'Settings imported',
                         );
                         setError('');
@@ -2904,7 +2779,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 function App() {
   const location = useLocation(),
     navigate = useNavigate();
-  const { state, rows } = useStore();
+  const { state, rows, signals } = useStore();
   const [mobile, setMobile] = useState(false),
     [search, setSearch] = useState(false),
     [q, setQ] = useState('');
@@ -2945,7 +2820,7 @@ function App() {
   }, []);
   const path = location.pathname.split('/')[1] || 'dashboard';
   const present = path === 'presentation';
-  const count = evaluate(rows, state.rules, state.active).filter(
+  const count = signals.filter(
     (a) => !['RESOLVED', 'ACKNOWLEDGED'].includes(state.alertStates[a.id]?.status || 'NEW'),
   ).length;
   const results = modules.filter((m) => m[1].toLowerCase().includes(q.toLowerCase()));
@@ -3075,7 +2950,7 @@ function App() {
             />
             <Route path="/risk-map" element={<GIS />} />
             <Route path="/surveillance" element={<Surveillance />} />
-            <Route path="/district-intelligence" element={<District summary={data.summary}/>} />
+            <Route path="/district-intelligence" element={<District summary={data.summary} />} />
             <Route path="/climate" element={<Climate />} />
             <Route path="/forecasting" element={<Models models={data.models} forecast />} />
             <Route path="/model-benchmarking" element={<Models models={data.models} />} />
