@@ -74,7 +74,7 @@ await page.locator('.leaflet-interactive').first().click({force:true});await pag
 await page.getByLabel('Close district drawer').click();await page.getByLabel('Global district').selectOption('All districts');
 await page.goto(base+'/risk-intelligence');await page.getByLabel('Global model').selectOption('Random Forest');await page.getByLabel('Risk mode').selectOption('MODEL-ASSISTED RISK');
 await page.getByRole('button',{name:'How was this risk calculated?'}).first().click();await page.getByRole('dialog',{name:'Risk calculation'}).waitFor();await page.keyboard.press('Escape');if(await page.getByRole('dialog').count())throw Error('Dialog Escape failed');
-await page.getByLabel('Risk mode').selectOption('SPATIAL RISK');await page.getByRole('button',{name:'Calculate neighborhood incidence'}).click();await page.waitForTimeout(500);
+await page.getByLabel('Risk mode').selectOption('SPATIAL RISK');await page.getByRole('table',{name:'District risk calculations'}).waitFor();
 if((await page.locator('tbody').innerText()).includes('INSUFFICIENT DATA'))throw Error('Spatial risk did not use loaded neighbors');
 await page.goto(base+'/settings');await page.getByLabel('Snapshot name').fill('Browser acceptance snapshot');await page.getByRole('button',{name:'Save snapshot'}).click();
 await page.goto(base+'/reports');await page.getByLabel('Report type').selectOption('Model Performance Report');await page.getByRole('button',{name:'Generate report'}).click();
