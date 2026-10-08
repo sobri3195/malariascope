@@ -1,3 +1,4 @@
+import { isAnalyticalDemo, loadAnalyticalDemo, analyticalDemoId } from './analytical-demo';
 import {
   loadResearchPackage,
   researchDatasets,
@@ -36,7 +37,7 @@ export type Dataset = {
   classification?: import('./district-intelligence').Classification;
 };
 export type State = {
-  researchMode?: 'BUILTIN' | 'USER IMPORT';
+  researchMode?: 'BUILTIN' | 'USER IMPORT' | 'DEMO';
   scientificSources?: import('./scientific-sources').ScientificSource[];
   facilitySnapshot?: import('./public-healthcare').FacilitySnapshot;
   mapContext?: 'local' | 'osm';
@@ -118,6 +119,7 @@ function load(): State {
 const Context = createContext<{
   research: ResearchPackage | null;
   researchError: string;
+  activateDemo: () => Promise<void>;
   state: State;
   update: (s: Partial<State>, event?: string, details?: string) => void;
   rows: Row[];
@@ -148,7 +150,7 @@ export function Provider({ children }: { children: ReactNode }) {
     ) {
       initialState.active = dataset;
       if (!builtin(dataset)) {
-        initialState.researchMode = 'USER IMPORT';
+        initialState.researchMode = isAnalyticalDemo(dataset) ? 'DEMO' : 'USER IMPORT';
         initialState.datasets = initialState.datasets.filter((d) => !builtin(d.id));
       }
     }
@@ -183,6 +185,7 @@ export function Provider({ children }: { children: ReactNode }) {
         if (!live) return;
         setResearch(p);
         setState((prev) => {
+          if (isAnalyticalDemo(prev.active)) return { ...prev, researchMode: 'DEMO' as const };
           if ((prev.active && !builtin(prev.active)) || prev.researchMode === 'USER IMPORT')
             return {
               ...prev,
@@ -218,23 +221,86 @@ export function Provider({ children }: { children: ReactNode }) {
       live = false;
     };
   }, []);
+  async function activateDemo() {
+    if (!research) throw Error('Research geographic context is not loaded yet.');
+    const demo = await loadAnalyticalDemo();
+    setState((prev) => {
+      const next = {
+        ...prev,
+        researchMode: 'DEMO' as const,
+        active: analyticalDemoId,
+        datasets: [...prev.datasets.filter((d) => !isAnalyticalDemo(d.id)), ...demo],
+        audit: [
+          {
+            time: new Date().toISOString(),
+            event: 'Synthetic analytical demo activated',
+            details: 'SYNTHETIC — NOT OBSERVED DATA',
+          },
+          ...prev.audit,
+        ].slice(0, 500),
+      };
+      try {
+        localStorage.setItem('malariascope-v1', JSON.stringify(next));
+      } catch {
+        window.dispatchEvent(
+          new CustomEvent('malariascope-notice', {
+            detail: 'Synthetic demo is available in this session; browser storage is full.',
+          }),
+        );
+      }
+      return next;
+    });
+  }
   const projectedDatasets = useMemo(
     () =>
-      state.datasets.map((d) =>
-        builtin(d.id) && research && ['study-balanced', 'study-spatial'].includes(d.id)
-          ? {
-              ...d,
-              rows: researchRows(research, model, d.id === 'study-spatial').filter(
-                (r) => d.id !== 'study-spatial' || r.year === 2025,
-              ),
-            }
-          : d,
-      ),
-    [state.datasets, research, model],
+      state.datasets
+        .filter((d) =>
+          isAnalyticalDemo(state.active) ? isAnalyticalDemo(d.id) : !isAnalyticalDemo(d.id),
+        )
+        .map((d) =>
+          builtin(d.id) && research && ['study-balanced', 'study-spatial'].includes(d.id)
+            ? {
+                ...d,
+                rows: researchRows(research, model, d.id === 'study-spatial').filter(
+                  (r) => d.id !== 'study-spatial' || r.year === 2025,
+                ),
+              }
+            : d.id === analyticalDemoId
+              ? {
+                  ...d,
+                  rows: d.rows.map((r) => {
+                    const output = state.datasets.find(
+                      (s) => isAnalyticalDemo(s.id) && s.rows.some((x) => x.model === model),
+                    );
+                    const prediction = output?.rows.find(
+                      (x) => x.district === r.district && x.year === r.year,
+                    )?.prediction;
+                    return { ...r, model, prediction };
+                  }),
+                }
+              : d,
+        ),
+    [state.datasets, state.active, research, model],
   );
   const effectiveState = useMemo(
-    () => ({ ...state, datasets: projectedDatasets }),
-    [state, projectedDatasets],
+    () => ({
+      ...state,
+      datasets: projectedDatasets,
+      ...(isAnalyticalDemo(state.active) && research
+        ? {
+            geometry: research.geometry,
+            scientificSources: [],
+            geometrySource: {
+              ...research.geometryMetadata,
+              name: 'Public district boundaries — SYNTHETIC VALUES ONLY',
+              checksum: research.geometryMetadata.sha256,
+              created: research.geometryMetadata.retrieved,
+              classification: 'PUBLIC GEOMETRY',
+            },
+          }
+        : {}),
+    }),
+    [state, projectedDatasets, research],
   );
   const riskMode = safeRiskMode(state.riskMode);
   function setRiskMode(mode: RiskMode) {
@@ -270,7 +336,9 @@ export function Provider({ children }: { children: ReactNode }) {
             active: nextDataset,
             ...(dataset !== null && !builtin(nextDataset)
               ? {
-                  researchMode: 'USER IMPORT' as const,
+                  researchMode: isAnalyticalDemo(nextDataset)
+                    ? ('DEMO' as const)
+                    : ('USER IMPORT' as const),
                   datasets: prev.datasets.filter((d) => !builtin(d.id)),
                 }
               : {}),
@@ -303,20 +371,33 @@ export function Provider({ children }: { children: ReactNode }) {
       const next = {
         ...prev,
         ...s,
-        ...(s.active !== undefined && !builtin(s.active)
-          ? {
-              researchMode: 'USER IMPORT' as const,
-              datasets: (s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
-            }
-          : s.active && builtin(s.active) && research
+        ...(s.active && isAnalyticalDemo(s.active)
+          ? { researchMode: 'DEMO' as const }
+          : s.active !== undefined && !builtin(s.active)
             ? {
-                researchMode: 'BUILTIN' as const,
-                datasets: [
-                  ...(s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
-                  ...researchDatasets(research),
-                ],
+                researchMode: 'USER IMPORT' as const,
+                datasets: (s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
               }
-            : {}),
+            : s.active && builtin(s.active) && research
+              ? {
+                  researchMode: 'BUILTIN' as const,
+                  ...(!prev.geometry
+                    ? {
+                        geometry: research.geometry,
+                        geometrySource: {
+                          ...research.geometryMetadata,
+                          checksum: research.geometryMetadata.sha256,
+                          created: research.geometryMetadata.retrieved,
+                          classification: 'PUBLIC GEOMETRY',
+                        },
+                      }
+                    : {}),
+                  datasets: [
+                    ...(s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
+                    ...researchDatasets(research),
+                  ],
+                }
+              : {}),
         audit: event
           ? [{ time: new Date().toISOString(), event, details }, ...prev.audit].slice(0, 500)
           : prev.audit,
@@ -348,6 +429,7 @@ export function Provider({ children }: { children: ReactNode }) {
     });
   }, [projectedDatasets, state.active, state.rules, state.thresholds, model]);
   useEffect(() => {
+    if (isAnalyticalDemo(state.active)) return;
     setState((prev) => {
       const additions = signals.filter(
         (a) => !(prev.alertLog || []).some((old) => old.id === a.id),
@@ -380,13 +462,14 @@ export function Provider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  }, [signals]);
+  }, [signals, state.active]);
   return (
     <Context.Provider
       value={{
         state: effectiveState,
         research,
         researchError,
+        activateDemo,
         update,
         rows,
         signals,

@@ -1,0 +1,12 @@
+{
+  "version": "synthetic-analytics-v1",
+  "classification": "SYNTHETIC — NOT OBSERVED DATA",
+  "observations": 54,
+  "districts": 9,
+  "period": "2020–2025 artificial annual values",
+  "modelOutputs": 225,
+  "sha256": "8a30c096cfe085ff4861d6a55d1ae462af64ae11ac45d1fa3878047b258fc2f2",
+  "source": "scripts/generate-analytical-demo.mjs",
+  "geometry": "Existing public geoBoundaries ADM2 polygons, not synthetic locations",
+  "limitations": "All analytical values and model formulas are synthetic; no scientific validation or source verification is claimed."
+}

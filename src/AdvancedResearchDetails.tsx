@@ -704,7 +704,12 @@ export default function AdvancedResearchDetails() {
             Active analytical dataset:{' '}
             {active ? (
               <>
-                <span className="method-badge">USER IMPORT</span> {active.name}
+                <span className="method-badge">
+                  {active.classification === 'SYNTHETIC'
+                    ? 'SYNTHETIC — NOT OBSERVED DATA'
+                    : 'USER IMPORT'}
+                </span>{' '}
+                {active.name}
               </>
             ) : (
               'No user dataset selected'

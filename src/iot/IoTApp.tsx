@@ -1,3 +1,4 @@
+import AnalyticalDemoControls from '../AnalyticalDemoControls';
 import BrandMark from '../BrandMark';
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -287,6 +288,7 @@ export default function IoTApp() {
     );
   return (
     <div className={'iot-app' + (simulation ? ' iot-simulation' : '')}>
+      <AnalyticalDemoControls />
       <header>
         <div>
           <h1 className="malariascope-brand-line">

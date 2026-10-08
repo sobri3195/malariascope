@@ -5,7 +5,8 @@ export type Classification =
   | 'PUBLIC SOURCE'
   | 'AUTHORIZED'
   | 'USER IMPORT'
-  | 'UNVERIFIED';
+  | 'UNVERIFIED'
+  | 'SYNTHETIC';
 export type EvidenceDataset = {
   fieldSources?: Partial<Record<Field, { source: string; checksum: string; name: string }>>;
   id: string;
@@ -68,7 +69,11 @@ export function aggregateEvidence(
   model: string,
   verifiedOnly = false,
 ) {
-  const eligible = datasets.filter(
+  const synthetic = datasets.find((d) => d.id === active)?.classification === 'SYNTHETIC';
+  const isolated = datasets.filter((d) =>
+    synthetic ? d.classification === 'SYNTHETIC' : d.classification !== 'SYNTHETIC',
+  );
+  const eligible = isolated.filter(
     (d) =>
       !verifiedOnly ||
       ['VERIFIED', 'VERIFIED_RESEARCH_EXTRACTION'].includes(d.classification || ''),
@@ -178,6 +183,8 @@ export function includeSuppliedIncidence(
   model: string,
   verifiedOnly = false,
 ) {
+  if (records.some((r) => r.references.some((ref) => ref.classification === 'SYNTHETIC')))
+    return records;
   const f = summary?.incidence;
   if (
     verifiedOnly ||

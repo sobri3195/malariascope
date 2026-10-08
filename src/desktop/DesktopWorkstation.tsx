@@ -1,3 +1,4 @@
+import AnalyticalDemoControls from '../AnalyticalDemoControls';
 import BrandMark from '../BrandMark';
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
@@ -259,6 +260,7 @@ export default function DesktopWorkstation() {
   };
   return (
     <div className={'desktop-workstation' + (layout.max ? ' desk-max' : '')}>
+      <AnalyticalDemoControls />
       <header className="desk-title">
         <h1 className="malariascope-brand-line">
           <BrandMark size={32} />
