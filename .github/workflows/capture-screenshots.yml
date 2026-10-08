@@ -1,0 +1,130 @@
+name: Capture MALARIASCOPE Screenshots
+on:
+  push:
+    branches:
+      - artifact/screenshots-20261008
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Start preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/malariascope-preview.log 2>&1 &
+          echo $! > /tmp/malariascope-preview.pid
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4173/dashboard >/dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          cat /tmp/malariascope-preview.log
+          exit 1
+      - name: Capture all application screens
+        shell: bash
+        run: |
+          cat > /tmp/capture.mjs <<'EOF'
+          import { chromium } from '@playwright/test';
+          import fs from 'node:fs';
+          const base='http://127.0.0.1:4173';
+          fs.mkdirSync('screenshots',{recursive:true});
+          const browser=await chromium.launch({headless:true});
+          const manifest=[];
+          const clean=s=>s.replace(/^\//,'').replaceAll('/','__')||'home';
+          async function shot(context, path, label, opts={}) {
+            const page=await context.newPage();
+            await page.goto(base+path,{waitUntil:'networkidle',timeout:60000});
+            await page.waitForTimeout(opts.wait ?? 1200);
+            if (opts.before) await opts.before(page);
+            await page.waitForTimeout(500);
+            const file='screenshots/'+clean(label)+'.png';
+            await page.screenshot({path:file,fullPage:true,animations:'disabled'});
+            manifest.push({label,path,file});
+            await page.close();
+          }
+          const desktop=await browser.newContext({viewport:{width:1440,height:1000},deviceScaleFactor:1});
+          const desktopRoutes=[
+            ['/dashboard','01-dashboard'],
+            ['/risk-map','02-risk-map'],
+            ['/surveillance','03-surveillance'],
+            ['/district-intelligence','04-district-intelligence'],
+            ['/climate','05-climate'],
+            ['/forecasting','06-forecasting'],
+            ['/model-benchmarking','07-model-benchmarking'],
+            ['/spatial-analysis','08-spatial-analysis'],
+            ['/early-warning','09-early-warning'],
+            ['/risk-intelligence','10-risk-intelligence'],
+            ['/force-health','11-force-health'],
+            ['/scenario','12-scenario'],
+            ['/data-center','13-data-center'],
+            ['/data-quality','14-data-quality'],
+            ['/reports','15-reports'],
+            ['/alerts','16-alerts'],
+            ['/audit','17-audit'],
+            ['/settings','18-settings'],
+            ['/methodology','19-methodology'],
+            ['/provenance','20-provenance'],
+            ['/about','21-about']
+          ];
+          for (const [path,label] of desktopRoutes) await shot(desktop,path,label);
+          // Presentation mode: capture all six built-in views.
+          const p=await desktop.newPage();
+          await p.goto(base+'/presentation',{waitUntil:'networkidle',timeout:60000});
+          await p.waitForTimeout(1200);
+          for(let i=1;i<=6;i++){
+            const file='screenshots/'+String(22+i).padStart(2,'0')+'-presentation-'+i+'.png';
+            await p.screenshot({path:file,fullPage:true,animations:'disabled'});
+            manifest.push({label:'Presentation '+i,path:'/presentation',file});
+            if(i<6){ const next=p.getByRole('button',{name:'Next'}); await next.click(); await p.waitForTimeout(700); }
+          }
+          await p.close();
+          await desktop.close();
+
+          const mobile=await browser.newContext({viewport:{width:430,height:932},deviceScaleFactor:1});
+          const mobileRoutes=[
+            ['/mobile','30-mobile-home'],
+            ['/mobile/map','31-mobile-map'],
+            ['/mobile/district','32-mobile-district'],
+            ['/mobile/alerts','33-mobile-alerts'],
+            ['/mobile/surveillance','34-mobile-surveillance'],
+            ['/mobile/models','35-mobile-models'],
+            ['/mobile/readiness','36-mobile-readiness'],
+            ['/mobile/report','37-mobile-report'],
+            ['/mobile/more','38-mobile-more'],
+            ['/mobile/provenance','39-mobile-provenance'],
+            ['/mobile/quality','40-mobile-quality']
+          ];
+          for (const [path,label] of mobileRoutes) await shot(mobile,path,label);
+          await mobile.close();
+
+          const watch=await browser.newContext({viewport:{width:1440,height:1100},deviceScaleFactor:1});
+          const wp=await watch.newPage();
+          await wp.goto(base+'/smartwatch',{waitUntil:'networkidle',timeout:60000});
+          await wp.waitForTimeout(1200);
+          const screens=['Risk','Surveillance','Climate','Forecast','Alerts','Readiness','Sync','Data','District'];
+          for(let i=0;i<screens.length;i++){
+            const s=screens[i];
+            await wp.getByLabel('Watch screen').selectOption({label:s});
+            await wp.waitForTimeout(350);
+            const file='screenshots/'+String(41+i).padStart(2,'0')+'-smartwatch-'+s.toLowerCase()+'.png';
+            await wp.screenshot({path:file,fullPage:true,animations:'disabled'});
+            manifest.push({label:'Smartwatch '+s,path:'/smartwatch',file});
+          }
+          await wp.close();
+          await watch.close();
+          fs.writeFileSync('screenshots/manifest.json',JSON.stringify(manifest,null,2));
+          await browser.close();
+          EOF
+          node /tmp/capture.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: malariascope-all-screenshots
+          path: screenshots/
+          if-no-files-found: error
+          retention-days: 3
