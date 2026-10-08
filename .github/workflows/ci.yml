@@ -33,3 +33,4 @@ jobs:
           node tests/research-desktop-iot.mjs
           node tests/methodology-evidence.mjs
           node tests/coverage-summary.mjs
+          node tests/connected-analytical-demo.mjs

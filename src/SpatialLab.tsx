@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from './store';
 import { download } from './analytics';
 import { spatialInput, type moran } from './spatial';
@@ -10,6 +10,18 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
     [busy, setBusy] = useState(false),
     [permutations, setPermutations] = useState(999),
     [selected, setSelected] = useState('');
+  const workerRef = useRef<Worker | null>(null);
+  useEffect(() => {
+    setResult(null);
+    setError('');
+    setBusy(false);
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
+  }, [rows, year, state.geometry]);
   function run() {
     setError('');
     setResult(null);
@@ -23,6 +35,7 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
       const worker = new Worker(new URL('./spatial.worker.ts', import.meta.url), {
         type: 'module',
       });
+      workerRef.current = worker;
       worker.onmessage = (e) => {
         setBusy(false);
         if (e.data.error) setError(e.data.error);
@@ -49,27 +62,31 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
         </div>
       </div>
       <div className="two-col">
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Supplied global Moran’s I</h2>
-            <span className="badge">SUPPLIED STUDY RESULT</span>
-          </div>
-          <div className="scenario-result">
-            <span>2025 · NINE-DISTRICT ASSESSMENT</span>
-            <h1>{evidence?.moranI ?? '—'}</h1>
-            <strong>Permutation p = {evidence?.pValue ?? '—'}</strong>
-          </div>
-          <div className="notice">
-            Not statistically significant at p &lt; 0.05. Underlying weights and permutation count
-            were not supplied.
-          </div>
-          <button
-            className="button"
-            onClick={() => download('spatial-study-evidence.json', evidence)}
-          >
-            Export supplied evidence
-          </button>
-        </section>
+        {state.researchMode !== 'DEMO' && (
+          <section className="panel">
+            <div className="panel-head">
+              <h2>Supplied global Moran’s I</h2>
+              <span className="badge">SUPPLIED STUDY RESULT</span>
+            </div>
+            <div className="scenario-result">
+              <span>2025 · NINE-DISTRICT ASSESSMENT</span>
+              <h1>{evidence?.moranI ?? '—'}</h1>
+              <strong>Permutation p = {evidence?.pValue ?? '—'}</strong>
+            </div>
+            <div className="notice">
+              Not statistically significant at p &lt; 0.05. Weights:{' '}
+              {evidence?.weights || 'not supplied'}; neighbors:{' '}
+              {evidence?.neighbors_definition || 'not supplied'}; permutations:{' '}
+              {evidence?.permutations ?? 'not supplied'}.
+            </div>
+            <button
+              className="button"
+              onClick={() => download('spatial-study-evidence.json', evidence)}
+            >
+              Export supplied evidence
+            </button>
+          </section>
+        )}
         <section className="panel">
           <div className="panel-head">
             <h2>Calculate loaded-data spatial association</h2>
@@ -112,6 +129,10 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
                 onClick={() =>
                   download('derived-spatial-analysis.json', {
                     ...result,
+                    dataClassification:
+                      state.researchMode === 'DEMO'
+                        ? 'SYNTHETIC — NOT OBSERVED DATA'
+                        : 'DERIVED FROM LOADED DATA',
                     year,
                     dataset: state.active,
                   })
@@ -139,6 +160,8 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
               </div>
             </div>
             <div className="notice">
+              {state.researchMode === 'DEMO' &&
+                'Synthetic demo association only; no research inference. '}
               {result.pValue < 0.05
                 ? 'Statistically significant at p < 0.05 under the selected exploratory weights.'
                 : 'Not statistically significant at p < 0.05.'}{' '}

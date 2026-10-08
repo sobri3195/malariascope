@@ -461,6 +461,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
         year: y,
         model,
         source: currentDataset?.name || null,
+        dataClassification: currentDataset?.classification || 'USER IMPORT',
         checksum: currentDataset?.checksum,
         geometrySource: state.geometrySource || {
           source: 'Natural Earth public-domain country outlines; not district geometry',

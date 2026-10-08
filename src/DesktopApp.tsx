@@ -1,3 +1,4 @@
+import AnalyticalDemoControls from './AnalyticalDemoControls';
 import BrandMark from './BrandMark';
 import {
   EvidenceCoverage,
@@ -1505,7 +1506,13 @@ function Alerts() {
   const [search, setSearch] = useState(''),
     [status, setStatus] = useState('ALL');
   const alerts = (
-    state.alertLog || signals.map((a) => ({ ...a, timestamp: state.alertCreated?.[a.id] || '' }))
+    state.researchMode === 'DEMO'
+      ? signals.map((a) => ({
+          ...a,
+          timestamp: state.datasets.find((d) => d.id === state.active)?.created || '',
+        }))
+      : state.alertLog ||
+        signals.map((a) => ({ ...a, timestamp: state.alertCreated?.[a.id] || '' }))
   )
     .filter((a) => a.sourceDataset.id === state.active)
     .filter(
@@ -2256,9 +2263,12 @@ function App() {
         </>
       )}
       <main id="main" className="main" tabIndex={-1}>
+        <AnalyticalDemoControls />
         <WorkspaceUX
           modules={modules}
-          models={research?.performance ?? data?.models ?? []}
+          models={
+            state.researchMode === 'DEMO' ? [] : (research?.performance ?? data?.models ?? [])
+          }
           provenance={data?.provenance ?? {}}
         />
         {location.pathname !== '/methodology' && (
@@ -2274,15 +2284,18 @@ function App() {
             RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently audited.
           </div>
         )}
-        {['/dashboard', '/data-center'].includes(location.pathname) && <EvidenceCoverage />}
-        {['/data-center', '/data-quality', '/provenance'].includes(location.pathname) && (
-          <SourceLedger />
-        )}
-        {['/forecasting', '/model-benchmarking'].includes(location.pathname) && (
-          <ResearchForecastScience />
-        )}
+        {state.researchMode !== 'DEMO' &&
+          ['/dashboard', '/data-center'].includes(location.pathname) && <EvidenceCoverage />}
+        {state.researchMode !== 'DEMO' &&
+          ['/data-center', '/data-quality', '/provenance'].includes(location.pathname) && (
+            <SourceLedger />
+          )}
+        {state.researchMode !== 'DEMO' &&
+          ['/forecasting', '/model-benchmarking'].includes(location.pathname) && (
+            <ResearchForecastScience />
+          )}
         {location.pathname === '/district-intelligence' && <DistrictResearchContext />}
-        {location.pathname === '/dashboard' && <DataReadiness />}
+        {state.researchMode !== 'DEMO' && location.pathname === '/dashboard' && <DataReadiness />}
         {error && (
           <div className="notice" role="alert" aria-label="Research evidence load error">
             {error}
@@ -2297,14 +2310,22 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <Dashboard summary={data.summary} models={research?.performance ?? data.models} />
+                <Dashboard
+                  summary={state.researchMode === 'DEMO' ? {} : data.summary}
+                  models={
+                    state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
+                  }
+                />
               }
             />
             <Route path="/prospective-registry" element={<ProspectiveRegistry />} />
             <Route path="/model-monitoring" element={<ProspectiveRegistry monitoring />} />
             <Route path="/risk-map" element={<GIS />} />
             <Route path="/surveillance" element={<Surveillance />} />
-            <Route path="/district-intelligence" element={<District summary={data.summary} />} />
+            <Route
+              path="/district-intelligence"
+              element={<District summary={state.researchMode === 'DEMO' ? {} : data.summary} />}
+            />
             <Route path="/climate" element={<Climate />} />
             <Route
               path="/forecasting/failure-analysis"
@@ -2312,15 +2333,34 @@ function App() {
             />
             <Route
               path="/forecasting"
-              element={<Models models={research?.performance ?? data.models} forecast />}
+              element={
+                <Models
+                  models={
+                    state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
+                  }
+                  forecast
+                />
+              }
             />
             <Route
               path="/model-benchmarking"
-              element={<Models models={research?.performance ?? data.models} />}
+              element={
+                <Models
+                  models={
+                    state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
+                  }
+                />
+              }
             />
             <Route
               path="/spatial-analysis"
-              element={<Spatial spatial={research?.spatialResult ?? data.spatial} />}
+              element={
+                <Spatial
+                  spatial={
+                    state.researchMode === 'DEMO' ? {} : (research?.spatialResult ?? data.spatial)
+                  }
+                />
+              }
             />
             <Route path="/early-warning" element={<EarlyWarning />} />
             <Route path="/risk-intelligence" element={<Risk />} />
@@ -2332,9 +2372,13 @@ function App() {
               path="/reports"
               element={
                 <Reports
-                  models={research?.performance ?? data.models}
-                  summary={data.summary}
-                  spatial={research?.spatialResult ?? data.spatial}
+                  models={
+                    state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
+                  }
+                  summary={state.researchMode === 'DEMO' ? {} : data.summary}
+                  spatial={
+                    state.researchMode === 'DEMO' ? {} : (research?.spatialResult ?? data.spatial)
+                  }
                   provenance={
                     research
                       ? Object.fromEntries(
@@ -2355,7 +2399,7 @@ function App() {
               path="/methodology"
               element={
                 <Evidence
-                  summary={data.summary}
+                  summary={state.researchMode === 'DEMO' ? {} : data.summary}
                   provenance={
                     research
                       ? Object.fromEntries(
@@ -2390,7 +2434,7 @@ function App() {
               path="/about"
               element={
                 <Evidence
-                  summary={data.summary}
+                  summary={state.researchMode === 'DEMO' ? {} : data.summary}
                   provenance={
                     research
                       ? Object.fromEntries(
@@ -2409,8 +2453,12 @@ function App() {
               path="/presentation"
               element={
                 <Presentation
-                  models={research?.performance ?? data.models}
-                  spatial={research?.spatialResult ?? data.spatial}
+                  models={
+                    state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
+                  }
+                  spatial={
+                    state.researchMode === 'DEMO' ? {} : (research?.spatialResult ?? data.spatial)
+                  }
                 />
               }
             />

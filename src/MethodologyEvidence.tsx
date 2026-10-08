@@ -104,7 +104,7 @@ export default function MethodologyEvidence() {
         eligible: !match || match.length > 0,
       };
     });
-  if (active && !builtin(active.id))
+  if (active && !builtin(active.id) && active.classification !== 'SYNTHETIC')
     metadataRows.push({
       name: active.name,
       category: 'User import',
@@ -174,7 +174,9 @@ export default function MethodologyEvidence() {
             {active
               ? builtin(active.id)
                 ? 'VERIFIED RESEARCH EXTRACTION'
-                : 'USER IMPORT — NOT INDEPENDENTLY VERIFIED'
+                : state.researchMode === 'DEMO'
+                  ? 'SYNTHETIC — NOT OBSERVED DATA'
+                  : 'USER IMPORT — NOT INDEPENDENTLY VERIFIED'
               : 'NO DATA'}
           </span>
         </p>

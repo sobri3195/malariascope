@@ -1,3 +1,4 @@
+import AnalyticalDemoControls from '../AnalyticalDemoControls';
 import BrandMark from '../BrandMark';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -393,6 +394,7 @@ export default function WatchApp() {
         </Link>
         <Link to="/mobile">Mobile workspace</Link>
       </header>
+      <AnalyticalDemoControls />
       <main>
         <div className="w-intro">
           <p className="w-eyebrow">AGGREGATED RESEARCH COMPANION</p>

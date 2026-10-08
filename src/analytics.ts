@@ -10,6 +10,7 @@ export type Row = {
   model?: string;
   district_code?: string;
   region?: string;
+  classification?: 'SYNTHETIC';
   incidence?: number;
 };
 export type Issue = { row: number; severity: 'ERROR' | 'WARNING'; message: string };
@@ -603,6 +604,7 @@ export function toCSV(rows: Row[]) {
     'model',
     'region',
     'district_code',
+    ...(rows.some((r) => r.classification === 'SYNTHETIC') ? ['classification' as const] : []),
   ] as const;
   return [
     keys.join(','),

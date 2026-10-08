@@ -224,13 +224,15 @@ export default function ForecastWorkbench({
     [datasets, state.active],
   );
   const source =
-    sourceChoice === 'AUTO'
-      ? state.researchMode === 'BUILTIN'
-        ? 'SUPPLIED'
-        : evidence.pairs.length
-          ? 'LOADED'
-          : 'SUPPLIED'
-      : sourceChoice;
+    state.researchMode === 'DEMO'
+      ? 'LOADED'
+      : sourceChoice === 'AUTO'
+        ? state.researchMode === 'BUILTIN'
+          ? 'SUPPLIED'
+          : evidence.pairs.length
+            ? 'LOADED'
+            : 'SUPPLIED'
+        : sourceChoice;
   const years = useMemo(
     () =>
       [
@@ -391,6 +393,10 @@ export default function ForecastWorkbench({
           onClick={() =>
             download('forecasting-workbench.json', {
               created: new Date().toISOString(),
+              dataClassification:
+                state.researchMode === 'DEMO'
+                  ? 'SYNTHETIC — NOT OBSERVED DATA'
+                  : 'LOADED OR SUPPLIED RESEARCH EVIDENCE',
               source,
               scope,
               primaryMetric: metric,
@@ -425,7 +431,8 @@ export default function ForecastWorkbench({
           Evidence basis
           <select
             aria-label="Forecast evidence basis"
-            value={sourceChoice}
+            disabled={state.researchMode === 'DEMO'}
+            value={state.researchMode === 'DEMO' ? 'LOADED' : sourceChoice}
             onChange={(e) => setSourceChoice(e.target.value as typeof sourceChoice)}
           >
             <option value="AUTO">

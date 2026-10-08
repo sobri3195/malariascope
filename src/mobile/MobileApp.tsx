@@ -1,3 +1,4 @@
+import AnalyticalDemoControls from '../AnalyticalDemoControls';
 import BrandMark from '../BrandMark';
 import React, {
   createContext,
@@ -290,8 +291,9 @@ export default function MobileApp() {
           data && research
             ? {
                 ...data,
-                models: research.performance,
-                spatial: research.spatialResult,
+                ...(state.researchMode === 'DEMO' ? { summary: {} } : {}),
+                models: state.researchMode === 'DEMO' ? [] : research.performance,
+                spatial: state.researchMode === 'DEMO' ? {} : research.spatialResult,
                 provenance: research.manifest,
               }
             : data,
@@ -301,6 +303,7 @@ export default function MobileApp() {
       }}
     >
       <div className="mobile-app">
+        <AnalyticalDemoControls />
         <header className="m-header">
           <div>
             <NavLink to="/mobile" className="malariascope-brand-line">
