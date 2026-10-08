@@ -16,7 +16,7 @@ import {
   type ScientificRecord,
 } from './scientific-sources';
 import { validateFacilitySnapshot } from './public-healthcare';
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { NavLink, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
@@ -2090,6 +2090,28 @@ function App() {
   const location = useLocation();
   const { state, signals, research, researchError } = useStore();
   const [mobile, setMobile] = useState(false);
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 850px)').matches);
+  const navigation = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 850px)');
+    const resize = () => {
+      setCompact(media.matches);
+      setMobile(false);
+    };
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  }, []);
+  useEffect(() => {
+    if (!mobile || !compact) return;
+    const previous = document.activeElement as HTMLElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    navigation.current?.querySelector<HTMLButtonElement>('.navigation-close')?.focus();
+    return () => {
+      document.body.style.overflow = overflow;
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [mobile, compact]);
   const [data, setData] = useState<{
       summary: any;
       models: any[];
@@ -2150,7 +2172,38 @@ function App() {
       </a>
       {!present && (
         <>
-          <aside id="workspace-navigation" className={`sidebar ${mobile ? 'mobile-open' : ''}`}>
+          {compact && mobile && (
+            <button
+              className="navigation-backdrop"
+              aria-label="Dismiss navigation"
+              tabIndex={-1}
+              onClick={() => setMobile(false)}
+            />
+          )}
+          <aside
+            ref={navigation}
+            id="workspace-navigation"
+            className={`sidebar ${mobile ? 'mobile-open' : ''}`}
+            inert={compact && !mobile}
+            role={compact && mobile ? 'dialog' : undefined}
+            aria-modal={compact && mobile ? true : undefined}
+            aria-label="Workspace navigation"
+            onKeyDown={(e) => {
+              if (compact && mobile) dialogKeys(e, () => setMobile(false));
+            }}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('a')) setMobile(false);
+            }}
+          >
+            {compact && (
+              <button
+                className="navigation-close"
+                aria-label="Close navigation"
+                onClick={() => setMobile(false)}
+              >
+                <X size={22} />
+              </button>
+            )}
             <NavLink to="/dashboard" className="brand">
               <span className="brand-symbol">
                 <BrandMark size={36} />
@@ -2243,6 +2296,7 @@ function App() {
             <div className="topbar-actions">
               <button
                 className="search-trigger"
+                aria-label="Search workspace"
                 onClick={() => window.dispatchEvent(new Event('malariascope-command'))}
               >
                 <Search size={15} />

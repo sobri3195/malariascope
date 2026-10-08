@@ -34,3 +34,5 @@ jobs:
           node tests/methodology-evidence.mjs
           node tests/coverage-summary.mjs
           node tests/connected-analytical-demo.mjs
+          node tests/mobile-responsive.mjs
+          node tests/mobile.mjs

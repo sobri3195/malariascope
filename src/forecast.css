@@ -175,3 +175,16 @@
     gap: 12px;
   }
 }
+@media (max-width: 600px) {
+  .forecast-controls select {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .forecast-models label {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .forecast-tabs button {
+    min-height: 44px;
+  }
+}
