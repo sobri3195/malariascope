@@ -4,6 +4,8 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { Provider } from './store';
 const Desktop = lazy(() => import('./DesktopApp'));
 const Mobile = lazy(() => import('./mobile/MobileApp'));
+const Workstation = lazy(() => import('./desktop/DesktopWorkstation'));
+const IoT = lazy(() => import('./iot/IoTApp'));
 const Watch = lazy(() => import('./watch/WatchApp'));
 class ApplicationBoundary extends React.Component<
   { children: React.ReactNode },
@@ -41,7 +43,11 @@ function ApplicationRouter() {
         </main>
       }
     >
-      {pathname === '/smartwatch' || pathname === '/smartwatch/' ? (
+      {pathname === '/iot' || pathname.startsWith('/iot/') ? (
+        <IoT />
+      ) : pathname === '/aplikasi-desktop' || pathname.startsWith('/aplikasi-desktop/') ? (
+        <Workstation />
+      ) : pathname === '/smartwatch' || pathname === '/smartwatch/' ? (
         <Watch />
       ) : pathname === '/mobile' || pathname.startsWith('/mobile/') ? (
         <Mobile />

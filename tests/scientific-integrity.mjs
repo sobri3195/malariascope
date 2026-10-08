@@ -17,6 +17,11 @@ const downloadReport = async () => {
   const file = await pending;
   return JSON.parse(await fs.readFile(await file.path(), 'utf8'));
 };
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/data-quality');
   await page.getByRole('heading', { name: 'Scientific Integrity Center', exact: true }).waitFor();

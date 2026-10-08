@@ -41,7 +41,7 @@ const icons = {
   District: Compass,
 };
 const safety =
-  'Research Prototype — Aggregated Malaria Risk Intelligence — Not for Autonomous Clinical or Operational Decision-Making';
+  'RETROSPECTIVE RESEARCH DATA — Research Prototype — Aggregated Malaria Risk Intelligence — Not for Autonomous Clinical or Operational Decision-Making';
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="w-detail">

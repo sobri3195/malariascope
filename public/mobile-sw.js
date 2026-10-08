@@ -1,6 +1,22 @@
 /* Dedicated /mobile scope; caches public research assets, never uploaded records. */
-const CACHE = 'malariascope-mobile-v2';
+const CACHE = 'malariascope-mobile-v3';
 const PUBLIC = [
+  "/data/verified/climate-annual-2020-2025.csv",
+  "/data/verified/district-registry.json",
+  "/data/verified/evidence-coverage.json",
+  "/data/verified/forecast-risk-2025.csv",
+  "/data/verified/geometry-metadata.json",
+  "/data/verified/model-errors-2025.csv",
+  "/data/verified/model-performance.json",
+  "/data/verified/model-predictions-2025.csv",
+  "/data/verified/papua-study-adm2.geojson",
+  "/data/verified/source-quality-ledger.json",
+  "/data/verified/spatial-analysis-2025.json",
+  "/data/verified/surveillance-2025-all-nine.csv",
+  "/data/verified/surveillance-balanced-2020-2025.csv",
+  "/data/verified/system-evidence-status.json",
+  "/data/verified/uncertainty.json",
+  "/data/verified/manifest.json",
   '/data/research-summary.json',
   '/data/model-performance.json',
   '/data/spatial-analysis.json',

@@ -1,0 +1,49 @@
+.research-evidence {
+  padding: 16px;
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.research-evidence p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+.research-evidence table {
+  width: 100%;
+  font-size: 12px;
+}
+.research-evidence th,
+.research-evidence td {
+  padding: 8px;
+  text-align: left;
+}
+.research-evidence summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+.evidence-grid > div {
+  background: #f5f8fa;
+  padding: 10px;
+  border-radius: 5px;
+}
+.research-evidence select {
+  min-height: 44px;
+  max-width: 100%;
+}
+.research-evidence .table-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+.research-evidence .evidence-grid {
+  min-width: 0;
+}
+.research-evidence .evidence-grid > * {
+  min-width: 0;
+}
+.research-evidence input {
+  max-width: 100%;
+}

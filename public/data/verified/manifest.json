@@ -1,0 +1,198 @@
+{
+  "version": "MALARIASCOPE-AMMM2026-v1",
+  "verification": "Extracted from user-supplied study tables; not independently audited against underlying reports",
+  "files": [
+    {
+      "name": "climate-annual-2020-2025.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 48,
+      "period": "2020\u20132025",
+      "classification": "VERIFIED_RESEARCH_EXTRACTION",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "fdc61e99cf13c9f10eb57ee7e0ccb1f267a55d2b38f67e832639bac2ee2e4245",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "district-registry.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "9b19f9858e839dd7ea6258291a40b74250e2c53fc0bba9f8b0a5642eb5619920",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "evidence-coverage.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "6fa5b634a916215a18796745cf0558bbaeb22bb335e92d8db691a5e1b7400aa3",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "forecast-risk-2025.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 8,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "371f86804b34b7b1de09ddf99ffe1c705b81bb5bc4e17146ce35308225887eb9",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "geometry-metadata.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2020 geometry vintage",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "geoBoundaries gbOpen IDN ADM2 release 9469f09",
+      "license": "CC BY 3.0 IGO",
+      "sha256": "4607ab13048befe2850d8f2b6e82bbbd61444cfb3ff1fe3398ef922a23454903",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "model-errors-2025.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 8,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "17a5b81777d81c195d421f08fd30e5389c076ae2e289b4896bf5392584e5fad3",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "model-performance.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "9a865c240d974283fefd17835cb78e416023ba1bf991e7d6f106a123dd19b5d3",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "model-predictions-2025.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 8,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "a459f7ecb9a0b9f0d3008bbc379d4d0e60f7aebf734189d13bc3af560bf4915a",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "papua-study-adm2.geojson",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 9,
+      "period": "2020 geometry vintage",
+      "classification": "PUBLIC GEOMETRY",
+      "source": "Badan Pusat Statistik (BPS - Statistics Indonesia), World Food Programme, OCHA ROAP",
+      "license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)",
+      "sha256": "bf4e9d691afa962b847e068730f20a133351a3047bd7c3a3aca79b9eaa2c4ad7",
+      "generated_from": "Checksum-verified geoBoundaries source subset",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "source-quality-ledger.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "f1680ed1cd17d795f768bf9b23226a878f1659e6ab41de2e18565af807618884",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "spatial-analysis-2025.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "07fc467c61316759aaca03ad1e719344091739c9779dfbc16e9e482bc0cf6ecf",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "surveillance-2025-all-nine.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 9,
+      "period": "2025 / metadata",
+      "classification": "VERIFIED_RESEARCH_EXTRACTION",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "f0d59993f46116855434224a0a8bf3237e8f0d9eebaaa5a4aab8ddb6c86d9044",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "surveillance-balanced-2020-2025.csv",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": 48,
+      "period": "2020\u20132025",
+      "classification": "VERIFIED_RESEARCH_EXTRACTION",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "5209703b6cd49b34aa2350927d782146ee55764b27cd21cd3ac425e3f73b3481",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "system-evidence-status.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "06bdfb557efd5e3d1d8f667436e7639c2311fe661eed0eab86211af995f5e3ca",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    },
+    {
+      "name": "uncertainty.json",
+      "version": "MALARIASCOPE-AMMM2026-v1",
+      "records": null,
+      "period": "2025 / metadata",
+      "classification": "SUPPLIED_STUDY_OUTPUT",
+      "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+      "license": "Research source redistribution license not specified by supplier",
+      "sha256": "7b30bfa9f6a66f377b551b7986c6e4f01469f715f9bebb5109f46f808bb77de5",
+      "generated_from": "Supplied pasted research specification",
+      "last_verified": "2026-10-07"
+    }
+  ],
+  "integrityTotals": {
+    "2020": 104544,
+    "2021": 116675,
+    "2022": 180950,
+    "2023": 151127,
+    "2024": 204727,
+    "2025": 288131
+  },
+  "allNineTotals": {
+    "cases": 288879,
+    "at_risk_population": 1073637
+  }
+}

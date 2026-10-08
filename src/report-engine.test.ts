@@ -119,7 +119,7 @@ test('all report types support selectable sections with mandatory integrity cont
     assert.ok(r.knownLimitations.length);
   }
 });
-test('period totals use unique joined observations, never duplicate four model sources', () => {
+test('period totals use unique joined observations, never duplicate five model sources', () => {
   const r = buildResearchReport(fixture());
   assert.equal(getTable(r, 'District profile').rows.length, 3);
   assert.equal(
@@ -134,7 +134,7 @@ test('period totals use unique joined observations, never duplicate four model s
     )?.value,
     3000,
   );
-  assert.equal(r.metadata.dataVersion.length, 4);
+  assert.equal(r.metadata.dataVersion.length, 5);
 });
 test('report snapshot and CSV remain immutable when live data and filters change', () => {
   const f = fixture(),

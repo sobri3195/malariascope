@@ -10,6 +10,11 @@ page.on('pageerror', (e) => errors.push(e.message));
 const base = process.env.APP_URL || 'http://127.0.0.1:5173';
 const state = () => page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')));
 const input = (name) => page.getByLabel(name, { exact: true });
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/scenario');
   await page.getByRole('heading', { name: 'What-If Analytical Simulator' }).waitFor();

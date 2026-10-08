@@ -25,6 +25,11 @@ const fits = async () =>
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
     true,
   );
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/smartwatch');
   await page.getByRole('heading', { name: 'MALARIASCOPE Watch', exact: true }).waitFor();

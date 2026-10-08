@@ -1,3 +1,10 @@
+import {
+  EvidenceCoverage,
+  SourceLedger,
+  ResearchForecastScience,
+  DistrictResearchContext,
+} from './research-data/EvidencePanels';
+import './research-data/research.css';
 import DataReadiness from './DataReadiness';
 import {
   validateScientific,
@@ -75,6 +82,7 @@ import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import WorkspaceUX, { SnapshotManager, WorkspaceSkeleton } from './WorkspaceUX';
 import { textEntry } from './workspace-context';
 import { validateGeometry } from './geometry';
+const ProspectiveRegistry = lazy(() => import('./ProspectiveRegistry'));
 const MapView = lazy(() => import('./Map'));
 const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
 const ScientificIntegrityCenter = lazy(() => import('./ScientificIntegrityCenter'));
@@ -105,6 +113,10 @@ const modules: [string, string, React.ElementType][] = [
   ['provenance', 'Data Provenance', Info],
   ['about', 'About MALARIASCOPE', Compass],
   ['presentation', 'Presentation Mode', Play],
+  ['prospective-registry', 'Prospective Registry', Database],
+  ['model-monitoring', 'Model Monitoring', Activity],
+  ['aplikasi-desktop', 'Desktop Workstation', Grid2X2],
+  ['iot', 'Environmental IoT', Wind],
 ];
 const fmt = (n: number | null | undefined, d = 0) =>
   n === null || n === undefined ? '—' : n.toLocaleString('en-US', { maximumFractionDigits: d });
@@ -366,7 +378,13 @@ function Filters() {
             value={model}
             onChange={(e) => setModel(e.target.value)}
           >
-            {['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].map((m) => (
+            {[
+              'Persistence',
+              'Ridge Regression — no climate',
+              'Ridge Regression',
+              'Random Forest',
+              'Gradient Boosting',
+            ].map((m) => (
               <option key={m}>{m}</option>
             ))}
           </select>
@@ -375,11 +393,14 @@ function Filters() {
           Source{' '}
           <select value={state.active} onChange={(e) => update({ active: e.target.value })}>
             <option value="">Supplied study summary</option>
-            {state.datasets.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
+            <option value="study-balanced">Verified MALARIASCOPE Study</option>
+            {state.datasets
+              .filter((d) => d.id !== 'study-balanced')
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
           </select>
         </label>
         <button
@@ -607,7 +628,10 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
           </Suspense>
           <div className="panel-foot">
             <span>
-              <Info size={13} /> Public geographic context · district risk data not connected
+              <Info size={13} />{' '}
+              {rows.length
+                ? 'Local ADM2 · loaded district observations'
+                : 'Public geographic context · district risk data not connected'}
             </span>
             <NavLink to="/provenance">
               View provenance <ChevronRight size={13} />
@@ -701,7 +725,14 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
         <Panel title="Data connectivity" sub="Availability determines analytical confidence">
           <div className="connectivity">
             {[
-              ['Surveillance', rows.length ? 'USER IMPORT' : 'SUMMARY ONLY'],
+              [
+                'Surveillance',
+                rows.length
+                  ? state.researchMode === 'BUILTIN'
+                    ? 'VERIFIED RESEARCH EXTRACTION'
+                    : 'USER IMPORT'
+                  : 'SUMMARY ONLY',
+              ],
               ['Climate', rows.some((r) => r.rainfall !== undefined) ? 'PARTIAL' : 'NOT CONNECTED'],
               ['District boundaries', state.geometry ? 'USER IMPORT' : 'NOT CONNECTED'],
               [
@@ -1404,6 +1435,12 @@ function DataCenter() {
                     <button
                       className="icon-btn"
                       aria-label={`Remove ${d.name}`}
+                      disabled={d.id.startsWith('study-')}
+                      title={
+                        d.id.startsWith('study-')
+                          ? 'Bundled research extraction is read-only'
+                          : 'Remove local import'
+                      }
                       onClick={() =>
                         update(
                           {
@@ -1963,9 +2000,10 @@ function Presentation({ models, spatial }: { models: any[]; spatial: any }) {
     'Papua Malaria Risk Map',
     'Temporal & Climate Intelligence',
     'Forecasting and Model Benchmarking',
+    'Climate Ablation',
+    'Forecast Failure Inspector',
     'Spatial Analysis',
-    'Risk Intelligence',
-    'Force Health Readiness',
+    'Force Health Readiness / Limitations',
   ];
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
@@ -1978,7 +2016,7 @@ function Presentation({ models, spatial }: { models: any[]; spatial: any }) {
         document.querySelector('[aria-modal="true"]')
       )
         return;
-      if (e.key === 'ArrowRight') setSlide((s) => Math.min(5, s + 1));
+      if (e.key === 'ArrowRight') setSlide((s) => Math.min(6, s + 1));
       if (e.key === 'ArrowLeft') setSlide((s) => Math.max(0, s - 1));
     };
     window.addEventListener('keydown', f);
@@ -1986,10 +2024,13 @@ function Presentation({ models, spatial }: { models: any[]; spatial: any }) {
   }, []);
   return (
     <div className="presentation">
-      <Heading title={titles[slide]} sub={`AMMM 2026 · ${slide + 1} / 6`} />
+      <Heading
+        title={titles[slide]}
+        sub={`LIVE RESEARCH PROTOTYPE · AMMM 2026 · ${slide + 1} / 7`}
+      />
       <div className="toolbar">
         <Button onClick={() => setSlide(Math.max(0, slide - 1))}>Previous</Button>
-        <Button onClick={() => setSlide(Math.min(5, slide + 1))}>Next</Button>
+        <Button onClick={() => setSlide(Math.min(6, slide + 1))}>Next</Button>
         <Button
           onClick={() => {
             void document.documentElement.requestFullscreen();
@@ -2007,9 +2048,11 @@ function Presentation({ models, spatial }: { models: any[]; spatial: any }) {
       ) : slide === 2 ? (
         <Models models={models} />
       ) : slide === 3 ? (
-        <Spatial spatial={spatial} />
+        <ResearchForecastScience />
       ) : slide === 4 ? (
-        <Risk />
+        <ResearchForecastScience failure />
+      ) : slide === 5 ? (
+        <Spatial spatial={spatial} />
       ) : (
         <ForceHealth />
       )}
@@ -2035,7 +2078,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 }
 function App() {
   const location = useLocation();
-  const { state, signals } = useStore();
+  const { state, signals, research, researchError } = useStore();
   const [mobile, setMobile] = useState(false);
   const [data, setData] = useState<{
       summary: any;
@@ -2147,6 +2190,12 @@ function App() {
                 <Play size={16} />
                 Presentation mode
               </NavLink>
+              {modules.slice(22).map(([path, label, Icon]) => (
+                <NavLink key={path} to={'/' + path}>
+                  <Icon size={16} />
+                  {label}
+                </NavLink>
+              ))}
               <NavLink to="/smartwatch">
                 <Watch size={16} />
                 MALARIASCOPE Watch
@@ -2206,7 +2255,7 @@ function App() {
       <main id="main" className="main" tabIndex={-1}>
         <WorkspaceUX
           modules={modules}
-          models={data?.models ?? []}
+          models={research?.performance ?? data?.models ?? []}
           provenance={data?.provenance ?? {}}
         />
         <div className="safety-banner">
@@ -2214,6 +2263,22 @@ function App() {
           <span>{safety}</span>
           <Badge>RESEARCH PROTOTYPE</Badge>
         </div>
+        {researchError && <p role="alert">{researchError}</p>}
+        {state.researchMode === 'BUILTIN' && (
+          <div className="notice">
+            RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently audited.
+          </div>
+        )}
+        {['/dashboard', '/methodology', '/data-center'].includes(location.pathname) && (
+          <EvidenceCoverage />
+        )}
+        {['/data-center', '/data-quality', '/provenance'].includes(location.pathname) && (
+          <SourceLedger />
+        )}
+        {['/forecasting', '/model-benchmarking'].includes(location.pathname) && (
+          <ResearchForecastScience />
+        )}
+        {location.pathname === '/district-intelligence' && <DistrictResearchContext />}
         {location.pathname === '/dashboard' && <DataReadiness />}
         {error && (
           <div className="notice" role="alert" aria-label="Research evidence load error">
@@ -2228,15 +2293,32 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/dashboard"
-              element={<Dashboard summary={data.summary} models={data.models} />}
+              element={
+                <Dashboard summary={data.summary} models={research?.performance ?? data.models} />
+              }
             />
+            <Route path="/prospective-registry" element={<ProspectiveRegistry />} />
+            <Route path="/model-monitoring" element={<ProspectiveRegistry monitoring />} />
             <Route path="/risk-map" element={<GIS />} />
             <Route path="/surveillance" element={<Surveillance />} />
             <Route path="/district-intelligence" element={<District summary={data.summary} />} />
             <Route path="/climate" element={<Climate />} />
-            <Route path="/forecasting" element={<Models models={data.models} forecast />} />
-            <Route path="/model-benchmarking" element={<Models models={data.models} />} />
-            <Route path="/spatial-analysis" element={<Spatial spatial={data.spatial} />} />
+            <Route
+              path="/forecasting/failure-analysis"
+              element={<ResearchForecastScience failure />}
+            />
+            <Route
+              path="/forecasting"
+              element={<Models models={research?.performance ?? data.models} forecast />}
+            />
+            <Route
+              path="/model-benchmarking"
+              element={<Models models={research?.performance ?? data.models} />}
+            />
+            <Route
+              path="/spatial-analysis"
+              element={<Spatial spatial={research?.spatialResult ?? data.spatial} />}
+            />
             <Route path="/early-warning" element={<EarlyWarning />} />
             <Route path="/risk-intelligence" element={<Risk />} />
             <Route path="/force-health" element={<ForceHealth />} />
@@ -2247,10 +2329,19 @@ function App() {
               path="/reports"
               element={
                 <Reports
-                  models={data.models}
+                  models={research?.performance ?? data.models}
                   summary={data.summary}
-                  spatial={data.spatial}
-                  provenance={data.provenance}
+                  spatial={research?.spatialResult ?? data.spatial}
+                  provenance={
+                    research
+                      ? Object.fromEntries(
+                          research.manifest.files.map((f: any) => [
+                            f.name,
+                            { ...f, path: '/data/verified/' + f.name },
+                          ]),
+                        )
+                      : data.provenance
+                  }
                 />
               }
             />
@@ -2259,16 +2350,66 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/methodology"
-              element={<Evidence summary={data.summary} provenance={data.provenance} />}
+              element={
+                <Evidence
+                  summary={data.summary}
+                  provenance={
+                    research
+                      ? Object.fromEntries(
+                          research.manifest.files.map((f: any) => [
+                            f.name,
+                            { ...f, path: '/data/verified/' + f.name },
+                          ]),
+                        )
+                      : data.provenance
+                  }
+                />
+              }
             />
-            <Route path="/provenance" element={<ProvenancePage data={data.provenance} />} />
+            <Route
+              path="/provenance"
+              element={
+                <ProvenancePage
+                  data={
+                    research
+                      ? Object.fromEntries(
+                          research.manifest.files.map((f: any) => [
+                            f.name,
+                            { ...f, path: '/data/verified/' + f.name },
+                          ]),
+                        )
+                      : data.provenance
+                  }
+                />
+              }
+            />
             <Route
               path="/about"
-              element={<Evidence summary={data.summary} provenance={data.provenance} about />}
+              element={
+                <Evidence
+                  summary={data.summary}
+                  provenance={
+                    research
+                      ? Object.fromEntries(
+                          research.manifest.files.map((f: any) => [
+                            f.name,
+                            { ...f, path: '/data/verified/' + f.name },
+                          ]),
+                        )
+                      : data.provenance
+                  }
+                  about
+                />
+              }
             />
             <Route
               path="/presentation"
-              element={<Presentation models={data.models} spatial={data.spatial} />}
+              element={
+                <Presentation
+                  models={research?.performance ?? data.models}
+                  spatial={research?.spatialResult ?? data.spatial}
+                />
+              }
             />
             <Route
               path="*"
@@ -2335,3 +2476,26 @@ export default function DesktopApplication() {
     </ErrorBoundary>
   );
 }
+
+export const desktopViews = {
+  Dashboard,
+  GIS,
+  Surveillance,
+  Climate,
+  Models,
+  District,
+  EarlyWarning,
+  Alerts,
+  Risk,
+  ForceHealth,
+  Scenario,
+  DataCenter,
+  Quality,
+  Reports,
+  Audit,
+  SettingsPage,
+  Evidence,
+  ProvenancePage,
+  Spatial,
+  Presentation,
+};

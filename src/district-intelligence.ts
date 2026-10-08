@@ -1,7 +1,13 @@
 import { normalize, risk, evaluate, type Row, type Rule } from './analytics.ts';
 export type Classification =
-  'VERIFIED' | 'PUBLIC SOURCE' | 'AUTHORIZED' | 'USER IMPORT' | 'UNVERIFIED';
+  | 'VERIFIED_RESEARCH_EXTRACTION'
+  | 'VERIFIED'
+  | 'PUBLIC SOURCE'
+  | 'AUTHORIZED'
+  | 'USER IMPORT'
+  | 'UNVERIFIED';
 export type EvidenceDataset = {
+  fieldSources?: Partial<Record<Field, { source: string; checksum: string; name: string }>>;
   id: string;
   name: string;
   source: string;
@@ -62,7 +68,11 @@ export function aggregateEvidence(
   model: string,
   verifiedOnly = false,
 ) {
-  const eligible = datasets.filter((d) => !verifiedOnly || d.classification === 'VERIFIED');
+  const eligible = datasets.filter(
+    (d) =>
+      !verifiedOnly ||
+      ['VERIFIED', 'VERIFIED_RESEARCH_EXTRACTION'].includes(d.classification || ''),
+  );
   const nameCodes = new Map<string, Set<string>>();
   for (const d of eligible)
     for (const r of d.rows)
@@ -125,11 +135,11 @@ export function aggregateEvidence(
         for (const e of candidates)
           references.push({
             datasetId: e.dataset.id,
-            dataset: e.dataset.name,
+            dataset: e.dataset.fieldSources?.[field]?.name || e.dataset.name,
             district: e.row.district,
-            source: e.dataset.source,
+            source: e.dataset.fieldSources?.[field]?.source || e.dataset.source,
             classification: e.dataset.classification || 'USER IMPORT',
-            checksum: e.dataset.checksum,
+            checksum: e.dataset.fieldSources?.[field]?.checksum || e.dataset.checksum,
             created: e.dataset.created,
             year: e.row.year,
             field,

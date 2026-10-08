@@ -30,9 +30,9 @@ Primary routes: dashboard, risk-map, surveillance, district-intelligence, climat
 
 ## Data policy and supplied evidence
 
-`public/data/research-summary.json`, `model-performance.json`, and `spatial-analysis.json` contain only results explicitly supplied in the request. Those results have not been independently verified against underlying records. District-year surveillance, climate, detailed model predictions, healthcare facilities, and district boundaries were **not supplied**. The application uses empty states for them and never synthesizes missing values.
+The default checksummed study package is now populated at `public/data/verified/`: 48 balanced district-year observations, a separate nine-district 2025 snapshot, 48 annual climate records, eight districts with five saved hindcasts, supplied benchmarks/uncertainty, a source-quality ledger and nine legitimate public ADM2 geometries. Extraction status does not establish independent verification against underlying reports. Public healthcare resources and actual IoT measurements remain unconnected. [Implementation, provenance, schemas and limitations](docs/RESEARCH-DESKTOP-IOT.md).
 
-The supplied 2020 and 2025 annual aggregates are plotted as separate points; intervening years are unavailable. The eight-district balanced forecasting panel (48 district-years) is distinct from the nine-district 2025 spatial assessment. Supiori's 2024 outcome is missing and is not imputed. Persistence 2025 MAE (10,426) is lower than Random Forest MAE (12,690). Global Moran's I is 0.165 with permutation p = 0.1301, not significant at 0.05.
+The supplied row-level balanced panel now supports every annual point from 2020 through 2025. The eight-district balanced forecasting panel (48 district-years) is distinct from the nine-district 2025 spatial assessment. Supiori's 2024 outcome is missing and is not imputed. Persistence 2025 MAE (10,425.5) is lower than the supplied Random Forest MAE (12,690.256937171625); rounded point-output recalculations remain separate. Global Moran's I is 0.165 with permutation p = 0.1301, not significant at 0.05.
 
 Distinctions are maintained between supplied evidence, loaded observations, derived metrics, model predictions, exploratory scenarios, and user imports. Schema validation does not imply scientific verification. Imports always retain USER IMPORT status. Never label a user-selected dataset as independently verified merely because the file parses.
 
@@ -307,7 +307,7 @@ Data Center provides header-only CSV templates under `/data/templates/`:
 District is nonempty text (maximum 100 characters), years are integers 1900–2100, observed cases
 are nonnegative integers, population is positive, rainfall/prediction are nonnegative, humidity
 is 0–100, and temperature is finite. Model names are Persistence, Ridge Regression, Random Forest,
-Gradient Boosting. Risk categories are LOW, MODERATE, HIGH, VERY HIGH. Separate sources reject
+Gradient Boosting and Ridge Regression — no climate. Risk categories are LOW, MODERATE, HIGH, VERY HIGH. Separate sources reject
 empty rows, duplicates and missing metadata. Anomalies are calculated from annual history (minimum
 three preceding periods with nonzero variance), rather than accepting an undocumented anomaly basis.
 
@@ -326,8 +326,9 @@ extent are retained; restricted/military records are excluded again on import. T
 has zero facilities and honestly reports NOT CONNECTED. Live refresh remains optional.
 
 DATA READINESS is available on Dashboard, GIS, Data Center and Scientific Integrity Center.
-Header-only surveillance is NOT CONNECTED, supplied summary/spatial findings are SUMMARY ONLY,
-and partial supplied model metrics stay PARTIAL. Missing metrics are never zero. Scientific
+Legacy header-only surveillance remains an unconnected import template. The default study uses
+VERIFIED RESEARCH EXTRACTION, climate aggregates and saved model outputs; supplied spatial/model
+statistics are distinct from newly calculated outputs. Unsupported metrics stay unavailable. Missing metrics are never zero. Scientific
 Integrity scoring continues to inspect observational datasets; separate source imports are schema
 validated and listed separately, not silently included in an observational quality denominator.
 
@@ -342,3 +343,7 @@ It blocks all external services, exercises OSM/Overpass failures, checks local p
 surveillance, separate predictions, provenance, invalid geometry, mobile controls and direct refreshes.
 Vercel rewrites preserve `/data/` and `/data/geography/`; deployed browser verification may require
 Vercel SSO. Local deep-route checks do not prove authenticated deployed-route behavior.
+
+## Research desktop and environmental IoT
+
+Use `/aplikasi-desktop` for the shared desktop workstation and `/iot` for environmental sensor ingestion and an isolated optional simulation. `/prospective-registry` and `/model-monitoring` prepare future evaluation without generating forecasts or outcomes. See [the implementation report](docs/RESEARCH-DESKTOP-IOT.md) for datasets, exact totals, geometry licensing, scientific limits, IoT schemas and acceptance commands.

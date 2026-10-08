@@ -10,6 +10,11 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } }),
   errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/risk-map');
   await page
