@@ -96,3 +96,45 @@ export function evidenceCsv(value: unknown): string {
     )
     .join('\r\n');
 }
+
+export function loadedCoverage(
+  rows: { district: string; year: number; cases?: number }[],
+  year: number,
+  district: string,
+) {
+  const selected = rows.filter(
+    (r) => r.year === year && (district === 'All districts' || r.district === district),
+  );
+  const years = [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b);
+  const names = [...new Set(rows.map((r) => r.district))].sort();
+  const valid = selected.filter((r) => Number.isFinite(r.cases) && r.cases! >= 0);
+  const keys = new Set(selected.map((r) => `${r.district}\0${r.year}`));
+  return {
+    selected,
+    years,
+    names,
+    cases: valid.length ? valid.reduce((sum, r) => sum + r.cases!, 0) : null,
+    completeness: selected.length ? (valid.length / selected.length) * 100 : null,
+    duplicates: selected.length - keys.size,
+    districtCoverage: names
+      .filter((n) => district === 'All districts' || district === n)
+      .map((name) => ({
+        name,
+        available: new Set(rows.filter((r) => r.district === name).map((r) => r.year)).size,
+        expected: years.length,
+        selected: selected.some((r) => r.district === name),
+      })),
+  };
+}
+export const friendlyEvidenceNames: Record<string, string> = {
+  'surveillance-balanced-2020-2025.csv': 'Balanced surveillance panel',
+  'surveillance-2025-all-nine.csv': '2025 spatial surveillance snapshot',
+  'climate-annual-2020-2025.csv': 'Annual climate archive',
+  'model-predictions-2025.csv': 'Saved model hindcasts',
+  'model-errors-2025.csv': 'District forecast errors',
+  'model-performance.json': 'Temporal model benchmarks',
+  'forecast-risk-2025.csv': 'Relative forecast intensity',
+  'spatial-analysis-2025.json': 'Global spatial analysis',
+  'source-quality-ledger.json': 'Unresolved source issues',
+  'uncertainty.json': 'Model uncertainty',
+};

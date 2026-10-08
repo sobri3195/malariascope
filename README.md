@@ -351,3 +351,5 @@ Use `/aplikasi-desktop` for the shared desktop workstation and `/iot` for enviro
 ### Brand assets
 
 The shared MALARIASCOPE mark is in `public/brand/malariascope-mark.svg`; the full navy/teal wordmark is in `public/brand/malariascope-logo.svg`, with a 512px PNG icon alongside it. All application headers share `BrandMark`, with adjacent product text providing its accessible name. The HTML shell supplies an SVG favicon, 16/32/48px ICO fallback and 180px Apple touch icon. Mobile offline caching includes the mark and browser icons.
+
+The `/methodology` workspace now opens with **Data Coverage & Research Summary**, global-context metrics, source coverage/quality indicators and a searchable/exportable evidence catalog. Full research metadata lives under **Advanced Technical Details**. A separately labeled **Synthetic Demo — 100,000 Records** offers on-demand worker parsing and a paginated preview of fictional records; it never replaces verified research data. See [Methodology workspace documentation](docs/METHODOLOGY-EVIDENCE.md) for provenance, limits and fixture regeneration.
