@@ -11,7 +11,11 @@ const base = process.env.APP_URL || 'http://127.0.0.1:4173',
 page.on('pageerror', (e) => errors.push(e.message));
 try {
   await page.goto(base + '/methodology');
-  const root = page.locator('.methodology');
+  const root = page.locator('.method-dashboard');
+  await root
+    .getByRole('heading', { name: 'Data Coverage & Research Summary', exact: true })
+    .waitFor();
+  await root.locator('.coverage-advanced > summary').click();
   await root.getByRole('heading', { name: 'Study at a Glance', exact: true }).waitFor();
   assert.equal(await root.locator('pre:visible').count(), 0, 'raw metadata hidden by default');
   const text = await root.innerText();
@@ -41,7 +45,7 @@ try {
   );
   assert.ok(
     !(await root
-      .locator('.method-header')
+      .locator('.coverage-advanced .method-header')
       .innerText()
       .then((t) => t.includes('USER IMPORT'))),
   );
@@ -135,7 +139,7 @@ try {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.emulateMedia({ media: 'print' });
   assert.equal(await root.locator('.method-developer').isVisible(), false);
-  assert.equal(await root.locator('.method-print-only').isVisible(), true);
+  assert.equal(await root.locator('.method-print-only').isVisible(), false);
   await page.pdf({
     path: '/tmp/methodology-evidence.pdf',
     format: 'A4',
@@ -160,17 +164,26 @@ try {
     localStorage.setItem('malariascope-v1', JSON.stringify(state));
   });
   await page.goto(base + '/methodology');
+  await root
+    .getByRole('heading', { name: 'Data Coverage & Research Summary', exact: true })
+    .waitFor();
+  await root.locator('.coverage-advanced > summary').click();
   await root.getByRole('heading', { name: 'Study at a Glance', exact: true }).waitFor();
   assert.match(
-    await root.locator('.method-header').innerText(),
+    await root.locator('.coverage-advanced .method-header').innerText(),
     /USER IMPORT.*Actual user surveillance upload/s,
   );
-  assert.match(await root.locator('.method-header').innerText(), /VERIFIED RESEARCH EXTRACTION/);
+  assert.match(
+    await root.locator('.coverage-advanced .method-header').innerText(),
+    /VERIFIED RESEARCH EXTRACTION/,
+  );
   await root.getByRole('button', { name: 'Use bundled study evidence', exact: true }).click();
   await page.waitForFunction(
     () => JSON.parse(localStorage.getItem('malariascope-v1')).active === 'study-balanced',
   );
-  assert.ok(!(await root.locator('.method-header').innerText()).includes('USER IMPORT'));
+  assert.ok(
+    !(await root.locator('.coverage-advanced .method-header').innerText()).includes('USER IMPORT'),
+  );
   const links = await root
     .locator('.method-demo a')
     .evaluateAll((a) => a.map((n) => n.getAttribute('href')));

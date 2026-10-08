@@ -32,3 +32,4 @@ jobs:
           node tests/gis-reliability.mjs
           node tests/research-desktop-iot.mjs
           node tests/methodology-evidence.mjs
+          node tests/coverage-summary.mjs

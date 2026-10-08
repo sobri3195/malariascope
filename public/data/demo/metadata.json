@@ -1,0 +1,18 @@
+{
+  "name": "Synthetic demonstration records",
+  "version": "synthetic-demo-v1",
+  "records": 100000,
+  "seed": 3602026,
+  "classification": "SYNTHETIC — NOT OBSERVED DATA",
+  "unit": "Artificial demonstration record; NOT a verified district-year surveillance observation",
+  "source": "Deterministic local generator scripts/generate-synthetic-demo.mjs",
+  "period": "2020–2025 artificial labels",
+  "districts": "Nine fictional districts; no real geographic match",
+  "sha256": "4b4f9528fc412a353a750a553001e5a8871f60c75996aa3a8384f54feb53fbaf",
+  "limitations": [
+    "No scientific validity",
+    "Not observed surveillance, forecasts, climate measurements or readiness evidence",
+    "Never merged into verified research datasets",
+    "Repeated fictional district-year labels are intentional record-level demo data"
+  ]
+}
