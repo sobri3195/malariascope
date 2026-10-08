@@ -1,3 +1,4 @@
+import BrandMark from './BrandMark';
 import {
   EvidenceCoverage,
   SourceLedger,
@@ -2145,7 +2146,7 @@ function App() {
           <aside id="workspace-navigation" className={`sidebar ${mobile ? 'mobile-open' : ''}`}>
             <NavLink to="/dashboard" className="brand">
               <span className="brand-symbol">
-                <Compass size={27} />
+                <BrandMark size={36} />
               </span>
               <div>
                 MALARIA<span>SCOPE</span>

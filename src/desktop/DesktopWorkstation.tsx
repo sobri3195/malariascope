@@ -1,3 +1,4 @@
+import BrandMark from '../BrandMark';
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { desktopViews as views } from '../DesktopApp';
@@ -259,7 +260,10 @@ export default function DesktopWorkstation() {
   return (
     <div className={'desktop-workstation' + (layout.max ? ' desk-max' : '')}>
       <header className="desk-title">
-        <h1>MALARIASCOPE Desktop Intelligence Workstation</h1>
+        <h1 className="malariascope-brand-line">
+          <BrandMark size={32} />
+          <span>MALARIASCOPE Desktop Intelligence Workstation</span>
+        </h1>
         <button onClick={() => setLayout({ ...layout, left: !layout.left })}>Navigation</button>
         <button onClick={() => setLayout({ ...layout, right: !layout.right })}>Inspector</button>
         <button onClick={() => setLayout({ ...layout, filters: !layout.filters })}>

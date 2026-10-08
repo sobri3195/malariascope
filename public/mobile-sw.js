@@ -1,6 +1,10 @@
 /* Dedicated /mobile scope; caches public research assets, never uploaded records. */
-const CACHE = 'malariascope-mobile-v3';
+const CACHE = 'malariascope-mobile-v4';
 const PUBLIC = [
+  '/brand/malariascope-mark.svg',
+  '/favicon.svg',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
   "/data/verified/climate-annual-2020-2025.csv",
   "/data/verified/district-registry.json",
   "/data/verified/evidence-coverage.json",

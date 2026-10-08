@@ -1,3 +1,4 @@
+import BrandMark from '../BrandMark';
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Papa from 'papaparse';
@@ -288,7 +289,10 @@ export default function IoTApp() {
     <div className={'iot-app' + (simulation ? ' iot-simulation' : '')}>
       <header>
         <div>
-          <h1>MALARIASCOPE IoT</h1>
+          <h1 className="malariascope-brand-line">
+            <BrandMark size={36} />
+            <span>MALARIASCOPE IoT</span>
+          </h1>
           <p>Environmental Surveillance & Sensor Intelligence · research prototype</p>
         </div>
         <nav>

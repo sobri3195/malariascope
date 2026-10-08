@@ -1,3 +1,4 @@
+import BrandMark from '../BrandMark';
 import React, {
   createContext,
   lazy,
@@ -302,7 +303,10 @@ export default function MobileApp() {
       <div className="mobile-app">
         <header className="m-header">
           <div>
-            <NavLink to="/mobile">MALARIASCOPE</NavLink>
+            <NavLink to="/mobile" className="malariascope-brand-line">
+              <BrandMark size={28} />
+              MALARIASCOPE
+            </NavLink>
             <p>Malaria Spatial Early-Warning &amp; Risk Intelligence</p>
           </div>
           <button onClick={() => setFilters(true)} aria-label="Mobile context filters">

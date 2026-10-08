@@ -347,3 +347,7 @@ Vercel SSO. Local deep-route checks do not prove authenticated deployed-route be
 ## Research desktop and environmental IoT
 
 Use `/aplikasi-desktop` for the shared desktop workstation and `/iot` for environmental sensor ingestion and an isolated optional simulation. `/prospective-registry` and `/model-monitoring` prepare future evaluation without generating forecasts or outcomes. See [the implementation report](docs/RESEARCH-DESKTOP-IOT.md) for datasets, exact totals, geometry licensing, scientific limits, IoT schemas and acceptance commands.
+
+### Brand assets
+
+The shared MALARIASCOPE mark is in `public/brand/malariascope-mark.svg`; the full navy/teal wordmark is in `public/brand/malariascope-logo.svg`, with a 512px PNG icon alongside it. All application headers share `BrandMark`, with adjacent product text providing its accessible name. The HTML shell supplies an SVG favicon, 16/32/48px ICO fallback and 180px Apple touch icon. Mobile offline caching includes the mark and browser icons.

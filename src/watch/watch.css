@@ -654,8 +654,9 @@
   .w-page-header a {
     font-size: 0.72rem;
   }
-  .w-brand svg {
+  .w-brand .malariascope-mark {
     width: 20px;
+    height: 20px;
   }
   .w-controls {
     padding: 16px;

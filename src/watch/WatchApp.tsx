@@ -1,3 +1,4 @@
+import BrandMark from '../BrandMark';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -388,7 +389,7 @@ export default function WatchApp() {
     <div className="watch-demo">
       <header className="w-page-header">
         <Link to="/dashboard" className="w-brand">
-          <Compass size={24} /> MALARIASCOPE
+          <BrandMark size={28} /> MALARIASCOPE
         </Link>
         <Link to="/mobile">Mobile workspace</Link>
       </header>
