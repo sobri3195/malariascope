@@ -355,3 +355,29 @@ The shared MALARIASCOPE mark is in `public/brand/malariascope-mark.svg`; the ful
 The `/methodology` workspace now opens with **Data Coverage & Research Summary**, global-context metrics, source coverage/quality indicators and a searchable/exportable evidence catalog. Full research metadata lives under **Advanced Technical Details**. A separately labeled **Synthetic Demo — 100,000 Records** offers on-demand worker parsing and a paginated preview of fictional records; it never replaces verified research data. See [Methodology workspace documentation](docs/METHODOLOGY-EVIDENCE.md) for provenance, limits and fixture regeneration.
 
 Empty analytical views can now be populated through **Analytical data source & demo**: restore the supplied study package or activate a clearly labeled connected synthetic demo (nine districts, six artificial annual periods, five illustrative model labels). Synthetic sources stay separated from research/user data and historical alerts. See [Connected analytical demo](docs/CONNECTED-ANALYTICAL-DEMO.md).
+
+## Project and agent handbook
+
+These documents describe contributor roles and project practices; they do not add an autonomous agent runtime. Start with [project rules](00-project-rules.md) and [development workflow](15-workflow.md).
+
+- [00-project-rules](00-project-rules.md)
+- [01-system-overview](01-system-overview.md)
+- [02-architecture](02-architecture.md)
+- [03-orchestrator](03-orchestrator.md)
+- [04-planner-agent](04-planner-agent.md)
+- [05-architect-agent](05-architect-agent.md)
+- [06-backend-agent](06-backend-agent.md)
+- [07-frontend-agent](07-frontend-agent.md)
+- [08-qa-agent](08-qa-agent.md)
+- [09-debug-agent](09-debug-agent.md)
+- [10-security-agent](10-security-agent.md)
+- [11-devops-agent](11-devops-agent.md)
+- [12-reporter-agent](12-reporter-agent.md)
+- [13-agent-communication](13-agent-communication.md)
+- [14-project-memory](14-project-memory.md)
+- [15-workflow](15-workflow.md)
+- [16-repository-structure](16-repository-structure.md)
+- [17-coding-standard](17-coding-standard.md)
+- [18-testing-standard](18-testing-standard.md)
+- [19-deployment](19-deployment.md)
+- [20-roadmap](20-roadmap.md)
