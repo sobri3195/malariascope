@@ -1,0 +1,135 @@
+name: Capture MALARIASCOPE screenshots
+
+on:
+  push:
+    branches:
+      - artifact/capture-site-screenshots-20261008
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          mkdir -p /tmp/capture
+          cd /tmp/capture
+          npm init -y
+          npm install playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Capture live MALARIASCOPE
+        working-directory: /tmp/capture
+        env:
+          BASE_URL: https://malariascope.vercel.app
+        run: |
+          cat > capture.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+          const base = process.env.BASE_URL;
+          const out = process.env.GITHUB_WORKSPACE + '/screenshots';
+          await fs.mkdir(out, { recursive: true });
+          const browser = await chromium.launch({headless:true});
+          async function shot(page, url, file, viewport={width:1440,height:1000}) {
+            await page.setViewportSize(viewport);
+            await page.goto(base + url, { waitUntil: 'networkidle', timeout: 90000 });
+            await page.waitForTimeout(1800);
+            await page.screenshot({ path: out + '/' + file, fullPage: true });
+          }
+          const desktop = [
+            ['/dashboard','01-dashboard.png'],
+            ['/risk-map','02-risk-map.png'],
+            ['/surveillance','03-surveillance.png'],
+            ['/district-intelligence','04-district-intelligence.png'],
+            ['/climate','05-climate-intelligence.png'],
+            ['/forecasting','06-forecasting.png'],
+            ['/model-benchmarking','07-model-benchmarking.png'],
+            ['/spatial-analysis','08-spatial-analysis.png'],
+            ['/early-warning','09-early-warning.png'],
+            ['/risk-intelligence','10-risk-intelligence.png'],
+            ['/force-health','11-force-health.png'],
+            ['/scenario','12-scenario-explorer.png'],
+            ['/data-center','13-data-center.png'],
+            ['/data-quality','14-data-quality.png'],
+            ['/reports','15-reports.png'],
+            ['/alerts','16-alerts.png'],
+            ['/audit','17-audit-log.png'],
+            ['/settings','18-settings.png'],
+            ['/methodology','19-methodology.png'],
+            ['/provenance','20-provenance.png'],
+            ['/about','21-about.png']
+          ];
+          const page = await browser.newPage();
+          for (const [url,file] of desktop) {
+            try { await shot(page,url,file); } catch(e) { console.error('FAIL',url,e); }
+          }
+
+          // Presentation screens
+          try {
+            await page.setViewportSize({width:1440,height:1000});
+            await page.goto(base + '/presentation', {waitUntil:'networkidle', timeout:90000});
+            await page.waitForTimeout(1800);
+            for (let i=0;i<6;i++) {
+              await page.screenshot({path: out + '/presentation-' + String(i+1).padStart(2,'0') + '.png', fullPage:true});
+              if (i<5) {
+                const next = page.getByRole('button',{name:'Next'});
+                await next.click();
+                await page.waitForTimeout(1000);
+              }
+            }
+          } catch(e) { console.error('FAIL presentation',e); }
+
+          // Mobile dedicated routes
+          const mobile = [
+            ['/mobile','mobile-01-home.png'],
+            ['/mobile/map','mobile-02-map.png'],
+            ['/mobile/alerts','mobile-03-alerts.png'],
+            ['/mobile/district','mobile-04-district.png'],
+            ['/mobile/surveillance','mobile-05-surveillance.png'],
+            ['/mobile/models','mobile-06-models.png'],
+            ['/mobile/readiness','mobile-07-readiness.png'],
+            ['/mobile/more','mobile-08-more.png'],
+            ['/mobile/provenance','mobile-09-provenance.png'],
+            ['/mobile/quality','mobile-10-quality.png'],
+            ['/mobile/report','mobile-11-report.png']
+          ];
+          for (const [url,file] of mobile) {
+            try { await shot(page,url,file,{width:430,height:932}); } catch(e) { console.error('FAIL',url,e); }
+          }
+
+          // Smartwatch screens
+          try {
+            await page.setViewportSize({width:1440,height:1000});
+            await page.goto(base + '/smartwatch', {waitUntil:'networkidle', timeout:90000});
+            await page.waitForTimeout(1800);
+            const select = page.getByLabel('Watch screen');
+            const options = await select.locator('option').allTextContents();
+            let idx=1;
+            for (const name of options) {
+              await select.selectOption({label:name});
+              await page.waitForTimeout(500);
+              const safe = name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+              await page.screenshot({path: out + '/watch-' + String(idx).padStart(2,'0') + '-' + safe + '.png', fullPage:true});
+              idx++;
+            }
+          } catch(e) { console.error('FAIL smartwatch',e); }
+
+          // Capture home/root at end
+          try { await shot(page,'/','00-home-root.png'); } catch(e) { console.error('FAIL root',e); }
+          await browser.close();
+          NODE
+          node capture.mjs
+          find "$GITHUB_WORKSPACE/screenshots" -type f -maxdepth 1 -printf '%f\n' | sort
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: malariascope-live-screenshots
+          path: screenshots/
+          if-no-files-found: error
+          retention-days: 3
