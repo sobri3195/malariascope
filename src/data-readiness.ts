@@ -1,5 +1,11 @@
 export type ReadinessStatus =
-  'CONNECTED' | 'PARTIAL' | 'SUMMARY ONLY' | 'NOT CONNECTED' | 'INVALID';
+  | 'CONNECTED'
+  | 'PARTIAL'
+  | 'SUMMARY ONLY'
+  | 'NOT CONNECTED'
+  | 'INVALID'
+  | 'VERIFIED RESEARCH EXTRACTION'
+  | 'SUPPLIED STUDY OUTPUT';
 export function fieldReadiness(
   rows: { [key: string]: unknown }[],
   fields: string[],

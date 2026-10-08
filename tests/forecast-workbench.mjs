@@ -17,7 +17,7 @@ try {
   await page.getByRole('heading', { name: 'Forecasting Workbench Pro', exact: true }).waitFor();
   assert.match(
     await page.getByLabel('Scientific interpretation').innerText(),
-    /Persistence outperformed Random Forest on the primary 2025 MAE metric/,
+    /Persistence outperformed (Ridge Regression — no climate|Random Forest) on the primary 2025 MAE metric/,
   );
   await page.getByLabel('Forecast primary metric', { exact: true }).selectOption('rmse');
   assert.match(

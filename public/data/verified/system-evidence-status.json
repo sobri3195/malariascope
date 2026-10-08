@@ -1,0 +1,14 @@
+{
+  "surveillance": "VERIFIED_RESEARCH_EXTRACTION",
+  "spatialSnapshot": "CONNECTED",
+  "climate": "VERIFIED_CLIMATE_AGGREGATE",
+  "predictions": "VERIFIED_MODEL_OUTPUT",
+  "modelBenchmark": "SUPPLIED_STUDY_OUTPUT",
+  "spatialStatistic": "SUPPLIED_STUDY_OUTPUT",
+  "sourceLedger": "UNRESOLVED SOURCE ISSUE",
+  "geometry": "PUBLIC GEOMETRY",
+  "facilities": "OPTIONAL — NOT CONNECTED",
+  "prospective": "NOT YET AVAILABLE",
+  "iot": "NOT CONNECTED",
+  "militaryMobility": "NOT CONNECTED"
+}

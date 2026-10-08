@@ -1,0 +1,30 @@
+{
+  "name": "geoBoundaries Papua study ADM2",
+  "source": "Badan Pusat Statistik (BPS - Statistics Indonesia), World Food Programme, OCHA ROAP",
+  "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IDN/ADM2/geoBoundaries-IDN-ADM2.geojson",
+  "releaseCommit": "9469f09",
+  "geometryIdentifier": "IDN-ADM2-22746128",
+  "license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)",
+  "retrieved": "2026-10-07",
+  "crs": "EPSG:4326",
+  "administrativeLevel": "ADM2 regency/city",
+  "classification": "PUBLIC SOURCE",
+  "sourceArtifactSha256": "146653d488331086ddc43d159a261b01ea6dd08c7ed422e34a9886c3c690430c",
+  "sourceArtifact": "geoBoundaries-IDN-ADM2_simplified.geojson",
+  "sha256": "bf4e9d691afa962b847e068730f20a133351a3047bd7c3a3aca79b9eaa2c4ad7",
+  "mapping": {
+    "Biak Numfor": "Biak Numfor",
+    "Jayapura": "Jayapura",
+    "Keerom": "Keerom",
+    "Kepulauan Yapen": "Kepulauan Yapen",
+    "Kota Jayapura": "Kota Jayapura",
+    "Mamberamo Raya": "Mamberamo Raya",
+    "Sarmi": "Sarmi",
+    "Supiori": "Supiori",
+    "Waropen": "Waropen"
+  },
+  "note": "Source-authored simplified geometry, exact nine-feature subset; not newly drawn polygons. Geometry vintage 2020.",
+  "sourceArtifactURL": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/IDN/ADM2/geoBoundaries-IDN-ADM2_simplified.geojson",
+  "geometryVintage": "2020",
+  "identifierKind": "geoBoundaries shapeID; not an asserted official administrative code"
+}

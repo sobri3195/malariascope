@@ -32,6 +32,7 @@ import type { Adjacency, hotspotContext } from './hotspot-spatial';
 import type { moran } from './moran';
 import './hotspot.css';
 import DataReadiness from './DataReadiness';
+import { researchRows } from './research-data/research';
 import { gisRows } from './scientific-sources';
 import { featureDistrictIdentity, resolveDistrict } from './district-registry';
 type MoranResult = ReturnType<typeof moran>;
@@ -47,6 +48,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
     state,
     rows: observedRows,
     signals,
+    research,
     year,
     setYear,
     district,
@@ -55,8 +57,15 @@ export default function MapView({ large = false }: { large?: boolean }) {
     update,
   } = useStore();
   const rows = useMemo(
-    () => gisRows(observedRows, state.scientificSources || [], model),
-    [observedRows, state.scientificSources, model],
+    () =>
+      gisRows(
+        state.researchMode === 'BUILTIN' && research
+          ? researchRows(research, model, true)
+          : observedRows,
+        state.scientificSources || [],
+        model,
+      ),
+    [observedRows, state.scientificSources, model, state.researchMode, research],
   );
   const root = useRef<HTMLDivElement>(null),
     mapA = useRef<MapHandle>(null),

@@ -95,9 +95,13 @@ export function validateScientific(kind: ScientificKind, input: Record<string, u
       if (r[field] !== undefined) (row as any)[field] = String(r[field]).trim();
     if (
       kind === 'model-predictions' &&
-      !['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(
-        row.model!,
-      )
+      ![
+        'Persistence',
+        'Ridge Regression — no climate',
+        'Ridge Regression',
+        'Random Forest',
+        'Gradient Boosting',
+      ].includes(row.model!)
     )
       fail('Unsupported model');
     if (kind === 'district-risk' && !['LOW', 'MODERATE', 'HIGH', 'VERY HIGH'].includes(row.risk!))

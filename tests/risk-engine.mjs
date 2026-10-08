@@ -23,6 +23,11 @@ const inspect = async (district) => {
   return page.getByRole('dialog', { name: 'Risk calculation', exact: true });
 };
 const state = async () => page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')));
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/risk-intelligence');
   await page.getByRole('heading', { name: 'Explainable Risk Engine 2.0', exact: true }).waitFor();

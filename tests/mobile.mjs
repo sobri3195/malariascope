@@ -35,6 +35,14 @@ const filters = async (year, district) => {
   if (district) await page.getByLabel('Mobile district', { exact: true }).selectOption(district);
   await page.getByRole('button', { name: 'Apply / close' }).click();
 };
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem(
+      'malariascope-v1',
+      JSON.stringify({ researchMode: 'USER IMPORT', datasets: [], active: '', geometry: null }),
+    );
+});
 try {
   await navigate('');
   await heading('Current Intelligence');
@@ -53,7 +61,7 @@ try {
   await heading('Model Comparison');
   assert.match(
     await page.locator('main').innerText(),
-    /Persistence outperformed Random Forest on the primary 2025 MAE metric/,
+    /Persistence outperformed (Ridge Regression — no climate|Random Forest) on the primary 2025 MAE metric/,
   );
   await page.getByLabel('Mobile primary metric').selectOption('rmse');
   assert.match(await page.locator('main').innerText(), /Only Random Forest/);
@@ -256,6 +264,9 @@ try {
   });
   await unavailable.route('**/data/model-performance.json', (route) =>
     route.fulfill({ status: 503, body: 'Research source unavailable' }),
+  );
+  await unavailable.route('**/data/verified/manifest.json', (route) =>
+    route.fulfill({ status: 503, body: 'Isolated unavailable study package' }),
   );
   const partial = await unavailable.newPage();
   partial.on('pageerror', (e) => errors.push(e.message));

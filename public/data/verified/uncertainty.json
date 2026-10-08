@@ -1,0 +1,19 @@
+{
+  "persistenceMae": 10425.5,
+  "persistenceInterval": [
+    3487,
+    21928.5
+  ],
+  "rfMae": 12690.3,
+  "rfInterval": [
+    4292.6,
+    22781
+  ],
+  "pairedDifference": 2264.8,
+  "pairedInterval": [
+    -2793.2,
+    8965.2
+  ],
+  "interpretation": "Model superiority is not established.",
+  "classification": "SUPPLIED_STUDY_OUTPUT"
+}

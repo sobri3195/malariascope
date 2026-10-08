@@ -1,4 +1,12 @@
 import {
+  loadResearchPackage,
+  researchDatasets,
+  builtin,
+  researchRows,
+  studyModels,
+  type ResearchPackage,
+} from './research-data/research';
+import {
   createContext,
   useContext,
   useState,
@@ -19,9 +27,16 @@ export type Dataset = {
   source: string;
   checksum: string;
   created: string;
+  fieldSources?: Partial<
+    Record<
+      import('./district-intelligence').Field,
+      { source: string; checksum: string; name: string }
+    >
+  >;
   classification?: import('./district-intelligence').Classification;
 };
 export type State = {
+  researchMode?: 'BUILTIN' | 'USER IMPORT';
   scientificSources?: import('./scientific-sources').ScientificSource[];
   facilitySnapshot?: import('./public-healthcare').FacilitySnapshot;
   mapContext?: 'local' | 'osm';
@@ -101,6 +116,8 @@ function load(): State {
   }
 }
 const Context = createContext<{
+  research: ResearchPackage | null;
+  researchError: string;
   state: State;
   update: (s: Partial<State>, event?: string, details?: string) => void;
   rows: Row[];
@@ -116,6 +133,8 @@ const Context = createContext<{
 }>(null!);
 const EMPTY_ROWS: Row[] = [];
 export function Provider({ children }: { children: ReactNode }) {
+  const [research, setResearch] = useState<ResearchPackage | null>(null);
+  const [researchError, setResearchError] = useState('');
   const route = useLocation();
   const navigationType = useNavigationType();
   const [state, setState] = useState(() => {
@@ -123,8 +142,16 @@ export function Provider({ children }: { children: ReactNode }) {
       query = new URLSearchParams(route.search),
       dataset = query.get('dataset'),
       mode = query.get('riskMode');
-    if (dataset !== null && (dataset === '' || initialState.datasets.some((d) => d.id === dataset)))
+    if (
+      dataset !== null &&
+      (dataset === '' || initialState.datasets.some((d) => d.id === dataset))
+    ) {
       initialState.active = dataset;
+      if (!builtin(dataset)) {
+        initialState.researchMode = 'USER IMPORT';
+        initialState.datasets = initialState.datasets.filter((d) => !builtin(d.id));
+      }
+    }
     if (mode && riskModes.includes(mode as RiskMode)) initialState.riskMode = mode as RiskMode;
     return initialState;
   });
@@ -143,16 +170,72 @@ export function Provider({ children }: { children: ReactNode }) {
       params.get('district') || state.selection?.district || 'All districts',
     ),
     [model, setModel] = useState(
-      ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(
-        params.get('model') ?? '',
-      )
+      (studyModels as readonly string[]).includes(params.get('model') ?? '')
         ? params.get('model')!
-        : ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(
-              state.selection?.model ?? '',
-            )
+        : (studyModels as readonly string[]).includes(state.selection?.model ?? '')
           ? state.selection!.model
           : 'Persistence',
     );
+  useEffect(() => {
+    let live = true;
+    void loadResearchPackage()
+      .then((p) => {
+        if (!live) return;
+        setResearch(p);
+        setState((prev) => {
+          if ((prev.active && !builtin(prev.active)) || prev.researchMode === 'USER IMPORT')
+            return {
+              ...prev,
+              researchMode: 'USER IMPORT',
+              datasets: prev.datasets.filter((d) => !builtin(d.id)),
+            };
+          const built = researchDatasets(p);
+          return {
+            ...prev,
+            researchMode: 'BUILTIN',
+            datasets: [...prev.datasets.filter((d) => !builtin(d.id)), ...built],
+            active: builtin(prev.active) ? prev.active : 'study-balanced',
+            geometry: prev.geometry || p.geometry,
+            geometrySource: prev.geometrySource || {
+              ...p.geometryMetadata,
+              checksum: p.geometryMetadata.sha256,
+              created: p.geometryMetadata.retrieved,
+            },
+          };
+        });
+      })
+      .catch((e) => {
+        if (live) {
+          setResearchError(String(e));
+          setState((prev) =>
+            builtin(prev.active)
+              ? { ...prev, active: '', datasets: prev.datasets.filter((d) => !builtin(d.id)) }
+              : prev,
+          );
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  const projectedDatasets = useMemo(
+    () =>
+      state.datasets.map((d) =>
+        builtin(d.id) && research && ['study-balanced', 'study-spatial'].includes(d.id)
+          ? {
+              ...d,
+              rows: researchRows(research, model, d.id === 'study-spatial').filter(
+                (r) => d.id !== 'study-spatial' || r.year === 2025,
+              ),
+            }
+          : d,
+      ),
+    [state.datasets, research, model],
+  );
+  const effectiveState = useMemo(
+    () => ({ ...state, datasets: projectedDatasets }),
+    [state, projectedDatasets],
+  );
   const riskMode = safeRiskMode(state.riskMode);
   function setRiskMode(mode: RiskMode) {
     if (riskModes.includes(mode)) update({ riskMode: mode }, 'Risk mode changed', mode);
@@ -167,8 +250,7 @@ export function Provider({ children }: { children: ReactNode }) {
     const d = p.get('district');
     if (d) setDistrict(d);
     const m = p.get('model');
-    if (m && ['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(m))
-      setModel(m);
+    if (m && (studyModels as readonly string[]).includes(m)) setModel(m);
     const risk = p.get('riskMode'),
       dataset = p.get('dataset');
     setState((prev) => {
@@ -182,7 +264,17 @@ export function Provider({ children }: { children: ReactNode }) {
           : prev.active;
       return nextRisk === safeRiskMode(prev.riskMode) && nextDataset === prev.active
         ? prev
-        : { ...prev, riskMode: nextRisk, active: nextDataset };
+        : {
+            ...prev,
+            riskMode: nextRisk,
+            active: nextDataset,
+            ...(dataset !== null && !builtin(nextDataset)
+              ? {
+                  researchMode: 'USER IMPORT' as const,
+                  datasets: prev.datasets.filter((d) => !builtin(d.id)),
+                }
+              : {}),
+          };
     });
   }, [route.search, route.key, navigationType, route.state]);
   useEffect(() => {
@@ -211,6 +303,20 @@ export function Provider({ children }: { children: ReactNode }) {
       const next = {
         ...prev,
         ...s,
+        ...(s.active !== undefined && !builtin(s.active)
+          ? {
+              researchMode: 'USER IMPORT' as const,
+              datasets: (s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
+            }
+          : s.active && builtin(s.active) && research
+            ? {
+                researchMode: 'BUILTIN' as const,
+                datasets: [
+                  ...(s.datasets || prev.datasets).filter((d) => !builtin(d.id)),
+                  ...researchDatasets(research),
+                ],
+              }
+            : {}),
         audit: event
           ? [{ time: new Date().toISOString(), event, details }, ...prev.audit].slice(0, 500)
           : prev.audit,
@@ -228,9 +334,9 @@ export function Provider({ children }: { children: ReactNode }) {
       return next;
     });
   }
-  const rows = state.datasets.find((d) => d.id === state.active)?.rows || EMPTY_ROWS;
+  const rows = projectedDatasets.find((d) => d.id === state.active)?.rows || EMPTY_ROWS;
   const signals = useMemo(() => {
-    const dataset = state.datasets.find((d) => d.id === state.active);
+    const dataset = projectedDatasets.find((d) => d.id === state.active);
     return evaluate(dataset?.rows || [], state.rules, state.active, {
       datasetCreated: dataset?.created,
       datasetName: dataset?.name,
@@ -240,7 +346,7 @@ export function Provider({ children }: { children: ReactNode }) {
       model,
       thresholds: state.thresholds,
     });
-  }, [state.datasets, state.active, state.rules, state.thresholds, model]);
+  }, [projectedDatasets, state.active, state.rules, state.thresholds, model]);
   useEffect(() => {
     setState((prev) => {
       const additions = signals.filter(
@@ -278,7 +384,9 @@ export function Provider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
-        state,
+        state: effectiveState,
+        research,
+        researchError,
         update,
         rows,
         signals,
@@ -290,8 +398,7 @@ export function Provider({ children }: { children: ReactNode }) {
         setDistrict,
         model,
         setModel: (s) => {
-          if (['Persistence', 'Ridge Regression', 'Random Forest', 'Gradient Boosting'].includes(s))
-            setModel(s);
+          if ((studyModels as readonly string[]).includes(s)) setModel(s);
         },
         riskMode,
         setRiskMode,

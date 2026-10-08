@@ -15,7 +15,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - name: GIS network-failure acceptance
+      - name: GIS, research, desktop and IoT acceptance
         shell: bash
         run: |
           set -euo pipefail
@@ -30,3 +30,4 @@ jobs:
           export APP_URL=http://127.0.0.1:4173
           export CHROMIUM_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())')"
           node tests/gis-reliability.mjs
+          node tests/research-desktop-iot.mjs

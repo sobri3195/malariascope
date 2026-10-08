@@ -35,7 +35,7 @@ const panels = [
   'Recent Activity',
   'Analytical Snapshots',
 ] as const;
-function Modal({
+export function Modal({
   label,
   children,
   onClose,

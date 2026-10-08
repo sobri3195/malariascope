@@ -12,6 +12,11 @@ page.on('pageerror', (e) => errors.push(e.message));
 const matrix = () => page.getByRole('table', { name: 'District readiness matrix' });
 const explanation = () => page.getByLabel('Readiness assessment explanation', { exact: true });
 const state = () => page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')));
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/force-health');
   await page.getByRole('heading', { name: 'Force Health Readiness Matrix', exact: true }).waitFor();

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "SUPIORI_2024_MISSING",
+    "description": "2024 malaria outcome unavailable.",
+    "impact": "Excluded complete Supiori six-year series from balanced forecasting panel.",
+    "resolution": "Unresolved."
+  },
+  {
+    "id": "BIAK_REPEATED_2023_2024_VALUE",
+    "description": "Biak Numfor reported positive total is identical in 2023 and 2024.",
+    "impact": "Possible source-quality concern; value retained.",
+    "resolution": "Official clarification not available."
+  },
+  {
+    "id": "2024_REPORT_DISCREPANCY",
+    "description": "Narrative and detailed malaria table differ materially.",
+    "impact": "Detailed identifiable district table used for analysis.",
+    "resolution": "Unresolved source discrepancy retained."
+  },
+  {
+    "id": "2025_TOTAL_DISCREPANCY",
+    "description": "District table sum 288,879; separate contemporary Papua Health Office statement 303,931.",
+    "impact": "Do not average these values. District table remains the benchmark.",
+    "resolution": "Official reconciliation required."
+  }
+]

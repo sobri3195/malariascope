@@ -1,3 +1,4 @@
+import { EvidenceCoverage, SourceLedger } from './research-data/EvidencePanels';
 import DataReadiness from './DataReadiness';
 import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -259,6 +260,8 @@ export default function ScientificIntegrityCenter() {
         cover the full source dataset. No rows are corrected, dropped, or imputed.
       </div>
       <DataReadiness />
+      <EvidenceCoverage />
+      <SourceLedger />
       <div className="integrity-severity-counts" aria-label="Integrity issue totals">
         {severities.map((s) => (
           <div key={s}>

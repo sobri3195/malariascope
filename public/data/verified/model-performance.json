@@ -1,0 +1,70 @@
+[
+  {
+    "model": "Persistence",
+    "year": 2025,
+    "mae": 10425.5,
+    "rmse": null,
+    "r2": null,
+    "classification": "SUPPLIED_STUDY_OUTPUT",
+    "precision": "Full supplied metric; saved point forecasts are rounded",
+    "trainingPeriod": "2021–2023 selection, refit through 2024",
+    "validationPeriod": "2024 selection; 2025 temporal test",
+    "output_type": "RETROSPECTIVE_HINDCAST"
+  },
+  {
+    "model": "Ridge Regression — no climate",
+    "year": 2025,
+    "mae": 12676.351881552853,
+    "rmse": null,
+    "r2": null,
+    "classification": "SUPPLIED_STUDY_OUTPUT",
+    "precision": "Full supplied metric; saved point forecasts are rounded",
+    "trainingPeriod": "2021–2023 selection, refit through 2024",
+    "validationPeriod": "2024 selection; 2025 temporal test",
+    "output_type": "RETROSPECTIVE_HINDCAST"
+  },
+  {
+    "model": "Ridge Regression",
+    "year": 2025,
+    "mae": 12787.184176752537,
+    "rmse": null,
+    "r2": null,
+    "classification": "SUPPLIED_STUDY_OUTPUT",
+    "precision": "Full supplied metric; saved point forecasts are rounded",
+    "trainingPeriod": "2021–2023 selection, refit through 2024",
+    "validationPeriod": "2024 selection; 2025 temporal test",
+    "output_type": "RETROSPECTIVE_HINDCAST"
+  },
+  {
+    "model": "Random Forest",
+    "year": 2025,
+    "mae": 12690.256937171625,
+    "rmse": 18502,
+    "r2": 0.36,
+    "classification": "SUPPLIED_STUDY_OUTPUT",
+    "precision": "Full supplied metric; saved point forecasts are rounded",
+    "trainingPeriod": "2021–2023 selection, refit through 2024",
+    "validationPeriod": "2024 selection; 2025 temporal test",
+    "output_type": "RETROSPECTIVE_HINDCAST"
+  },
+  {
+    "model": "Gradient Boosting",
+    "year": 2025,
+    "mae": 13271.651901896403,
+    "rmse": null,
+    "r2": null,
+    "classification": "SUPPLIED_STUDY_OUTPUT",
+    "precision": "Full supplied metric; saved point forecasts are rounded",
+    "trainingPeriod": "2021–2023 selection, refit through 2024",
+    "validationPeriod": "2024 selection; 2025 temporal test",
+    "output_type": "RETROSPECTIVE_HINDCAST"
+  },
+  {
+    "model": "Random Forest",
+    "year": 2024,
+    "mae": 11060,
+    "rmse": null,
+    "r2": null,
+    "classification": "SUPPLIED_STUDY_OUTPUT"
+  }
+]

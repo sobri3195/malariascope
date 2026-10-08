@@ -224,7 +224,13 @@ export default function ForecastWorkbench({
     [datasets, state.active],
   );
   const source =
-    sourceChoice === 'AUTO' ? (evidence.pairs.length ? 'LOADED' : 'SUPPLIED') : sourceChoice;
+    sourceChoice === 'AUTO'
+      ? state.researchMode === 'BUILTIN'
+        ? 'SUPPLIED'
+        : evidence.pairs.length
+          ? 'LOADED'
+          : 'SUPPLIED'
+      : sourceChoice;
   const years = useMemo(
     () =>
       [
@@ -241,12 +247,20 @@ export default function ForecastWorkbench({
     [evidence.pairs, included, start, year, metric, common],
   );
   const evaluations =
-    source === 'LOADED' ? loaded.evaluations : studyEvaluations(study, year, included, metric);
+    source === 'LOADED'
+      ? loaded.evaluations
+      : studyEvaluations(study, year, included, metric).map((e) => ({
+          ...e,
+          pairs:
+            state.researchMode === 'BUILTIN'
+              ? evidence.pairs.filter((p) => p.model === e.model && p.year === year)
+              : e.pairs,
+        }));
   const primary = evaluations.find((e) => e.model === model),
     primaryPairs = primary?.pairs || [];
   const districts = [...new Set(evidence.observations.map((r) => r.district))].sort();
   const chosen =
-    source === 'LOADED'
+    source === 'LOADED' || state.researchMode === 'BUILTIN'
       ? evidence.pairs.filter(
           (p) =>
             p.model === model &&
@@ -692,7 +706,7 @@ export default function ForecastWorkbench({
                   ))}
                 </select>
               </label>
-              {source === 'SUPPLIED' ? (
+              {source === 'SUPPLIED' && state.researchMode !== 'BUILTIN' ? (
                 <p>
                   Underlying district forecasts are not supplied. Select loaded evidence to inspect
                   actual predictions.

@@ -5,7 +5,7 @@ import { validateGeometry } from './geometry';
 import { gisRows } from './scientific-sources';
 import { fieldReadiness, type ReadinessStatus } from './data-readiness';
 export default function DataReadiness() {
-  const { state, rows: observed, model, year } = useStore();
+  const { state, research, rows: observed, model, year } = useStore();
   const [publicStatus, setPublicStatus] = useState<{
     surveillance: ReadinessStatus;
     models: ReadinessStatus;
@@ -77,7 +77,13 @@ export default function DataReadiness() {
       surveillance === 'NOT CONNECTED' ? publicStatus.summary : surveillance,
       'Supplied summary is not district observations.',
     ],
-    ['District surveillance records', surveillance, 'District surveillance records not connected.'],
+    [
+      'District surveillance records',
+      state.researchMode === 'BUILTIN' && surveillance === 'CONNECTED'
+        ? 'VERIFIED RESEARCH EXTRACTION'
+        : surveillance,
+      'District surveillance records not connected.',
+    ],
     [
       'Population',
       fieldReadiness(rows, ['population']),
@@ -99,10 +105,14 @@ export default function DataReadiness() {
     ],
     [
       'Model performance',
-      publicStatus.models,
+      research ? 'SUPPLIED STUDY OUTPUT' : publicStatus.models,
       'Supplied metrics only; missing metrics are not zero.',
     ],
-    ['Spatial results', publicStatus.spatial, 'Supplied aggregate; district outputs not supplied.'],
+    [
+      'Spatial results',
+      research ? 'SUPPLIED STUDY OUTPUT' : publicStatus.spatial,
+      'Global Moran result; no significant local-hotspot output supplied.',
+    ],
     [
       'Public facilities',
       state.facilitySnapshot?.facilities.length ? 'PARTIAL' : 'NOT CONNECTED',
@@ -132,9 +142,11 @@ export default function DataReadiness() {
         ))}
       </div>
       <p>
-        Public surveillance CSV: {publicStatus.surveillance}. Status reflects loaded data
-        availability, not independent scientific verification. GIS supplements remain separate from
-        observed records.
+        {research
+          ? 'Checksummed study package connected; legacy header-only import template remains separate.'
+          : 'Public surveillance CSV: ' + publicStatus.surveillance + '.'}{' '}
+        Status reflects loaded data availability, not independent scientific verification. GIS
+        supplements remain separate from observed records.
       </p>
     </details>
   );

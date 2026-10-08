@@ -123,8 +123,18 @@ class MobileBoundary extends React.Component<{ children: ReactNode }, { failed: 
   }
 }
 export default function MobileApp() {
-  const { state, update, year, setYear, district, setDistrict, model, riskMode, setRiskMode } =
-    useStore();
+  const {
+    state,
+    research,
+    update,
+    year,
+    setYear,
+    district,
+    setDistrict,
+    model,
+    riskMode,
+    setRiskMode,
+  } = useStore();
   const route = useLocation(),
     navigate = useNavigate();
   const [data, setData] = useState<Research | null>(null),
@@ -273,7 +283,22 @@ export default function MobileApp() {
     ...new Set(state.datasets.flatMap((d) => d.rows.map((r) => r.district))),
   ].sort();
   return (
-    <Context.Provider value={{ data, online, cached, evidence }}>
+    <Context.Provider
+      value={{
+        data:
+          data && research
+            ? {
+                ...data,
+                models: research.performance,
+                spatial: research.spatialResult,
+                provenance: research.manifest,
+              }
+            : data,
+        online,
+        cached,
+        evidence,
+      }}
+    >
       <div className="mobile-app">
         <header className="m-header">
           <div>
@@ -314,8 +339,8 @@ export default function MobileApp() {
         </header>
         <main className="m-main" id="mobile-main">
           <p className="m-disclaimer">
-            Research prototype · Decision Support — Not Autonomous Clinical or Operational
-            Recommendations
+            RETROSPECTIVE RESEARCH DATA · Research prototype · Decision Support — Not Autonomous
+            Clinical or Operational Recommendations
           </p>
           {evidence.configuration.experimental && (
             <p className="m-warning">
@@ -441,6 +466,9 @@ export default function MobileApp() {
                 }
               >
                 <option value="">No primary dataset</option>
+                {!state.datasets.some((d) => d.id === 'study-balanced') && research && (
+                  <option value="study-balanced">Verified MALARIASCOPE Study</option>
+                )}
                 {state.datasets.map((d) => (
                   <option value={d.id} key={d.id}>
                     {d.name}

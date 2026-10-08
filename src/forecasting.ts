@@ -11,6 +11,7 @@ export const forecastModels = [
   'Ridge Regression',
   'Random Forest',
   'Gradient Boosting',
+  'Ridge Regression — no climate',
 ] as const;
 export type ForecastModel = (typeof forecastModels)[number];
 export const primaryMetrics = [
@@ -265,16 +266,13 @@ export function modelFailureAnalysis(e: ModelEvaluation) {
     return [
       `No observed prediction error in these ${e.pairs.length} evaluated pairs. This does not establish performance in other districts or periods.`,
     ];
+  const bias = forecastMetrics(e.pairs).bias!;
   const direction =
-    e.metrics.bias! > 0
-      ? 'overprediction'
-      : e.metrics.bias! < 0
-        ? 'underprediction'
-        : 'no net directional bias';
+    bias > 0 ? 'overprediction' : bias < 0 ? 'underprediction' : 'no net directional bias';
   return [
     `Largest mean district error: ${ranking[0].district}, MAE ${ranking[0].metrics.mae!.toFixed(2)} cases across ${ranking[0].pairs.length} period(s).`,
     `Worst individual error: ${worst.district} (${worst.year}), absolute error ${worst.absoluteError.toFixed(2)} cases; observed ${worst.observed}, predicted ${worst.predicted}.`,
-    `Mean signed bias is ${e.metrics.bias!.toFixed(2)} cases (${direction}); ${e.pairs.filter((p) => p.residual > 0).length} overpredicted, ${e.pairs.filter((p) => p.residual < 0).length} underpredicted, ${e.pairs.filter((p) => p.residual === 0).length} exact.`,
+    `Mean signed bias calculated from paired rows is ${bias.toFixed(2)} cases (${direction}); ${e.pairs.filter((p) => p.residual > 0).length} overpredicted, ${e.pairs.filter((p) => p.residual < 0).length} underpredicted, ${e.pairs.filter((p) => p.residual === 0).length} exact.`,
     `The largest individual error accounts for ${((worst.absoluteError / total) * 100).toFixed(1)}% of total absolute error in this evaluated cohort. Findings are descriptive and do not explain causal model failure.`,
   ];
 }

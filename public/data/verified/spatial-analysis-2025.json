@@ -1,0 +1,15 @@
+{
+  "year": 2025,
+  "districts": 9,
+  "moranI": 0.165,
+  "pValue": 0.1301,
+  "permutations": 9999,
+  "expected_I": -0.125,
+  "neighbors_definition": "three-nearest-neighbour centroid distances",
+  "weights": "symmetrised and row-standardised",
+  "significant": false,
+  "significant_0_05": false,
+  "source": "User-supplied MALARIASCOPE study extraction, October 2026; underlying source reports not independently audited",
+  "classification": "SUPPLIED_STUDY_OUTPUT",
+  "interpretation": "Global clustering not established."
+}

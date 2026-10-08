@@ -23,6 +23,11 @@ await page.route('**/*', async (route) => {
     await route.abort();
   } else await route.continue();
 });
+// Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
+await page.addInitScript(() => {
+  if (!localStorage.getItem('malariascope-v1'))
+    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+});
 try {
   await page.goto(base + '/risk-map');
   await page.locator('.leaflet-overlay-pane path').first().waitFor();

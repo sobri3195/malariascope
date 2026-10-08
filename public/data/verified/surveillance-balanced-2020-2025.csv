@@ -1,0 +1,49 @@
+district,year,cases,dataset_id,verification,source_group,panel
+Biak Numfor,2020,641,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Biak Numfor,2021,660,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Biak Numfor,2022,3097,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Biak Numfor,2023,3245,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Biak Numfor,2024,3245,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Biak Numfor,2025,4306,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2020,21472,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2021,26195,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2022,47953,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2023,45462,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2024,62396,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Jayapura,2025,66025,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2020,21870,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2021,20867,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2022,29938,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2023,22513,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2024,37797,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Keerom,2025,43096,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2020,6205,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2021,16746,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2022,20204,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2023,13598,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2024,35987,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kepulauan Yapen,2025,47445,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2020,28648,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2021,28075,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2022,40095,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2023,35554,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2024,21812,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Kota Jayapura,2025,69944,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2020,7700,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2021,7165,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2022,15891,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2023,8348,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2024,22571,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Mamberamo Raya,2025,27482,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2020,14627,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2021,15291,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2022,17733,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2023,16801,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2024,14341,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Sarmi,2025,21142,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2020,3381,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2021,1676,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2022,6039,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2023,5606,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2024,6578,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL
+Waropen,2025,8691,study-balanced,VERIFIED_RESEARCH_EXTRACTION,supplied official district table extraction,BALANCED_FORECAST_PANEL

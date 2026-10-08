@@ -33,13 +33,14 @@ const datasets: EvidenceDataset[] = forecastModels.map((model, i) => ({
         [8, 8, 8],
         [0, 0, 12],
         [10, 10, 10],
+        [9, 9, 9],
       ][i][j],
     model,
   })),
 }));
 const evidence = loadedForecastEvidence(datasets, '0');
-test('forecast joins compare four model datasets without duplicating cases and retain exact provenance', () => {
-  assert.equal(evidence.pairs.length, 12);
+test('forecast joins compare five model datasets without duplicating cases and retain exact provenance', () => {
+  assert.equal(evidence.pairs.length, 15);
   assert.equal(evidence.observations.length, 3);
   const pair = evidence.pairs.find((p) => p.model === 'Random Forest' && p.district === 'C')!;
   assert.equal(pair.observed, 300);
@@ -72,14 +73,12 @@ test('MAE, RMSE, R², median absolute error and signed bias use actual paired er
   assert.equal(metrics.medianAbsoluteError, 0);
   assert.equal(metrics.bias, 4);
   assert.equal(metrics.r2, 1 - 144 / 20000);
-  const cancel: ForecastPair[] = selected
-    .slice(0, 2)
-    .map((p, i) => ({
-      ...p,
-      predicted: p.observed + (i ? -10 : 10),
-      residual: i ? -10 : 10,
-      absoluteError: 10,
-    }));
+  const cancel: ForecastPair[] = selected.slice(0, 2).map((p, i) => ({
+    ...p,
+    predicted: p.observed + (i ? -10 : 10),
+    residual: i ? -10 : 10,
+    absoluteError: 10,
+  }));
   assert.equal(forecastMetrics(cancel).bias, 0);
   assert.equal(forecastMetrics(cancel).medianAbsoluteError, 10);
   assert.equal(forecastMetrics(cancel.map((p) => ({ ...p, observed: 100 }))).r2, null);
