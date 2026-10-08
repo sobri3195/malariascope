@@ -108,6 +108,13 @@ try {
   await page.keyboard.press('Escape');
   await page.reload();
   await page.locator('.hotspot-workspace').waitFor();
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await page
+    .locator('.desk-sidebar')
+    .getByRole('button', { name: 'Dashboard', exact: true })
+    .click();
+  await page.getByRole('heading', { name: 'Command Dashboard', exact: true }).waitFor();
+  await page.waitForTimeout(300);
   await go('/prospective-registry');
   await page.getByRole('heading', { name: 'Prospective Forecast Registry', exact: true }).waitFor();
   assert.match(await page.locator('main').innerText(), /No prospective forecasts registered/);
@@ -159,6 +166,7 @@ try {
   const study = await page.evaluate(
     () => JSON.parse(localStorage.getItem('malariascope-v1')).datasets,
   );
+  await page.locator('.iot-map .leaflet-control-zoom-in').click();
   await page.getByLabel('Simulation Mode', { exact: true }).check();
   await page.getByRole('button', { name: 'Start Simulation', exact: true }).click();
   await page.waitForFunction(() =>
@@ -191,6 +199,10 @@ try {
     await page.setViewportSize({ width, height: 900 });
     await fits();
   }
+  await page.locator('.iot-map .leaflet-control-zoom-in').click();
+  await page.goto(base + '/dashboard');
+  await page.getByRole('heading', { name: 'Command Dashboard', exact: true }).waitFor();
+  await page.waitForTimeout(300);
   assert.deepEqual(errors, []);
   console.log(
     'Research/desktop/IoT acceptance passed: shared counts across eight modules, all-nine local geometry, five saved models, desktop layouts/shortcuts/comparison/refresh, empty prospective registry, IoT local import/quality/alerts/map/simulation isolation/export/refresh/responsiveness.',

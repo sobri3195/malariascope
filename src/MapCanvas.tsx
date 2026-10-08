@@ -143,6 +143,9 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       zoomControl: false,
       attributionControl: true,
       preferCanvas: false,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
     }).setView([-3.2, 138.4], 6);
     map.current = m;
     L.control.scale({ imperial: false }).addTo(m);
@@ -157,12 +160,17 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
     m.on('moveend', move);
     m.on('resize', move);
     move();
-    const resize = new ResizeObserver(() => m.invalidateSize());
+    const resize = new ResizeObserver(() => {
+      if (map.current === m) m.invalidateSize({ animate: false, pan: false });
+    });
     resize.observe(div.current);
     return () => {
       resize.disconnect();
-      m.remove();
       map.current = null;
+      m.off('moveend', move);
+      m.off('resize', move);
+      m.stop();
+      m.remove();
     };
   }, []);
   const [onlineStatus, setOnlineStatus] = useState('ONLINE CONTEXT UNAVAILABLE');

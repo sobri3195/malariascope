@@ -27,20 +27,26 @@ export default function IoTMap({
     map = useRef<L.Map | null>(null);
   useEffect(() => {
     if (!host.current) return;
-    const instance = L.map(host.current, { attributionControl: true, zoomControl: true }).setView(
-      [-2.9, 138.7],
-      6,
-    );
+    const instance = L.map(host.current, {
+      attributionControl: true,
+      zoomControl: true,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
+    }).setView([-2.9, 138.7], 6);
     instance.attributionControl.addAttribution(
       'geoBoundaries · CC BY 3.0 IGO · source vintage 2020',
     );
     map.current = instance;
-    const observer = new ResizeObserver(() => instance.invalidateSize());
+    const observer = new ResizeObserver(() => {
+      if (map.current === instance) instance.invalidateSize({ pan: false, animate: false });
+    });
     observer.observe(host.current);
     return () => {
       observer.disconnect();
-      instance.remove();
       map.current = null;
+      instance.stop();
+      instance.remove();
     };
   }, []);
   useEffect(() => {
@@ -101,7 +107,8 @@ export default function IoTMap({
       marker.bindPopup(popup).on('click', () => onSelect(sensor.sensor_id));
     }
     const bounds = group.getBounds();
-    if (bounds.isValid()) instance.fitBounds(bounds, { padding: [12, 12], maxZoom: 9 });
+    if (bounds.isValid())
+      instance.fitBounds(bounds, { padding: [12, 12], maxZoom: 9, animate: false });
     return () => {
       group.remove();
     };
