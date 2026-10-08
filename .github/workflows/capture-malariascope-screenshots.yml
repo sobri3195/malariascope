@@ -107,7 +107,7 @@ jobs:
             await page.setViewportSize({width:1440,height:1000});
             await page.goto(base + '/smartwatch', {waitUntil:'networkidle', timeout:90000});
             await page.waitForTimeout(1800);
-            const select = page.getByLabel('Watch screen');
+            const select = page.getByLabel('Watch screen', { exact: true });
             const options = await select.locator('option').allTextContents();
             let idx=1;
             for (const name of options) {
