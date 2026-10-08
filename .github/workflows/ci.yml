@@ -31,3 +31,4 @@ jobs:
           export CHROMIUM_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())')"
           node tests/gis-reliability.mjs
           node tests/research-desktop-iot.mjs
+          node tests/methodology-evidence.mjs

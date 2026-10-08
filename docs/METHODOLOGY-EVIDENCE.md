@@ -1,0 +1,15 @@
+# Methodology & Evidence workspace
+
+`/methodology` presents the checksummed supplied study package as a scientific workspace, independent of the user's selected analytical dataset. The page identifies the package as a verified research extraction and explicitly distinguishes any actual user import in the active-context note. This label describes fidelity to supplied tables, not an independent audit of underlying reports.
+
+The workspace includes study design, analytical/context timeline, preceding-year forecasting workflow, eight-versus-nine district explanation, candidate-record accounting, evidence status matrix, eight accessible explorer tabs, annual chart/table, spatial results, model benchmarking, climate ablation, uncertainty, qualitative feature importance, limitations, demonstration navigation, provenance and evidence exports. Developer objects are available only through an explicit disclosure. Shared navigation is retained; footer wording now avoids an operational-readiness claim.
+
+Calculations use `methodologyEvidence()` and the loaded package, not the active imported rows: annual totals, year-over-year percentages, cohort totals, MAE ordering and ridge climate difference. Reported full-precision metrics remain separate from rounded saved forecasts. Unreported metrics remain null / “Not supplied”. Supiori 2024 remains missing and 2020–2023 values remain not supplied. The data artifacts and manifest checksums are unchanged.
+
+JSON and long-format CSV exports include study metadata, all evidence coverage and statuses, six annual totals, model metrics, uncertainty, spatial results, limitations, source-quality ledger, source metadata and selected analytical filters. CSV escapes spreadsheet formula prefixes and preserves unavailable values explicitly. Browser print / Save PDF includes findings, limitations, source issues and full source metadata even when those explorer tabs are inactive. No scenario or sensor records become verified evidence.
+
+Tabs support Arrow Left/Right, Home and End; glossary tooltips work on keyboard focus and hover, with a full glossary as an alternative. The chart has a text alternative and exact-value table. Narrow layouts use vertical timelines, status cards and scrollable tables/tabs. Reduced-motion preferences are respected.
+
+Validation: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, then with the production preview on port 4173, `node tests/methodology-evidence.mjs`. Browser acceptance covers figures and claims, hidden developer metadata, all tabs, keyboard navigation/tooltips, JSON/CSV downloads, print visibility, 375/768/1366/1920 widths, import labeling, demo restoration and checksum-failure behavior. CI runs the acceptance suite alongside existing GIS/research/desktop/IoT acceptance.
+
+The evidence remains retrospective and small-sample. No prospective forecasting benefit, clinical utility, usability benefit, operational utility or confirmed local hotspot significance is established. No numeric feature-importance values are invented.

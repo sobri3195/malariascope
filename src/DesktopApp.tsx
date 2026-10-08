@@ -6,6 +6,7 @@ import {
 } from './research-data/EvidencePanels';
 import './research-data/research.css';
 import DataReadiness from './DataReadiness';
+import MethodologyEvidence from './MethodologyEvidence';
 import {
   validateScientific,
   sourceSchemas,
@@ -1898,6 +1899,7 @@ function Evidence({
   about?: boolean;
 }) {
   const [query, setQuery] = useState('');
+  if (!about) return <MethodologyEvidence />;
   return (
     <>
       <Heading
@@ -2258,20 +2260,20 @@ function App() {
           models={research?.performance ?? data?.models ?? []}
           provenance={data?.provenance ?? {}}
         />
-        <div className="safety-banner">
-          <ShieldCheck size={16} />
-          <span>{safety}</span>
-          <Badge>RESEARCH PROTOTYPE</Badge>
-        </div>
+        {location.pathname !== '/methodology' && (
+          <div className="safety-banner">
+            <ShieldCheck size={16} />
+            <span>{safety}</span>
+            <Badge>RESEARCH PROTOTYPE</Badge>
+          </div>
+        )}
         {researchError && <p role="alert">{researchError}</p>}
-        {state.researchMode === 'BUILTIN' && (
+        {state.researchMode === 'BUILTIN' && location.pathname !== '/methodology' && (
           <div className="notice">
             RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently audited.
           </div>
         )}
-        {['/dashboard', '/methodology', '/data-center'].includes(location.pathname) && (
-          <EvidenceCoverage />
-        )}
+        {['/dashboard', '/data-center'].includes(location.pathname) && <EvidenceCoverage />}
         {['/data-center', '/data-quality', '/provenance'].includes(location.pathname) && (
           <SourceLedger />
         )}
@@ -2429,8 +2431,9 @@ function App() {
           </span>
           <span>
             <span className="dot" style={{ background: error ? '#bd665e' : '#188b78' }} />{' '}
-            {error ? 'Application error' : data ? 'Application ready' : 'Loading application'}{' '}
-            <span className="footer-divider">·</span> Local research prototype
+            {error ? 'Application error' : data ? 'Application functioning' : 'Loading application'}{' '}
+            <span className="footer-divider">·</span> Research prototype · Not operationally
+            validated
           </span>
         </footer>
       </main>
