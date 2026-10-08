@@ -2089,3 +2089,138 @@ pre {
   font-size: 11px;
   color: #526775;
 }
+
+/* Mobile workspace: preserve content while keeping navigation and touch controls usable. */
+.navigation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  border: 0;
+  background: #10273588;
+}
+.navigation-close {
+  align-self: flex-end;
+  margin: 8px 12px 0;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+@media (max-width: 850px) {
+  .sidebar.mobile-open {
+    z-index: 1501;
+    width: min(320px, calc(100vw - 32px));
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .sidebar.mobile-open nav {
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .sidebar.mobile-open .brand {
+    padding-top: 12px;
+  }
+  .sidebar.mobile-open nav > a,
+  .sidebar.mobile-open .sidebar-bottom > a {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .main {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+  }
+  .mobile-nav {
+    min-height: calc(72px + env(safe-area-inset-bottom));
+    padding: 6px max(4px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+      max(4px, env(safe-area-inset-left));
+    height: auto;
+  }
+  .mobile-nav > a,
+  .mobile-nav > button {
+    flex: 1;
+    min-height: 54px;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .topbar .icon-btn,
+  .topbar .search-trigger,
+  .topbar .notification {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .breadcrumb {
+    min-width: 0;
+    flex: 1;
+  }
+  .breadcrumb strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-actions {
+    flex-shrink: 0;
+    gap: 4px;
+  }
+  .ux-context select,
+  .ux-context-footer button,
+  .filters select,
+  .filters button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .ux-notifications {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 600px) {
+  .topbar {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+  .breadcrumb {
+    gap: 4px;
+  }
+  .breadcrumb > svg {
+    display: none;
+  }
+  .breadcrumb strong {
+    font-size: 11px;
+  }
+  .page-heading {
+    flex-wrap: wrap;
+  }
+  .heading-actions {
+    padding-top: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .heading-actions > .button {
+    font-size: 12px;
+    min-height: 44px;
+  }
+  .filters label {
+    min-width: 0;
+    font-size: 11px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .filters label > select {
+    max-width: 100%;
+  }
+  .panel-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+@media print {
+  .navigation-backdrop,
+  .navigation-close {
+    display: none !important;
+  }
+}

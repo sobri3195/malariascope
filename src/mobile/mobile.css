@@ -546,3 +546,66 @@ body:has(.mobile-app) {
   color: var(--teal);
   font-weight: 700;
 }
+
+/* Flexible header and sheets also accommodate small phones and landscape. */
+.m-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.m-header > div:first-child {
+  min-width: 0;
+}
+.m-header > div:first-child > a {
+  font-size: clamp(1rem, 4.6vw, 1.3rem);
+  letter-spacing: 0;
+  gap: 6px;
+}
+.m-header > button {
+  align-self: start;
+}
+.m-connectivity {
+  flex-wrap: wrap;
+}
+.m-sheet {
+  overscroll-behavior: contain;
+  scroll-padding-block: 76px 20px;
+}
+.m-sheet > header {
+  position: sticky;
+  top: -20px;
+  background: white;
+  z-index: 2;
+  padding: 10px 0;
+}
+.m-sheet > header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.m-sheet > header button {
+  flex-shrink: 0;
+}
+.m-bottom a {
+  min-width: 0;
+}
+@media (max-width: 359px) {
+  .m-map-filters,
+  .m-indicators {
+    grid-template-columns: 1fr;
+  }
+  .m-header {
+    padding-inline: max(12px, env(safe-area-inset-left));
+    gap: 6px;
+  }
+  .m-header > button {
+    padding-inline: 8px;
+    font-size: 0.85rem;
+  }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .m-sheet {
+    max-height: calc(100dvh - 12px);
+  }
+  .mobile-app .map-canvas,
+  .mobile-app .leaflet-container {
+    min-height: 240px;
+  }
+}
