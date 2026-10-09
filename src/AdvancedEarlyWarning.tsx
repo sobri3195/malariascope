@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from './store';
 import {
@@ -101,6 +101,7 @@ function RuleCard({ rule }: { rule: Rule }) {
   const [draft, setDraft] = useState(rule),
     [error, setError] = useState('');
   const edit = (patch: Partial<Rule>) => setDraft((prev) => ({ ...prev, ...patch }));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(rule);
   const matches = signals.filter((a) => a.rule === rule.id);
   const historical = (state.alertLog || []).filter(
     (a) => a.rule === rule.id && a.sourceDataset.id === state.active,
@@ -126,7 +127,11 @@ function RuleCard({ rule }: { rule: Rule }) {
     setError('');
   }
   return (
-    <article className="warning-rule" aria-label={`Rule ${rule.name || rule.id}`}>
+    <article
+      id={`rule-${rule.id}`}
+      className="warning-rule"
+      aria-label={`Rule ${rule.name || rule.id}`}
+    >
       <div className="warning-rule-head">
         <h2>{rule.name || rule.id}</h2>
         <span className={`badge ${rule.enabled ? 'teal' : 'neutral'}`}>
@@ -264,14 +269,20 @@ function RuleCard({ rule }: { rule: Rule }) {
           </label>
         </div>
         <p className="warning-preview">{ruleText(draft)}</p>
+        {dirty && (
+          <p className="warning-draft" role="status">
+            Unsaved edits — alerts continue to use the saved rule until you save.
+          </p>
+        )}
         {error && <p role="alert">{error}</p>}
         <div className="warning-actions">
-          <button className="button primary" type="submit">
+          <button className="button primary" type="submit" disabled={!dirty}>
             Save rule
           </button>
           <button
             className="button"
             type="button"
+            disabled={!dirty}
             onClick={() => {
               setDraft(rule);
               setError('');
@@ -322,8 +333,42 @@ function RuleCard({ rule }: { rule: Rule }) {
 export default function AdvancedEarlyWarning() {
   const { state, update, rows, signals, model } = useStore();
   const [template, setTemplate] = useState('High Burden');
+  const [query, setQuery] = useState(''),
+    [status, setStatus] = useState('ALL'),
+    [priority, setPriority] = useState('ALL');
+  const newRule = useRef<string | null>(null);
+  useEffect(() => {
+    if (!newRule.current) return;
+    const target = document.getElementById(`rule-${newRule.current}`);
+    if (!target) return;
+    target.scrollIntoView({ block: 'start' });
+    target.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+    newRule.current = null;
+  }, [state.rules]);
+  const visible = new Set(
+    state.rules
+      .filter((rule) => {
+        const text = [rule.name, rule.id, rule.category, rule.description, ruleText(rule)]
+          .join(' ')
+          .toLowerCase();
+        return (
+          text.includes(query.trim().toLowerCase()) &&
+          (status === 'ALL' || (status === 'ACTIVE' ? rule.enabled : !rule.enabled)) &&
+          (priority === 'ALL' || (rule.priority || 'NORMAL') === priority)
+        );
+      })
+      .map((rule) => rule.id),
+  );
+  function clearFilters() {
+    setQuery('');
+    setStatus('ALL');
+    setPriority('ALL');
+  }
   const activeDataset = state.datasets.find((d) => d.id === state.active);
   function add(templateName?: string) {
+    const id = crypto.randomUUID();
+    newRule.current = id;
+    clearFilters();
     const chosen = ruleTemplates.find((t) => t.name === templateName);
     update(
       {
@@ -341,7 +386,7 @@ export default function AdvancedEarlyWarning() {
               suppress: true,
             }),
             name: chosen?.name || 'Custom rule',
-            id: crypto.randomUUID(),
+            id,
           },
         ],
       },
@@ -411,8 +456,70 @@ export default function AdvancedEarlyWarning() {
         original rule and evidence.
       </p>
       {!state.rules.length && <p>No rules configured. Add a rule or template to begin.</p>}
+      {!!state.rules.length && (
+        <section className="warning-browser" aria-label="Rule library filters">
+          <div className="warning-browser-controls">
+            <label>
+              Search saved rules
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Name, description or rule expression"
+              />
+            </label>
+            <label>
+              Rule status
+              <select
+                aria-label="Rule status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="ALL">All statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <label>
+              Rule priority filter
+              <select
+                aria-label="Rule priority filter"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+              >
+                <option value="ALL">All priorities</option>
+                {['LOW', 'NORMAL', 'HIGH', 'URGENT'].map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="button"
+              onClick={clearFilters}
+              disabled={!query && status === 'ALL' && priority === 'ALL'}
+            >
+              Clear rule filters
+            </button>
+          </div>
+          <p role="status">
+            Showing {visible.size} of {state.rules.length} saved rules. All active saved rules
+            remain evaluated.
+          </p>
+          {!visible.size && (
+            <div className="warning-no-results">
+              <strong>No matching rules</strong>
+              <p>Change the search or clear filters to return to your rule library.</p>
+              <button className="button" onClick={clearFilters}>
+                Show all rules
+              </button>
+            </div>
+          )}
+        </section>
+      )}
       {state.rules.map((rule) => (
-        <RuleCard key={`${rule.id}:${rule.revision || 0}`} rule={rule} />
+        <div key={`${rule.id}:${rule.revision || 0}`} hidden={!visible.has(rule.id)}>
+          <RuleCard rule={rule} />
+        </div>
       ))}
       <details className="warning-rule">
         <summary>Metric definitions and evaluation policy</summary>
