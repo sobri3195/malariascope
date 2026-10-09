@@ -1839,8 +1839,14 @@ function SettingsPage() {
                 'Clear all local datasets, checklist entries, alerts, snapshots, and settings?',
               )
             ) {
-              localStorage.removeItem('malariascope-v1');
-              location.reload();
+              try {
+                localStorage.removeItem('malariascope-v1');
+                location.replace(location.pathname);
+              } catch {
+                setError(
+                  'Browser storage could not be cleared. Export a workspace backup and review browser storage permissions.',
+                );
+              }
             }
           }}
         >

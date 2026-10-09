@@ -15,7 +15,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - name: GIS, research, desktop and IoT acceptance
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Complete workspace browser acceptance
         shell: bash
         run: |
           set -euo pipefail
@@ -29,10 +30,4 @@ jobs:
           curl --fail --silent http://127.0.0.1:4173/risk-map > /dev/null
           export APP_URL=http://127.0.0.1:4173
           export CHROMIUM_PATH="$(node --input-type=module -e 'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())')"
-          node tests/gis-reliability.mjs
-          node tests/research-desktop-iot.mjs
-          node tests/methodology-evidence.mjs
-          node tests/coverage-summary.mjs
-          node tests/connected-analytical-demo.mjs
-          node tests/mobile-responsive.mjs
-          node tests/mobile.mjs
+          npm run test:browser

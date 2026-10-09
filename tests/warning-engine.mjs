@@ -11,11 +11,10 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 try {
-  await page.goto(base + '/dashboard');
-  await page.locator('h1').waitFor();
-  // Isolated fixtures, not production surveillance evidence.
-  await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('malariascope-v1'));
+  // Install isolated evidence before the Provider mounts: async research hydration must not race fixture writes.
+  await page.addInitScript(() => {
+    if (localStorage.getItem('malariascope-v1')) return;
+    const state = { researchMode: 'USER IMPORT' };
     state.datasets = [
       {
         id: 'warning-fixture',

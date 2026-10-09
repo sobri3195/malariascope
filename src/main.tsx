@@ -1,3 +1,4 @@
+import WorkspaceStorageStatus from './WorkspaceStorageStatus';
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useLocation } from 'react-router-dom';
@@ -62,6 +63,7 @@ createRoot(document.getElementById('root')!).render(
     <ApplicationBoundary>
       <BrowserRouter>
         <Provider>
+          <WorkspaceStorageStatus />
           <ApplicationRouter />
         </Provider>
       </BrowserRouter>

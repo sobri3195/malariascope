@@ -1,3 +1,4 @@
+import { readWorkspace, saveWorkspace, type StorageIssue } from './workspace-storage';
 import { isAnalyticalDemo, loadAnalyticalDemo, analyticalDemoId } from './analytical-demo';
 import {
   loadResearchPackage,
@@ -108,15 +109,13 @@ const initial: State = {
   layer: 'boundaries',
   reduced: false,
 };
-function load(): State {
-  try {
-    const x = JSON.parse(localStorage.getItem('malariascope-v1') || 'null');
-    return x ? { ...initial, ...x } : initial;
-  } catch {
-    return initial;
-  }
-}
 const Context = createContext<{
+  storageIssue: StorageIssue;
+  storedBackup: string | null;
+  storageRecoveryRequired: boolean;
+  backupWorkspace: () => State;
+  retryResearch: () => void;
+  retryStorage: () => void;
   research: ResearchPackage | null;
   researchError: string;
   activateDemo: () => Promise<void>;
@@ -137,10 +136,20 @@ const EMPTY_ROWS: Row[] = [];
 export function Provider({ children }: { children: ReactNode }) {
   const [research, setResearch] = useState<ResearchPackage | null>(null);
   const [researchError, setResearchError] = useState('');
+  const [researchRevision, setResearchRevision] = useState(0);
+  const [loaded] = useState(() => {
+    try {
+      return readWorkspace(initial, window.localStorage);
+    } catch {
+      return { state: { ...initial }, issue: 'unavailable' as StorageIssue, raw: null };
+    }
+  });
+  const [storageIssue, setStorageIssue] = useState<StorageIssue>(loaded.issue);
+  const persistenceBlocked = useRef(loaded.issue !== null);
   const route = useLocation();
   const navigationType = useNavigationType();
   const [state, setState] = useState(() => {
-    const initialState = load(),
+    const initialState = { ...loaded.state },
       query = new URLSearchParams(route.search),
       dataset = query.get('dataset'),
       mode = query.get('riskMode');
@@ -157,6 +166,26 @@ export function Provider({ children }: { children: ReactNode }) {
     if (mode && riskModes.includes(mode as RiskMode)) initialState.riskMode = mode as RiskMode;
     return initialState;
   });
+  useEffect(() => {
+    if (persistenceBlocked.current) return;
+    try {
+      setStorageIssue(saveWorkspace(state, window.localStorage) ? null : 'write-failed');
+    } catch {
+      setStorageIssue('write-failed');
+    }
+  }, [state]);
+  function retryStorage() {
+    try {
+      if (!saveWorkspace(state, window.localStorage)) {
+        setStorageIssue('write-failed');
+        return;
+      }
+      persistenceBlocked.current = false;
+      setStorageIssue(null);
+    } catch {
+      setStorageIssue('write-failed');
+    }
+  }
   const navigate = useNavigate();
   const navRef = useRef(navigate);
   navRef.current = navigate;
@@ -220,7 +249,11 @@ export function Provider({ children }: { children: ReactNode }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [researchRevision]);
+  function retryResearch() {
+    setResearchError('');
+    setResearchRevision((n) => n + 1);
+  }
   async function activateDemo() {
     if (!research) throw Error('Research geographic context is not loaded yet.');
     const demo = await loadAnalyticalDemo();
@@ -239,15 +272,6 @@ export function Provider({ children }: { children: ReactNode }) {
           ...prev.audit,
         ].slice(0, 500),
       };
-      try {
-        localStorage.setItem('malariascope-v1', JSON.stringify(next));
-      } catch {
-        window.dispatchEvent(
-          new CustomEvent('malariascope-notice', {
-            detail: 'Synthetic demo is available in this session; browser storage is full.',
-          }),
-        );
-      }
       return next;
     });
   }
@@ -358,11 +382,6 @@ export function Provider({ children }: { children: ReactNode }) {
     );
     setState((prev) => {
       const next = { ...prev, selection: { year, district, model } };
-      try {
-        localStorage.setItem('malariascope-v1', JSON.stringify(next));
-      } catch {
-        /* In-memory state stays usable when storage is full. */
-      }
       return next;
     });
   }, [year, district, model, riskMode, state.active]);
@@ -402,16 +421,6 @@ export function Provider({ children }: { children: ReactNode }) {
           ? [{ time: new Date().toISOString(), event, details }, ...prev.audit].slice(0, 500)
           : prev.audit,
       };
-      try {
-        localStorage.setItem('malariascope-v1', JSON.stringify(next));
-      } catch {
-        window.dispatchEvent(
-          new CustomEvent('malariascope-notice', {
-            detail:
-              'Browser storage is full. Changes remain in this session. Export a copy before reloading.',
-          }),
-        );
-      }
       return next;
     });
   }
@@ -455,17 +464,18 @@ export function Provider({ children }: { children: ReactNode }) {
           ...additions.map((a) => ({ ...a, timestamp: prev.alertCreated?.[a.id] || now })),
         ],
       };
-      try {
-        localStorage.setItem('malariascope-v1', JSON.stringify(next));
-      } catch {
-        /* Local memory remains usable. */
-      }
       return next;
     });
   }, [signals, state.active]);
   return (
     <Context.Provider
       value={{
+        storageIssue,
+        storedBackup: loaded.raw,
+        storageRecoveryRequired: loaded.issue !== null && storageIssue !== null,
+        backupWorkspace: () => structuredClone(state),
+        retryResearch,
+        retryStorage,
         state: effectiveState,
         research,
         researchError,

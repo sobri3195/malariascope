@@ -24,7 +24,7 @@ Development binds to all interfaces on port 5173; preview defaults to 4173. If t
 
 ## Architecture
 
-`src/main.tsx` contains the application shell and routed analytical modules. `src/analytics.ts` provides pure validation, identity normalization, incidence, percentage change, correlation, model metrics, risk classification, alert evaluation, and export functions. `src/store.tsx` manages versioned localStorage state. `src/Map.tsx` is a lazy-loaded Leaflet GIS workspace. `src/geometry.ts` validates closed polygon rings and resolves district codes/names. `src/SpatialLab.tsx`, `src/spatial.ts`, `src/moran.ts`, and `src/spatial.worker.ts` provide queen-contiguity neighborhoods and reproducible permutation analysis in a worker. Heavy GIS code is loaded on demand. Recharts renders interactive charts. Application activity and local notes never leave the browser.
+`src/main.tsx` mounts the shared provider and lazy interface shells; `src/DesktopApp.tsx` contains the main workspace routes. `src/analytics.ts` provides pure validation, identity normalization, incidence, percentage change, correlation, model metrics, risk classification, alert evaluation, and export functions. `src/store.tsx` manages versioned localStorage state. `src/Map.tsx` is a lazy-loaded Leaflet GIS workspace. `src/geometry.ts` validates closed polygon rings and resolves district codes/names. `src/SpatialLab.tsx`, `src/spatial.ts`, `src/moran.ts`, and `src/spatial.worker.ts` provide queen-contiguity neighborhoods and reproducible permutation analysis in a worker. Heavy GIS code is loaded on demand. Recharts renders interactive charts. Application activity and local notes never leave the browser.
 
 Primary routes: dashboard, risk-map, surveillance, district-intelligence, climate, forecasting, model-benchmarking, spatial-analysis, early-warning, risk-intelligence, force-health, scenario, data-center, data-quality, reports, alerts, audit, settings. Secondary routes: methodology, provenance, about, presentation. The app opens at `/dashboard`; Vercel rewrites support direct links.
 
@@ -381,3 +381,7 @@ These documents describe contributor roles and project practices; they do not ad
 - [18-testing-standard](18-testing-standard.md)
 - [19-deployment](19-deployment.md)
 - [20-roadmap](20-roadmap.md)
+
+## Workspace reliability and feature audit
+
+Saved workspace structure is checked before use. If local state cannot be read safely, the original is preserved until explicitly replaced; a cross-interface recovery panel offers original/session backups. Storage-full or blocked-write failures remain visible, with retry and complete session export. Shared study-source controls also offer integrity-preserving retries after connection failures. Resetting application data clears only this application's state and stale context query parameters. See [Workspace feature audit](docs/WORKSPACE-FEATURE-AUDIT.md) for all module suites and remaining evidence limitations.

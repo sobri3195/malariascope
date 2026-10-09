@@ -1,3 +1,5 @@
+> Historical audit: the findings below describe an earlier, pre-completion baseline. Current source availability and cross-module checks are documented in [Workspace feature audit](WORKSPACE-FEATURE-AUDIT.md) and [Research evidence](RESEARCH-DESKTOP-IOT.md).
+
 # Production audit — vector GIS and data reliability
 
 Audit baseline: main at 8986bc4. Existing analytical engines, routes, source classifications,
