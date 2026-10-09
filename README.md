@@ -385,3 +385,7 @@ These documents describe contributor roles and project practices; they do not ad
 ## Workspace reliability and feature audit
 
 Saved workspace structure is checked before use. If local state cannot be read safely, the original is preserved until explicitly replaced; a cross-interface recovery panel offers original/session backups. Storage-full or blocked-write failures remain visible, with retry and complete session export. Shared study-source controls also offer integrity-preserving retries after connection failures. Resetting application data clears only this application's state and stale context query parameters. See [Workspace feature audit](docs/WORKSPACE-FEATURE-AUDIT.md) for all module suites and remaining evidence limitations.
+
+## Workspace interaction improvements
+
+Early Warning Center supports saved-rule search, status/priority filters, explicit unsaved-edit notices and draft preservation while filtering. Shared navigation waits for lazy-loaded headings and announces page changes across interface shells without disturbing query-only context updates. See [Workspace UX polish](docs/WORKSPACE-UX-POLISH.md) for behavior, limits and browser coverage.

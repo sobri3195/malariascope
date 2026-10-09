@@ -24,7 +24,7 @@ This audit reviews the existing research application across its analytical modul
 | Watch companion demonstration                                             | `watch.mjs`                                        |
 | Cross-shell storage recovery, quota handling and study-source retry       | `workspace-recovery.mjs`                           |
 
-These are the 20 current browser scripts. The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
+These are the 21 current browser scripts. The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
 
 ## Reliability improvements
 

@@ -17,10 +17,9 @@ const open = async () => {
 const closeInspector = async () =>
   page.getByRole('button', { name: 'Close inspector', exact: true }).click();
 try {
-  await page.goto(base + '/dashboard');
-  await label('Context year').waitFor();
-  await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('malariascope-v1'));
+  await page.addInitScript(() => {
+    if (localStorage.getItem('malariascope-v1')) return;
+    const s = { researchMode: 'USER IMPORT' };
     s.datasets = [
       {
         id: 'ux',

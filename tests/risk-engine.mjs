@@ -26,7 +26,10 @@ const state = async () => page.evaluate(() => JSON.parse(localStorage.getItem('m
 // Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
 await page.addInitScript(() => {
   if (!localStorage.getItem('malariascope-v1'))
-    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+    localStorage.setItem(
+      'malariascope-v1',
+      JSON.stringify({ researchMode: 'USER IMPORT', datasets: [], active: '', geometry: null }),
+    );
 });
 try {
   await page.goto(base + '/risk-intelligence');
@@ -206,7 +209,7 @@ try {
   assert.equal(report.calculations[0].components[1].contribution, 112.5);
   await page.getByRole('button', { name: 'Reset to research defaults', exact: true }).click();
   assert.equal(await score('A'), '100');
-  assert.equal(await page.getByRole('status').count(), 0);
+  assert.equal(await page.locator('main').getByRole('status').count(), 0);
   assert.deepEqual((await state()).thresholds, [20, 30, 40]);
   // Local profiles are an interface gate, never a claim of authenticated authorization.
   await page.evaluate(() => {

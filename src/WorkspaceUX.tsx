@@ -372,14 +372,6 @@ export default function WorkspaceUX({
     window.addEventListener('malariascope-notice', listener);
     return () => window.removeEventListener('malariascope-notice', listener);
   }, []);
-  useEffect(() => {
-    const heading = document.querySelector<HTMLElement>('main h1');
-    if (heading) {
-      heading.tabIndex = -1;
-      heading.focus({ preventScroll: true });
-    }
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [route.pathname]);
   const actions = [
     ...routeCommands.map(([label, path]) => ({
       id: path,

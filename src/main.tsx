@@ -1,3 +1,4 @@
+import WorkspaceNavigation from './WorkspaceNavigation';
 import WorkspaceStorageStatus from './WorkspaceStorageStatus';
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -63,6 +64,7 @@ createRoot(document.getElementById('root')!).render(
     <ApplicationBoundary>
       <BrowserRouter>
         <Provider>
+          <WorkspaceNavigation />
           <WorkspaceStorageStatus />
           <ApplicationRouter />
         </Provider>
