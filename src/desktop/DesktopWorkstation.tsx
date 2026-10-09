@@ -62,10 +62,15 @@ export default function DesktopWorkstation() {
     [other, setOther] = useState(''),
     [yearB, setYearB] = useState(2024),
     [modelB, setModelB] = useState('Persistence');
-  const view =
-    new URLSearchParams(location.search).get('view') ||
-    localStorage.getItem('malariascope-desktop-view') ||
-    'Dashboard';
+  const view = (() => {
+    const requested = new URLSearchParams(location.search).get('view');
+    if (requested) return requested;
+    try {
+      return localStorage.getItem('malariascope-desktop-view') || 'Dashboard';
+    } catch {
+      return 'Dashboard';
+    }
+  })();
   const go = (name: string) => {
     const q = new URLSearchParams(location.search);
     q.set('view', name);

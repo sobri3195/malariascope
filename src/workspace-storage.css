@@ -1,0 +1,62 @@
+.workspace-storage-status {
+  box-sizing: border-box;
+  padding: 16px;
+  border: 2px solid #ba872b;
+  background: #fff9eb;
+  color: #493616;
+  font:
+    14px/1.6 system-ui,
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.workspace-storage-status p {
+  margin: 8px 0;
+}
+.workspace-storage-status > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workspace-storage-status button {
+  font: inherit;
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid #ba872b;
+  border-radius: 6px;
+  background: white;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.workspace-storage-status button:focus-visible {
+  outline: 3px solid #087e83;
+  outline-offset: 2px;
+}
+@media print {
+  .workspace-storage-status button {
+    display: none;
+  }
+}
+
+.workspace-storage-main {
+  margin-left: 245px;
+}
+@media (min-width: 1550px) {
+  .workspace-storage-main {
+    margin-left: 265px;
+  }
+}
+@media (max-width: 1150px) {
+  .workspace-storage-main {
+    margin-left: 217px;
+  }
+}
+@media (max-width: 850px) {
+  .workspace-storage-main {
+    margin-left: 0;
+  }
+}
+@media print {
+  .workspace-storage-main {
+    margin-left: 0;
+  }
+}

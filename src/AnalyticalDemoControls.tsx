@@ -3,7 +3,16 @@ import { useStore } from './store';
 import { isAnalyticalDemo } from './analytical-demo';
 import './analytical-demo.css';
 export default function AnalyticalDemoControls() {
-  const { state, research, activateDemo, update, setYear, setDistrict } = useStore();
+  const {
+    state,
+    research,
+    researchError,
+    retryResearch,
+    activateDemo,
+    update,
+    setYear,
+    setDistrict,
+  } = useStore();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const demo = isAnalyticalDemo(state.active);
@@ -62,6 +71,20 @@ export default function AnalyticalDemoControls() {
           without entering the historical research alert log.
         </p>
       </details>
+      {!research && !researchError && <p role="status">Connecting supplied research data…</p>}
+      {researchError && (
+        <div role="alert">
+          <p>
+            Supplied research package could not be connected. Source integrity checks remain
+            enabled.
+          </p>
+          <details>
+            <summary>Source loading details</summary>
+            <p>{researchError}</p>
+          </details>
+          <button onClick={retryResearch}>Retry supplied research data</button>
+        </div>
+      )}
       {error && <p role="alert">{error}</p>}
       {busy && <p role="status">Checking synthetic dataset integrity…</p>}
     </section>
