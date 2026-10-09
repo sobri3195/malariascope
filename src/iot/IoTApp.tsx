@@ -50,10 +50,56 @@ const empty: LocalData = {
   source: 'Local public data files — no sensors supplied',
   version: 'iot-empty-v1',
 };
-function restore<T>(key: string, fallback: T): T {
+const recovery = new Map<string, string>();
+function validStoredIoT(key: string, value: any): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (key.endsWith('-settings'))
+    return (
+      Object.keys(defaultIoTSettings).every((k) => Number.isFinite(value[k]) && value[k] >= 0) &&
+      value.refreshSeconds > 0
+    );
+  if (key.endsWith('-alerts')) return Object.values(value).every((v) => typeof v === 'string');
   try {
-    return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback;
+    validateSensors(value.sensors);
   } catch {
+    return false;
+  }
+  return (
+    Array.isArray(value.readings) &&
+    value.readings.every(
+      (r: any) =>
+        r &&
+        typeof r.sensor_id === 'string' &&
+        typeof r.timestamp === 'string' &&
+        typeof r.measurement_timestamp === 'string' &&
+        typeof r.received_timestamp === 'string' &&
+        r.variable in units &&
+        (r.value === null || Number.isFinite(r.value)) &&
+        typeof r.unit === 'string' &&
+        typeof r.source === 'string' &&
+        ['VALID', 'WARNING', 'INVALID', 'MISSING'].includes(r.quality_flag),
+    ) &&
+    Array.isArray(value.issues) &&
+    value.issues.every(
+      (r: any) => r && typeof r.field === 'string' && typeof r.reason === 'string',
+    ) &&
+    ['source', 'version', 'imported'].every((k) => typeof value[k] === 'string')
+  );
+}
+function restore<T>(key: string, fallback: T): T {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    return fallback;
+  }
+  if (raw === null) return fallback;
+  try {
+    const value = JSON.parse(raw);
+    if (!validStoredIoT(key, value)) throw Error('Invalid saved data');
+    return value;
+  } catch {
+    recovery.set(key, raw);
     return fallback;
   }
 }
@@ -155,6 +201,7 @@ export default function IoTApp() {
     };
   }, []);
   useEffect(() => {
+    if (recovery.size) return;
     try {
       localStorage.setItem('malariascope-iot-data', JSON.stringify(data));
       localStorage.setItem('malariascope-iot-settings', JSON.stringify(settings));
@@ -365,6 +412,32 @@ export default function IoTApp() {
         )}
       </div>
       <p role="status">{notice}</p>
+      {recovery.size > 0 && (
+        <section role="alert" className="notice">
+          <p>
+            Saved IoT data could not be read safely. Original values are preserved and automatic
+            saving is paused.
+          </p>
+          <button onClick={() => download('iot-storage-recovery', Object.fromEntries(recovery))}>
+            Export original saved values
+          </button>
+          <button
+            onClick={() => {
+              if (
+                confirm(
+                  'Replace unreadable IoT storage with the current session? Export original values first.',
+                )
+              ) {
+                recovery.clear();
+                setSettings((s) => ({ ...s }));
+                setNotice('IoT storage saving resumed after explicit replacement.');
+              }
+            }}
+          >
+            Replace unreadable IoT storage
+          </button>
+        </section>
+      )}
       {!simulation && !sensors.length && (
         <section className="panel">
           <h2>No IoT sensor dataset connected.</h2>

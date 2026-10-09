@@ -1,9 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigationType } from 'react-router-dom';
 import './workspace-navigation.css';
 /** Query-only context updates preserve focus and scroll; lazy route changes wait for actual content. */
 export default function WorkspaceNavigation() {
-  const { pathname } = useLocation();
+  const { pathname, key } = useLocation();
+  const navigation = useNavigationType();
+  const positions = useRef(new Map<string, number>());
+  const current = useRef(key);
+  useEffect(() => {
+    const save = () => positions.current.set(current.current, window.scrollY);
+    window.addEventListener('scroll', save, { passive: true });
+    return () => window.removeEventListener('scroll', save);
+  }, []);
+  useEffect(() => {
+    current.current = key;
+  }, [key]);
   const [announcement, setAnnouncement] = useState('');
   useEffect(() => {
     let frame = 0;
@@ -21,7 +32,10 @@ export default function WorkspaceNavigation() {
         if (!editing) {
           heading.tabIndex = -1;
           heading.focus({ preventScroll: true });
-          window.scrollTo({ top: 0, behavior: 'instant' });
+          window.scrollTo({
+            top: navigation === 'POP' ? positions.current.get(key) || 0 : 0,
+            behavior: 'instant',
+          });
         }
         setAnnouncement(`${heading.textContent?.trim() || 'Workspace'} page opened`);
         observer.disconnect();

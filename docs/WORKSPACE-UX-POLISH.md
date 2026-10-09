@@ -6,7 +6,7 @@ Early Warning Center now has search across saved names, descriptions, categories
 
 Rule cards remain mounted while hidden by view filters so unfinished edits survive searching and filtering. A visible unsaved-edit notice explains that generated signals still use the saved revision. Save and Discard are disabled when there are no changes. Adding a rule clears view filters and focuses its name field. The new controls and editor fields use touch-sized inputs on mobile.
 
-Draft preservation covers filtering within the current page; leaving or reloading the page still discards unsaved edits. Existing save validation, persistence, suppression and immutable alert provenance remain unchanged.
+Draft preservation originally covered filtering within the current page. The later [research completion](RESEARCH-COMPLETION.md) update adds revision-aware local draft recovery across navigation/reload and paginates editors. Existing save validation, persistence, suppression and immutable alert provenance remain unchanged.
 
 ## Shared navigation accessibility
 

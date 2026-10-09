@@ -1,3 +1,4 @@
+import ModelArtifactPanel from './ModelArtifactPanel';
 import { useMemo, useState } from 'react';
 import { useStore } from './store';
 import { aggregateEvidence } from './district-intelligence';
@@ -9,6 +10,7 @@ import {
   category,
   simulate,
   sensitivity,
+  sensitivityGrid,
   scenarioExport,
   validSavedScenario,
   type Baseline,
@@ -75,6 +77,7 @@ export default function AnalyticalScenarioSimulator() {
         </select>
       </label>
       <Workspace key={contextKey} baseline={baseline} />
+      <ModelArtifactPanel />
     </div>
   );
 }
@@ -276,6 +279,37 @@ function Workspace({ baseline }: { baseline: Baseline }) {
       </section>
       <section className="panel exploratory-panel">
         <h2>Sensitivity and contributing factors</h2>
+        <details>
+          <summary>Joint burden/population sensitivity grid</summary>
+          <p>
+            {SCENARIO_LABEL}. Fixed deterministic ±20% input ranges, not probability intervals.
+            Climate effects remain unsupported in the arithmetic risk formula.
+          </p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Burden multiplier</th>
+                  <th>Population multiplier</th>
+                  <th>Score / 1,000</th>
+                  <th>Category</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sensitivityGrid(inputs).map((r) => (
+                  <tr key={r.burdenFactor + ':' + r.populationFactor}>
+                    <td>{r.burdenFactor}</td>
+                    <td>{r.populationFactor}</td>
+                    <td>{number(r.score)}</td>
+                    <td>
+                      {r.category} · {SCENARIO_LABEL}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
         <p className="scenario-label">{SCENARIO_LABEL}</p>
         <p>
           Largest supported adjusted-variable effect:{' '}

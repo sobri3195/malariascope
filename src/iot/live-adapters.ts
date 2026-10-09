@@ -46,7 +46,7 @@ export function mqttSubscribe(topic: string) {
     throw Error('Use a public environmental topic only.');
   return packet(0x82, [0, 1, ...encode(topic), 0]);
 }
-export function connectFeed(options: {
+function connectOnce(options: {
   adapter: Adapter;
   url: string;
   topic: string;
@@ -56,21 +56,32 @@ export function connectFeed(options: {
 }) {
   const url = validateFeedURL(options.url, options.adapter);
   if (options.adapter === 'HTTP polling') {
-    const controller = new AbortController();
+    let controller = new AbortController();
+    let stopped = false;
+    let loading = false;
     const load = async () => {
+      if (loading) return;
+      if (stopped) return;
+      loading = true;
+      controller = new AbortController();
+      const deadline = setTimeout(() => controller.abort(), 20000);
       try {
         const response = await fetch(url, { signal: controller.signal, credentials: 'omit' });
         if (!response.ok) throw Error('HTTP feed unavailable');
         options.onData(await response.json());
         options.onStatus('CONNECTED');
       } catch {
-        if (!controller.signal.aborted)
+        if (!stopped)
           options.onStatus('ERROR — optional live feed unavailable; local data remain usable.');
+      } finally {
+        clearTimeout(deadline);
+        loading = false;
       }
     };
     void load();
     const timer = setInterval(() => void load(), Math.max(5, options.seconds) * 1000);
     return () => {
+      stopped = true;
       controller.abort();
       clearInterval(timer);
     };
@@ -119,10 +130,13 @@ export function connectFeed(options: {
           if (body[1] !== 0) throw Error('Broker connection rejected');
           socket.send(mqttSubscribe(options.topic));
         } else if (header >> 4 === 3) {
-          if ((header & 6) !== 0)
-            throw Error('Only anonymous QoS 0 environmental messages supported');
+          const qos = (header & 6) >> 1;
+          if (qos > 1) throw Error('QoS 2 is not supported by this public environmental adapter');
           const topicLength = (body[0] << 8) | body[1];
-          options.onData(JSON.parse(new TextDecoder().decode(body.slice(topicLength + 2))));
+          const offset = topicLength + 2;
+          if (body.length < offset + (qos ? 2 : 0)) throw Error('Truncated MQTT payload');
+          options.onData(JSON.parse(new TextDecoder().decode(body.slice(offset + (qos ? 2 : 0)))));
+          if (qos === 1) socket.send(new Uint8Array([0x40, 2, body[offset], body[offset + 1]]));
           options.onStatus('CONNECTED');
         }
       }
@@ -140,5 +154,39 @@ export function connectFeed(options: {
   return () => {
     clearInterval(ping);
     socket.close();
+  };
+}
+
+export function connectFeed(options: Parameters<typeof connectOnce>[0]) {
+  if (options.adapter === 'HTTP polling') return connectOnce(options);
+  let stopped = false,
+    attempt = 0,
+    timer: ReturnType<typeof setTimeout> | undefined;
+  let disconnect: (() => void) | undefined;
+  const start = () => {
+    disconnect = connectOnce({
+      ...options,
+      onStatus: (status) => {
+        if (stopped) return;
+        options.onStatus(status);
+        if (status === 'CONNECTED') attempt = 0;
+        if (status === 'NOT CONNECTED' || status.startsWith('ERROR')) {
+          if (timer) return;
+          const delay = Math.min(60000, 1000 * 2 ** Math.min(attempt++, 6));
+          options.onStatus(`${status} · retry in ${delay / 1000}s`);
+          timer = setTimeout(() => {
+            timer = undefined;
+            disconnect?.();
+            if (!stopped) start();
+          }, delay);
+        }
+      },
+    });
+  };
+  start();
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    disconnect?.();
   };
 }

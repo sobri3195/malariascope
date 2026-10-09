@@ -1,3 +1,4 @@
+import { validExpression, type Expression } from './rule-expression';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from './store';
@@ -96,12 +97,103 @@ function ConditionEditor({
     </div>
   );
 }
+function ExpressionEditor({
+  value,
+  onChange,
+  depth = 0,
+}: {
+  value: Expression;
+  onChange: (e: Expression) => void;
+  depth?: number;
+}) {
+  if (!('children' in value))
+    return (
+      <div>
+        <ConditionEditor value={value} onChange={onChange} />
+        {depth < 4 && (
+          <button
+            type="button"
+            className="button"
+            onClick={() => onChange({ join: 'AND', children: [value] })}
+          >
+            Create condition group
+          </button>
+        )}
+      </div>
+    );
+  return (
+    <fieldset>
+      <legend>Condition group</legend>
+      <select
+        aria-label="Group join"
+        value={value.join}
+        onChange={(e) => onChange({ ...value, join: e.target.value as 'AND' | 'OR' })}
+      >
+        <option>AND</option>
+        <option>OR</option>
+      </select>
+      {value.children.map((c, i) => (
+        <div key={i}>
+          <ExpressionEditor
+            value={c}
+            depth={depth + 1}
+            onChange={(next) =>
+              onChange({ ...value, children: value.children.map((x, j) => (j === i ? next : x)) })
+            }
+          />
+          <button
+            type="button"
+            className="button"
+            disabled={value.children.length === 1}
+            onClick={() =>
+              onChange({ ...value, children: value.children.filter((_, j) => j !== i) })
+            }
+          >
+            Remove condition
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="button"
+        disabled={value.children.length >= 10}
+        onClick={() =>
+          onChange({
+            ...value,
+            children: [...value.children, { metric: 'cases', operator: '>', value: 20000 }],
+          })
+        }
+      >
+        Add condition
+      </button>
+    </fieldset>
+  );
+}
 function RuleCard({ rule }: { rule: Rule }) {
   const { state, update, signals } = useStore();
-  const [draft, setDraft] = useState(rule),
+  const draftKey = `malariascope-rule-draft:${rule.id}`;
+  const [draft, setDraft] = useState(() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(draftKey) || 'null');
+        return saved && saved.baseRevision === (rule.revision || 0) && saved.draft?.id === rule.id
+          ? (saved.draft as Rule)
+          : rule;
+      } catch {
+        return rule;
+      }
+    }),
     [error, setError] = useState('');
   const edit = (patch: Partial<Rule>) => setDraft((prev) => ({ ...prev, ...patch }));
   const dirty = JSON.stringify(draft) !== JSON.stringify(rule);
+  useEffect(() => {
+    try {
+      if (dirty)
+        localStorage.setItem(draftKey, JSON.stringify({ baseRevision: rule.revision || 0, draft }));
+      else localStorage.removeItem(draftKey);
+    } catch {
+      setError('Draft could not be saved locally. Save the rule before leaving.');
+    }
+  }, [draft, draftKey, dirty, rule.revision]);
   const matches = signals.filter((a) => a.rule === rule.id);
   const historical = (state.alertLog || []).filter(
     (a) => a.rule === rule.id && a.sourceDataset.id === state.active,
@@ -109,7 +201,11 @@ function RuleCard({ rule }: { rule: Rule }) {
   const districts = new Set([...matches, ...historical].map((a) => normalize(a.district))).size;
   const latest = [...historical].sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
   function save() {
-    if (!validCondition(draft) || (draft.secondary && !validCondition(draft.secondary))) {
+    if (
+      !validCondition(draft) ||
+      (draft.secondary && !validCondition(draft.secondary)) ||
+      (draft.expression && !validExpression(draft.expression))
+    ) {
       setError(
         'Enter finite thresholds; range upper bounds must be at least the lower bound. Percentage-change thresholds must be nonnegative.',
       );
@@ -124,6 +220,11 @@ function RuleCard({ rule }: { rule: Rule }) {
       'Analytical rule saved',
       rule.id,
     );
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      /* Storage warning is handled separately. */
+    }
     setError('');
   }
   return (
@@ -151,6 +252,43 @@ function RuleCard({ rule }: { rule: Rule }) {
           save();
         }}
       >
+        <details>
+          <summary>Advanced nested conditions</summary>
+          <p>
+            Nested groups support up to four levels and ten conditions per group. When enabled this
+            expression replaces the simple IF conditions below.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={!!draft.expression}
+              onChange={(e) =>
+                edit({
+                  expression: e.target.checked
+                    ? {
+                        join: 'AND',
+                        children: [
+                          {
+                            metric: draft.metric,
+                            operator: draft.operator,
+                            value: draft.value,
+                            upper: draft.upper,
+                          },
+                        ],
+                      }
+                    : undefined,
+                })
+              }
+            />
+            Use nested expression
+          </label>
+          {draft.expression && (
+            <ExpressionEditor
+              value={draft.expression}
+              onChange={(expression) => edit({ expression })}
+            />
+          )}
+        </details>
         <div className="warning-meta">
           <label>
             Rule name
@@ -336,15 +474,18 @@ export default function AdvancedEarlyWarning() {
   const [query, setQuery] = useState(''),
     [status, setStatus] = useState('ALL'),
     [priority, setPriority] = useState('ALL');
+  const [page, setPage] = useState(0);
   const newRule = useRef<string | null>(null);
   useEffect(() => {
     if (!newRule.current) return;
     const target = document.getElementById(`rule-${newRule.current}`);
     if (!target) return;
     target.scrollIntoView({ block: 'start' });
-    target.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+    target
+      .querySelector<HTMLInputElement>('input[aria-label="Rule name"]')
+      ?.focus({ preventScroll: true });
     newRule.current = null;
-  }, [state.rules]);
+  }, [state.rules, page]);
   const visible = new Set(
     state.rules
       .filter((rule) => {
@@ -359,7 +500,11 @@ export default function AdvancedEarlyWarning() {
       })
       .map((rule) => rule.id),
   );
+  const ids = [...visible];
+  const displayPage = Math.min(page, Math.max(0, Math.ceil(ids.length / 20) - 1));
+  const pageIds = new Set(ids.slice(displayPage * 20, displayPage * 20 + 20));
   function clearFilters() {
+    setPage(0);
     setQuery('');
     setStatus('ALL');
     setPriority('ALL');
@@ -369,6 +514,7 @@ export default function AdvancedEarlyWarning() {
     const id = crypto.randomUUID();
     newRule.current = id;
     clearFilters();
+    setPage(Math.floor(state.rules.length / 20));
     const chosen = ruleTemplates.find((t) => t.name === templateName);
     update(
       {
@@ -442,7 +588,23 @@ export default function AdvancedEarlyWarning() {
           </button>
           <button
             className="button"
-            onClick={() => update({ rules: defaults }, 'Default alert rules restored')}
+            onClick={() => {
+              for (const r of state.rules)
+                try {
+                  localStorage.removeItem(`malariascope-rule-draft:${r.id}`);
+                } catch {
+                  /* Existing persistence warning remains visible. */
+                }
+              update(
+                {
+                  rules: defaults.map((r) => ({
+                    ...r,
+                    revision: (state.rules.find((old) => old.id === r.id)?.revision || 0) + 1,
+                  })),
+                },
+                'Default alert rules restored',
+              );
+            }}
           >
             Reset defaults
           </button>
@@ -516,11 +678,33 @@ export default function AdvancedEarlyWarning() {
           )}
         </section>
       )}
-      {state.rules.map((rule) => (
-        <div key={`${rule.id}:${rule.revision || 0}`} hidden={!visible.has(rule.id)}>
-          <RuleCard rule={rule} />
-        </div>
-      ))}
+      <div className="toolbar">
+        <button
+          className="button"
+          disabled={displayPage === 0}
+          onClick={() => setPage(displayPage - 1)}
+        >
+          Previous rule page
+        </button>
+        <span>
+          Rule page {displayPage + 1} of {Math.max(1, Math.ceil(ids.length / 20))} · 20 editors per
+          page
+        </span>
+        <button
+          className="button"
+          disabled={(displayPage + 1) * 20 >= ids.length}
+          onClick={() => setPage(displayPage + 1)}
+        >
+          Next rule page
+        </button>
+      </div>
+      {state.rules
+        .filter((rule) => pageIds.has(rule.id))
+        .map((rule) => (
+          <div key={`${rule.id}:${rule.revision || 0}`} hidden={!visible.has(rule.id)}>
+            <RuleCard rule={rule} />
+          </div>
+        ))}
       <details className="warning-rule">
         <summary>Metric definitions and evaluation policy</summary>
         <p>

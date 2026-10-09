@@ -1,3 +1,10 @@
+import {
+  validExpression,
+  expressionLeaves,
+  expressionText,
+  matchExpression,
+  type Expression,
+} from './rule-expression.ts';
 export type Row = {
   district: string;
   year: number;
@@ -45,6 +52,7 @@ export type Rule = Condition & {
   severity: string;
   join?: 'AND' | 'OR';
   secondary?: Condition;
+  expression?: Expression;
   name?: string;
   description?: string;
   category?: string;
@@ -441,7 +449,7 @@ export function conditionText(c: Condition) {
   return `${metricLabels[c.metric]} ${c.operator} ${c.value}${['between', 'outside range'].includes(c.operator) ? ` to ${c.upper}` : ''}${['increased by', 'decreased by'].includes(c.operator) ? '% vs previous adjacent year' : ''}`;
 }
 export function ruleText(rule: Rule) {
-  return `IF ${conditionText(rule)}${rule.secondary ? ` ${rule.join || 'AND'} ${conditionText(rule.secondary)}` : ''} for ${rule.persistence || 1} consecutive period(s) THEN ${rule.severity} analytical alert${rule.suppress ? '; suppress repeats until condition clears' : ''}`;
+  return `IF ${rule.expression ? expressionText(rule.expression) : conditionText(rule)}${!rule.expression && rule.secondary ? ` ${rule.join || 'AND'} ${conditionText(rule.secondary)}` : ''} for ${rule.persistence || 1} consecutive period(s) THEN ${rule.severity} analytical alert${rule.suppress ? '; suppress repeats until condition clears' : ''}`;
 }
 export function evaluate(
   rows: Row[],
@@ -453,7 +461,11 @@ export function evaluate(
     (a, b) => a.year - b.year || normalize(a.district).localeCompare(normalize(b.district)),
   );
   const evaluatePeriod = (r: Row, rule: Rule) => {
-    const conditions = [rule, ...(rule.secondary ? [rule.secondary] : [])].map((c) => ({
+    const conditions = (
+      rule.expression
+        ? expressionLeaves(rule.expression)
+        : [rule, ...(rule.secondary ? [rule.secondary] : [])]
+    ).map((c) => ({
       condition: conditionText(c),
       metric: c.metric,
       operator: c.operator,
@@ -474,8 +486,11 @@ export function evaluate(
     return {
       year: r.year,
       conditions,
-      matched:
-        rule.secondary && rule.join === 'OR'
+      matched: rule.expression
+        ? matchExpression(rule.expression, (c) =>
+            compareValue(conditionValue(r, rows, c, context), c),
+          )
+        : rule.secondary && rule.join === 'OR'
           ? conditions.some((c) => c.matched)
           : conditions.every((c) => c.matched),
     };
@@ -485,10 +500,16 @@ export function evaluate(
       (rule) =>
         rule.enabled &&
         validCondition(rule) &&
+        (!rule.expression || validExpression(rule.expression)) &&
         (!rule.secondary || validCondition(rule.secondary)) &&
         (!rule.persistence || [1, 2, 3].includes(rule.persistence)),
     )
     .flatMap((rule) => {
+      const usedMetrics = (
+        rule.expression
+          ? expressionLeaves(rule.expression)
+          : [rule, ...(rule.secondary ? [rule.secondary] : [])]
+      ).map((c) => c.metric);
       const streaks = new Map<
         string,
         { year: number; periods: ReturnType<typeof evaluatePeriod>[] }
@@ -505,7 +526,7 @@ export function evaluate(
         if (periods.length < required || (rule.suppress && periods.length > required)) return [];
         return [
           {
-            id: `${dataset ? dataset + ':' : ''}${rule.id}:${districtKey}:${r.year}${rule.revision ? `:v${rule.revision}` : ''}${context.model && [rule.metric, rule.secondary?.metric].some((m) => ['predicted_cases', 'prediction_increase', 'model_residual', 'residual'].includes(m || '')) ? `:model=${context.model}` : ''}${context.thresholds && [rule.metric, rule.secondary?.metric].includes('risk_level') ? `:risk=${context.thresholds.join(',')}` : ''}`,
+            id: `${dataset ? dataset + ':' : ''}${rule.id}:${districtKey}:${r.year}${rule.revision ? `:v${rule.revision}` : ''}${context.model && usedMetrics.some((m) => ['predicted_cases', 'prediction_increase', 'model_residual', 'residual'].includes(m || '')) ? `:model=${context.model}` : ''}${context.thresholds && usedMetrics.includes('risk_level') ? `:risk=${context.thresholds.join(',')}` : ''}`,
             district: r.district,
             year: r.year,
             severity: rule.severity,
@@ -524,9 +545,10 @@ export function evaluate(
             exactRule: ruleText(rule),
             ruleSnapshot: {
               ...rule,
+              expression: rule.expression ? structuredClone(rule.expression) : undefined,
               secondary: rule.secondary ? { ...rule.secondary } : undefined,
             },
-            explanation: `The ${rule.join || 'AND'} expression matched for ${periods.length} adjacent annual period(s) ending ${r.year}; ${required} required. ${rule.suppress ? 'First qualifying alert in this uninterrupted episode; subsequent matches suppressed.' : 'One alert per qualifying district-year.'} Analytical decision support only.`,
+            explanation: `The ${rule.expression ? expressionText(rule.expression) : rule.join || 'AND'} expression matched for ${periods.length} adjacent annual period(s) ending ${r.year}; ${required} required. ${rule.suppress ? 'First qualifying alert in this uninterrupted episode; subsequent matches suppressed.' : 'One alert per qualifying district-year.'} Analytical decision support only.`,
             triggeringData: periods.slice(-required),
             observations: rows
               .filter((x) => normalize(x.district) === districtKey && x.year <= r.year)

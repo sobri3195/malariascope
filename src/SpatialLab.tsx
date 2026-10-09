@@ -166,7 +166,9 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
                 ? 'Statistically significant at p < 0.05 under the selected exploratory weights.'
                 : 'Not statistically significant at p < 0.05.'}{' '}
               {result.permutations} permutations. Missing districts are excluded. Quadrant labels
-              are exploratory and do not establish statistically significant local hotspots.
+              are exploratory. Local conditional permutation p-values use Benjamini–Hochberg FDR
+              across non-isolated districts; significance is conditional on the selected geography,
+              observations and weights, not confirmed epidemiological hotspots.
             </div>
           </section>
           <section className="panel">
@@ -189,6 +191,9 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
                     <th>Spatial lag</th>
                     <th>Local I</th>
                     <th>Exploratory quadrant</th>
+                    <th>Local p</th>
+                    <th>FDR adjusted p</th>
+                    <th>Local evidence</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -202,6 +207,13 @@ export default function SpatialLab({ evidence }: { evidence: any }) {
                         <td>{r.lag?.toFixed(3) ?? '—'}</td>
                         <td>{r.localI?.toFixed(3) ?? '—'}</td>
                         <td>{r.quadrant}</td>
+                        <td>{r.localP?.toFixed(4) ?? 'Unavailable'}</td>
+                        <td>{r.adjustedP?.toFixed(4) ?? 'Unavailable'}</td>
+                        <td>
+                          {r.significant
+                            ? 'Significant under selected exploratory weights'
+                            : 'Not established'}
+                        </td>
                       </tr>
                     ))}
                 </tbody>

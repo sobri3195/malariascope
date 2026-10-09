@@ -1,3 +1,4 @@
+import ReadinessResources from './ReadinessResources';
 import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from './store';
@@ -163,6 +164,7 @@ export default function ForceHealthReadinessMatrix() {
       <div className="notice amber-notice">
         Decision Support — Not Autonomous Clinical or Operational Recommendations
       </div>
+      <ReadinessResources />
       <div className="readiness-controls">
         <label>
           Assessment year
@@ -302,6 +304,7 @@ export default function ForceHealthReadinessMatrix() {
         )}
       </Panel>
       <Panel title="Add a district for local documentation">
+        <ReadinessResources />
         <div className="readiness-controls">
           <label>
             District name
@@ -424,7 +427,12 @@ export default function ForceHealthReadinessMatrix() {
                       onChange={(e) => saveItem(item.item, item.status, e.target.value)}
                     />
                   </label>
-                  <small>User-entered · {timestamp(item.updatedAt)}</small>
+                  <small>
+                    User-entered · {timestamp(item.updatedAt)}
+                    {item.updatedAt && Date.now() - Date.parse(item.updatedAt) > 90 * 86400000
+                      ? ' · Older than 90 days — evidence review required'
+                      : ''}
+                  </small>
                 </div>
               ))}
               <p role="status">

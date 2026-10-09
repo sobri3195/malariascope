@@ -200,3 +200,30 @@ export function validSavedScenario(value: unknown): value is SavedScenario {
     )
   );
 }
+
+export function sensitivityGrid(inputs: Inputs) {
+  const rows: {
+    burdenFactor: number;
+    populationFactor: number;
+    score: number | null;
+    category: string;
+    label: string;
+  }[] = [];
+  if (inputs.burden === null || inputs.population === null) return rows;
+  for (const burdenFactor of [0.8, 1, 1.2])
+    for (const populationFactor of [0.8, 1, 1.2]) {
+      const result = simulate({
+        ...inputs,
+        burden: inputs.burden * burdenFactor,
+        population: inputs.population * populationFactor,
+      });
+      rows.push({
+        burdenFactor,
+        populationFactor,
+        score: result.score,
+        category: result.category,
+        label: SCENARIO_LABEL,
+      });
+    }
+  return rows;
+}
