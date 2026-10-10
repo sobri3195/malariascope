@@ -1,74 +1,153 @@
+import { Activity, Wind, Map, FlaskConical, CheckCircle, Target } from 'lucide-react';
+import DataReadiness from '../DataReadiness';
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from '../store';
 import { getForecastIntensity, getSourceIssues, studyModels, forecastCutpoints } from './research';
 export function EvidenceCoverage() {
-  const { research: p, researchError, state, update, setYear, setModel, setDistrict } = useStore();
-  if (!p) return <p role="status">{researchError || 'Loading checksummed study evidence…'}</p>;
+  const {
+    research: p,
+    researchError,
+    retryResearch,
+    update,
+    setYear,
+    setModel,
+    setDistrict,
+  } = useStore();
+  if (!p)
+    return researchError ? (
+      <section className="panel research-evidence" role="alert">
+        <h2>Evidence coverage unavailable</h2>
+        <p>{researchError}</p>
+        <button className="button" onClick={retryResearch}>
+          Retry evidence loading
+        </button>
+      </section>
+    ) : (
+      <p role="status">Loading checksummed study evidence…</p>
+    );
+  const candidate = p.coverage.candidatePanel.rows;
+  const cards = [
+    {
+      title: 'Case surveillance',
+      value: p.balanced.length,
+      total: candidate,
+      detail: 'Balanced district-year records',
+      icon: Activity,
+    },
+    {
+      title: 'Lagged targets',
+      value: p.coverage.laggedTargets.rows,
+      total: null,
+      detail: 'Declared eligible targets · 2021–2025',
+      icon: Target,
+    },
+    {
+      title: 'Model training',
+      value: p.coverage.training.rows,
+      total: null,
+      detail: 'Declared training rows · 2021–2023',
+      icon: FlaskConical,
+    },
+    {
+      title: 'Validation',
+      value: p.coverage.validation.rows,
+      total: null,
+      detail: 'Declared selection rows · 2024',
+      icon: CheckCircle,
+    },
+    {
+      title: 'Spatial snapshot',
+      value: p.spatial.length,
+      total: p.registry.districts.length,
+      detail: 'Districts with 2025 outcomes',
+      icon: Map,
+    },
+    {
+      title: 'Climate data',
+      value: p.climate.length,
+      total: p.balanced.length,
+      detail: 'Annual records · balanced cohort',
+      icon: Wind,
+    },
+  ];
   return (
-    <section className="panel research-evidence">
-      <h2>Evidence Coverage</h2>
-      <p>
-        <strong>{p.manifest.version}</strong> ·{' '}
-        {state.researchMode === 'BUILTIN' ? 'VERIFIED RESEARCH EXTRACTION' : 'USER IMPORT'}.
-        Extraction from supplied study tables; not independently audited against underlying reports.
-      </p>
-      <details>
-        <summary>System evidence status</summary>
-        {Object.entries(p.status)
-          .filter(([name]) => name !== 'militaryMobility')
-          .map(([name, value]) => (
-            <p key={name}>
-              {name}: {String(value)}
-            </p>
-          ))}
-      </details>
+    <section
+      className="panel research-evidence coverage-cards"
+      aria-label="Study evidence coverage"
+    >
+      <div className="panel-head">
+        <div>
+          <h2>Evidence coverage</h2>
+          <p>MALARIASCOPE · Supplied study package · {p.manifest.version}</p>
+        </div>
+        <NavLink className="text-link" to="/methodology">
+          View details →
+        </NavLink>
+      </div>
       <div className="evidence-grid">
-        {Object.entries(p.coverage).map(([name, value]) => (
-          <div key={name}>
-            <strong>{name}</strong>
-            <p>{typeof value === 'string' ? value : JSON.stringify(value)}</p>
-          </div>
+        {cards.map(({ title, value, total, detail, icon: Icon }) => (
+          <article className="evidence-card" key={title}>
+            <div className="evidence-card-title">
+              <span className="evidence-icon">
+                <Icon size={16} />
+              </span>
+              <h3>{title}</h3>
+            </div>
+            <strong className="evidence-value">
+              {value}
+              {total !== null && <small> / {total}</small>}
+            </strong>
+            <p>{detail}</p>
+            {total !== null ? (
+              <progress value={value} max={total} aria-label={`${title}: ${value} of ${total}`} />
+            ) : (
+              <span className="evidence-declared">Supplied protocol count</span>
+            )}
+          </article>
         ))}
       </div>
-      <p>
-        48 balanced district-years; separate 9-district spatial snapshot. Only 49 unique outcomes
-        are bundled. The study reports 53 of 54 candidate outcomes; Supiori 2020–2023 values were
-        not supplied and are not reconstructed.
+      <p className="coverage-limitation">
+        Package scope, independent of workspace filters. Extraction is not independently audited.{' '}
+        {p.coverage.candidatePanel.availableBundledOutcomes} unique outcomes are bundled;{' '}
+        {p.coverage.candidatePanel.observedOutcomesReported} are reported in metadata. Supiori’s
+        missing records are not reconstructed.
       </p>
-      <button
-        className="button"
-        onClick={() => {
-          update({ active: 'study-balanced', researchMode: 'BUILTIN' });
-          setYear(2025);
-          setDistrict('All districts');
-          setModel('Random Forest');
-        }}
-      >
-        AMMM Demo Mode — use research data
-      </button>
-      <p>
-        RETROSPECTIVE HINDCAST: 2025 climate was not used to predict 2025 outcomes; preceding-year
-        information was used. Historical report availability on an operational issue date is not
-        established.
-      </p>
-      <nav>
-        {[
-          ['dashboard', 'Dashboard'],
-          ['risk-map', 'GIS'],
-          ['forecasting', 'Benchmark'],
-          ['forecasting/failure-analysis', 'Failure Inspector'],
-          ['risk-intelligence', 'Risk'],
-          ['force-health', 'Readiness'],
-        ].map(([url, name]) => (
-          <NavLink key={url} to={'/' + url}>
-            {name} ·{' '}
-          </NavLink>
-        ))}
-      </nav>
+      <details className="evidence-technical">
+        <summary>Advanced technical details · System evidence status</summary>
+        <p>
+          RETROSPECTIVE HINDCAST: preceding-year climate was used; historical source availability on
+          an operational issue date is not established.
+        </p>
+        <pre>
+          {JSON.stringify(
+            {
+              coverage: p.coverage,
+              status: Object.fromEntries(
+                Object.entries(p.status).filter(([name]) => name !== 'militaryMobility'),
+              ),
+            },
+            null,
+            2,
+          )}
+        </pre>
+        <button
+          className="button"
+          onClick={() => {
+            update({ active: 'study-balanced', researchMode: 'BUILTIN' });
+            setYear(2025);
+            setDistrict('All districts');
+            setModel('Random Forest');
+          }}
+        >
+          AMMM Demo Mode — use research data
+        </button>
+        <DataReadiness />
+      </details>
     </section>
   );
 }
+
 export function SourceLedger() {
   const { research: p } = useStore();
   if (!p) return null;

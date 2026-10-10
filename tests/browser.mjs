@@ -13,7 +13,7 @@ await page.getByRole('heading', { name: 'Command Dashboard', exact: true }).wait
 await page.waitForTimeout(1500);
 await page.screenshot({ path: '/tmp/malariascope-desktop.png', fullPage: true });
 console.log('Dashboard loaded', await page.locator('.metric').allTextContents());
-await page.getByLabel('Global year').selectOption('2020');
+await page.getByLabel('Context year').selectOption('2020');
 if (!(await page.locator('.metric').first().innerText()).includes('104,544'))
   throw Error('Year filter did not update aggregate');
 const csv =
@@ -25,7 +25,7 @@ await page
 await page.getByRole('button', { name: 'Load validated data' }).click();
 await page.getByText('Dataset loaded. Existing datasets were preserved.').waitFor();
 await page.goto(base+'/dashboard');
-await page.getByLabel('Global year').selectOption('2025');
+await page.getByLabel('Context year').selectOption('2025');
 if (!(await page.locator('.metric').first().innerText()).includes('900'))
   throw Error('Import total incorrect');
 await page.goto(base+'/early-warning');

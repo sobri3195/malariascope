@@ -1,3 +1,9 @@
+import {
+  DashboardCard as Panel,
+  StatusBadge as Badge,
+  MetricCard as Metric,
+  useReducedMotion,
+} from './DashboardUI';
 import WorkspaceManagement from './WorkspaceManagement';
 import AnalyticalDemoControls from './AnalyticalDemoControls';
 import BrandMark from './BrandMark';
@@ -48,6 +54,7 @@ import {
   Upload,
   Wind,
   Watch,
+  Smartphone,
   X,
   Trash2,
   Play,
@@ -86,6 +93,7 @@ import AdvancedEarlyWarning from './AdvancedEarlyWarning';
 import WorkspaceUX, { SnapshotManager, WorkspaceSkeleton } from './WorkspaceUX';
 import { textEntry } from './workspace-context';
 import { validateGeometry } from './geometry';
+import './scientific-design.css';
 const ProspectiveRegistry = lazy(() => import('./ProspectiveRegistry'));
 const MapView = lazy(() => import('./Map'));
 const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
@@ -183,35 +191,6 @@ function Empty({
     </div>
   );
 }
-function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: string }) {
-  return <span className={`badge ${tone}`}>{children}</span>;
-}
-function Panel({
-  title,
-  sub,
-  children,
-  action,
-  className = '',
-}: {
-  title: string;
-  sub?: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`panel ${className}`}>
-      <div className="panel-head">
-        <div>
-          <h2>{title}</h2>
-          {sub && <p>{sub}</p>}
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
 function useData() {
   const s = useStore();
   const scoped = s.rows.filter(
@@ -289,6 +268,7 @@ function Provenance({ field = 'study aggregate' }: { field?: string }) {
   );
 }
 function Trend({ data, height = 220 }: { data: Record<string, any>[]; height?: number }) {
+  const reducedMotion = useReducedMotion();
   return (
     <div
       style={{ height }}
@@ -313,6 +293,7 @@ function Trend({ data, height = 220 }: { data: Record<string, any>[]; height?: n
           <Tooltip />
           <Line
             type="linear"
+            isAnimationActive={!reducedMotion}
             dataKey="cases"
             name="Observed cases"
             stroke="#168478"
@@ -322,6 +303,7 @@ function Trend({ data, height = 220 }: { data: Record<string, any>[]; height?: n
           />
           <Line
             type="linear"
+            isAnimationActive={!reducedMotion}
             dataKey="prediction"
             name="Model prediction"
             stroke="#d59a48"
@@ -488,7 +470,45 @@ function Filters() {
     </>
   );
 }
-function Dashboard({ summary, models }: { summary: any; models: any[] }) {
+function DashboardHeading({ summary }: { summary: any }) {
+  const { year, state, filtered } = useData();
+  return (
+    <div className="page-heading">
+      <div>
+        <div className="eyebrow">REGIONAL SURVEILLANCE WORKSPACE</div>
+        <h1>Command Dashboard</h1>
+        <p>A connected view of malaria burden, spatial risk, and analytical signals.</p>
+      </div>
+      <div className="heading-actions">
+        <Badge tone="teal">
+          <span className="dot" /> Research prototype · not operationally validated
+        </Badge>
+        <Button
+          onClick={() => {
+            download(`malariascope-${year}.json`, {
+              year,
+              source: state.active || 'Supplied study summary',
+              observations: filtered,
+              studySummary: state.active ? undefined : summary,
+            });
+          }}
+        >
+          {' '}
+          <ArrowDownToLine size={15} /> Export overview
+        </Button>
+      </div>
+    </div>
+  );
+}
+function Dashboard({
+  summary,
+  models,
+  externalHeading = false,
+}: {
+  summary: any;
+  models: any[];
+  externalHeading?: boolean;
+}) {
   const { filtered, scoped, rows, state, year, district, model, signals } = useData();
   const navigate = useNavigate();
   const alerts = signals.filter(
@@ -544,32 +564,15 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
   const rank = [...filtered].sort((a, b) => (value(b) ?? -1) - (value(a) ?? -1));
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <div className="eyebrow">REGIONAL SURVEILLANCE WORKSPACE</div>
-          <h1>Command Dashboard</h1>
-          <p>A connected view of malaria burden, spatial risk, and analytical signals.</p>
-        </div>
-        <div className="heading-actions">
-          <Badge tone="teal">
-            <span className="dot" /> Research workspace
-          </Badge>
-          <Button
-            onClick={() => {
-              download(`malariascope-${year}.json`, {
-                year,
-                source: state.active || 'Supplied study summary',
-                observations: filtered,
-                studySummary: state.active ? undefined : summary,
-              });
-            }}
-          >
-            {' '}
-            <ArrowDownToLine size={15} /> Export overview
-          </Button>
-        </div>
-      </div>
-      <Filters />
+      {!externalHeading && <DashboardHeading summary={summary} />}
+      <details className="dashboard-extra-filters">
+        <summary>
+          <SlidersHorizontal size={14} /> More dashboard filters
+        </summary>
+        <Filters />
+      </details>
+      {state.researchMode !== 'DEMO' && <EvidenceCoverage />}
+
       <div className="metrics">
         <Metric
           label={predicted ? 'TOTAL PREDICTED CASES' : 'TOTAL REPORTED CASES'}
@@ -668,21 +671,37 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
           }
         >
           {rank.length ? (
-            <div className="ranking">
-              {rank.slice(0, 5).map((r, i) => (
-                <NavLink
-                  to={`/district-intelligence?district=${encodeURIComponent(r.district)}&year=${year}`}
-                  key={r.district}
-                >
-                  <span className="rank">{String(i + 1).padStart(2, '0')}</span>
-                  <strong>{r.district}</strong>
-                  <span>{fmt(value(r))}</span>
-                  <Badge tone={risk(r, state.thresholds) === 'HIGH' ? 'amber' : 'neutral'}>
-                    {risk(r, state.thresholds)}
-                  </Badge>
-                </NavLink>
-              ))}
-            </div>
+            <>
+              <div className="ranking-head" aria-hidden="true">
+                <span>Rank</span>
+                <span>District</span>
+                <span>Cases</span>
+                <span>Risk level</span>
+              </div>
+              <div className="ranking">
+                {rank.slice(0, 5).map((r, i) => (
+                  <NavLink
+                    to={`/district-intelligence?district=${encodeURIComponent(r.district)}&year=${year}`}
+                    key={r.district}
+                  >
+                    <span className="rank">{String(i + 1).padStart(2, '0')}</span>
+                    <strong>{r.district}</strong>
+                    <span>{fmt(value(r))}</span>
+                    <Badge
+                      tone={
+                        risk(r, state.thresholds) === 'VERY HIGH'
+                          ? 'red'
+                          : risk(r, state.thresholds) === 'HIGH'
+                            ? 'amber'
+                            : 'neutral'
+                      }
+                    >
+                      {risk(r, state.thresholds)}
+                    </Badge>
+                  </NavLink>
+                ))}
+              </div>
+            </>
           ) : (
             <Empty
               title="District surveillance not connected"
@@ -692,7 +711,7 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
         </Panel>
         <Panel
           title="Model validation snapshot"
-          sub="Untouched temporal test · 2025"
+          sub="Supplied retrospective test · 2025 · MAE, lower is better"
           action={<Badge tone="teal">MAE comparison</Badge>}
         >
           <div className="model-comparison">
@@ -710,7 +729,7 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
                   <div className="bar-track">
                     <div
                       style={{
-                        width: `${(m.mae / 15000) * 100}%`,
+                        width: `${(m.mae / Math.max(...models.filter((x) => x.year === 2025 && Number.isFinite(x.mae)).map((x) => x.mae), 1)) * 100}%`,
                         background: i === 0 ? '#218b7c' : '#b7c9c5',
                       }}
                     />
@@ -720,7 +739,10 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
           </div>
           <div className="insight">
             <Info size={15} />
-            <span>Persistence outperformed Random Forest on the primary 2025 error metric.</span>
+            <span>
+              Supplied 2025 study: Persistence had the lowest primary MAE. Model superiority is not
+              established.
+            </span>
           </div>
           <NavLink className="text-link bottom-link" to="/model-benchmarking">
             Explore model laboratory <ArrowUpRight size={14} />
@@ -794,36 +816,17 @@ function Dashboard({ summary, models }: { summary: any; models: any[] }) {
           </NavLink>
         </Panel>
       </div>
+      <p className="dashboard-safety">
+        Research prototype · Retrospective geospatial intelligence. Not for autonomous clinical
+        decision-making or operational deployment.{' '}
+        <NavLink className="text-link" to="/provenance">
+          Inspect sources →
+        </NavLink>
+      </p>
     </>
   );
 }
-function Metric({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: React.ElementType;
-  onClick: () => void;
-}) {
-  return (
-    <button className="metric" onClick={onClick}>
-      <div className="metric-top">
-        <span>{label}</span>
-        <Icon size={17} />
-      </div>
-      <strong>{value}</strong>
-      <div className="metric-hint">
-        {hint}
-        <ChevronRight size={13} />
-      </div>
-    </button>
-  );
-}
+
 function Heading({
   title,
   sub,
@@ -2265,27 +2268,45 @@ function App() {
                   <span>{label}</span>
                 </NavLink>
               ))}
+              <div className="nav-group">METHODOLOGY & RESOURCES</div>
+              <div className="sidebar-resources">
+                <NavLink to="/methodology">
+                  <BookOpen size={16} />
+                  Methodology & evidence
+                  <ExternalLink size={12} />
+                </NavLink>
+                <NavLink to="/presentation">
+                  <Play size={16} />
+                  Presentation mode
+                </NavLink>
+                {modules.slice(22).map(([path, label, Icon]) => (
+                  <NavLink key={path} to={'/' + path}>
+                    <Icon size={16} />
+                    {label}
+                  </NavLink>
+                ))}
+                <NavLink to="/mobile">
+                  <Smartphone size={16} />
+                  Mobile research workspace
+                </NavLink>
+                <NavLink to="/smartwatch">
+                  <Watch size={16} />
+                  MALARIASCOPE Watch
+                </NavLink>
+              </div>
             </nav>
             <div className="sidebar-bottom">
-              <NavLink to="/methodology">
-                <BookOpen size={16} />
-                Methodology & evidence
-                <ExternalLink size={12} />
-              </NavLink>
-              <NavLink to="/presentation">
-                <Play size={16} />
-                Presentation mode
-              </NavLink>
-              {modules.slice(22).map(([path, label, Icon]) => (
-                <NavLink key={path} to={'/' + path}>
-                  <Icon size={16} />
-                  {label}
-                </NavLink>
-              ))}
-              <NavLink to="/smartwatch">
-                <Watch size={16} />
-                MALARIASCOPE Watch
-              </NavLink>
+              <div className="prototype-card">
+                <FlaskConical size={18} />
+                <div>
+                  <strong>Research prototype</strong>
+                  <small>
+                    For research use only.
+                    <br />
+                    Not for operational deployment.
+                  </small>
+                </div>
+              </div>
               <div className="local-user">
                 <span>RA</span>
                 <div>
@@ -2296,7 +2317,9 @@ function App() {
                       : 'Research analyst'}
                   <small>Local workspace · v1.0</small>
                 </div>
-                <Settings size={15} />
+                <NavLink to="/settings" aria-label="Workspace settings">
+                  <Settings size={17} />
+                </NavLink>
               </div>
             </div>
           </aside>
@@ -2339,7 +2362,17 @@ function App() {
           </header>
         </>
       )}
-      <main id="main" className="main" tabIndex={-1}>
+      <main
+        id="main"
+        className={`main ${path === 'dashboard' ? 'dashboard-shell' : ''}`}
+        tabIndex={-1}
+      >
+        {path === 'dashboard' && (
+          <DashboardHeading summary={state.researchMode === 'DEMO' ? {} : data?.summary} />
+        )}
+        <NavLink className="mobile-workspace-link" to="/mobile">
+          <Smartphone size={17} /> Open the dedicated mobile workspace <ChevronRight size={16} />
+        </NavLink>
         <AnalyticalDemoControls />
         <WorkspaceUX
           modules={modules}
@@ -2348,7 +2381,7 @@ function App() {
           }
           provenance={data?.provenance ?? {}}
         />
-        {location.pathname !== '/methodology' && (
+        {!['/methodology', '/dashboard'].includes(location.pathname) && (
           <div className="safety-banner">
             <ShieldCheck size={16} />
             <span>{safety}</span>
@@ -2356,13 +2389,16 @@ function App() {
           </div>
         )}
         {researchError && <p role="alert">{researchError}</p>}
-        {state.researchMode === 'BUILTIN' && location.pathname !== '/methodology' && (
-          <div className="notice">
-            RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently audited.
-          </div>
+        {state.researchMode === 'BUILTIN' &&
+          !['/methodology', '/dashboard'].includes(location.pathname) && (
+            <div className="notice">
+              RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently
+              audited.
+            </div>
+          )}
+        {state.researchMode !== 'DEMO' && ['/data-center'].includes(location.pathname) && (
+          <EvidenceCoverage />
         )}
-        {state.researchMode !== 'DEMO' &&
-          ['/dashboard', '/data-center'].includes(location.pathname) && <EvidenceCoverage />}
         {state.researchMode !== 'DEMO' &&
           ['/data-center', '/data-quality', '/provenance'].includes(location.pathname) && (
             <SourceLedger />
@@ -2372,7 +2408,7 @@ function App() {
             <ResearchForecastScience />
           )}
         {location.pathname === '/district-intelligence' && <DistrictResearchContext />}
-        {state.researchMode !== 'DEMO' && location.pathname === '/dashboard' && <DataReadiness />}
+
         {error && (
           <div className="notice" role="alert" aria-label="Research evidence load error">
             {error}
@@ -2388,6 +2424,7 @@ function App() {
               path="/dashboard"
               element={
                 <Dashboard
+                  externalHeading
                   summary={state.researchMode === 'DEMO' ? {} : data.summary}
                   models={
                     state.researchMode === 'DEMO' ? [] : (research?.performance ?? data.models)
@@ -2558,7 +2595,11 @@ function App() {
           </span>
           <span>
             <span className="dot" style={{ background: error ? '#bd665e' : '#188b78' }} />{' '}
-            {error ? 'Application error' : data ? 'Application functioning' : 'Loading application'}{' '}
+            {error
+              ? 'Application error'
+              : data
+                ? 'Research application functioning'
+                : 'Loading application'}{' '}
             <span className="footer-divider">·</span> Research prototype · Not operationally
             validated
           </span>
@@ -2591,15 +2632,6 @@ function App() {
   );
 }
 export default function DesktopApplication() {
-  useEffect(() => {
-    // Optional web fonts must never block the lazy application stylesheet.
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href =
-      'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap';
-    document.head.append(link);
-    return () => link.remove();
-  }, []);
   return (
     <ErrorBoundary>
       <App />

@@ -494,6 +494,19 @@ export default function WorkspaceUX({
               ))}
             </select>
           </label>
+          <button
+            className="context-refresh"
+            onClick={() => {
+              window.dispatchEvent(new Event('resize'));
+              window.dispatchEvent(
+                new CustomEvent('malariascope-notice', {
+                  detail: `View synchronized · ${year} · ${district}. Filters apply immediately.`,
+                }),
+              );
+            }}
+          >
+            Update view →
+          </button>
         </div>
         <div className="ux-context-footer">
           <nav aria-label="Contextual breadcrumbs">
