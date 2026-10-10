@@ -27,7 +27,7 @@ const modes = [
   ['cluster', 'Spatial Analysis'],
   ['completeness', 'Data Completeness'],
 ] as const;
-export default function MobileMap() {
+export default function MobileMap({ preview = false }: { preview?: boolean }) {
   const { state, update, year, setYear, district, setDistrict, model } = useStore(),
     { evidence } = useMobile();
   const [fallback, setFallback] = useState<any>(null),
@@ -114,6 +114,81 @@ export default function MobileMap() {
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, [full]);
+  const canvas = (
+    <>
+      {' '}
+      {valid || fallback ? (
+        <MapCanvas
+          ref={handle}
+          context={state.mapContext ?? 'local'}
+          geometry={valid ?? fallback}
+          administrative={!!valid}
+          rows={rows}
+          year={year}
+          layer={layer}
+          model={model}
+          thresholds={state.thresholds}
+          breaks={breaks}
+          opacity={state.mapOpacity ?? 0.8}
+          visible
+          clusters={context.clusters}
+          selectedIdentity={context.targetIdentity}
+          neighbors={context.neighborIds}
+          facilities={[]}
+          camera={null}
+          onCamera={() => {}}
+          onSelect={(name) => {
+            setDistrict(name);
+            setSelected(name);
+          }}
+          label="Mobile Papua district map"
+          reduced={reduced}
+        />
+      ) : (
+        <p role="status">Loading geographic context…</p>
+      )}
+    </>
+  );
+  if (preview)
+    return (
+      <div className="m-map-preview">
+        {!valid && (
+          <p className="m-preview-note">
+            District geometry not connected · public geographic context only.
+          </p>
+        )}
+        {!availability.available && valid && (
+          <p className="m-preview-note">{availability.reason}. No data is not LOW risk.</p>
+        )}
+        <div className="m-map-workspace">{canvas}</div>
+        <p className="m-preview-note">
+          Observed cases · {year} · local vector geography. Missing values remain gray.
+        </p>
+        <details className="m-preview-legend">
+          <summary>Layer legend &amp; source</summary>
+          <div className="m-map-legend" aria-label="Preview map legend">
+            {legend.map((item) => (
+              <span key={item.label}>
+                <i style={{ background: item.color }} />
+                {item.label}
+              </span>
+            ))}
+            <span>
+              <i style={{ background: '#cad5d3' }} />
+              Data not available
+            </span>
+          </div>
+          <small>
+            Administrative geometry and observed source labels are available in the full map
+            controls. Country outlines are context only.
+          </small>
+        </details>
+        {error && <p role="status">{error}</p>}
+        <Link className="m-card-link" to="/mobile/map">
+          View Map →
+        </Link>
+      </div>
+    );
   return (
     <>
       <h1>Risk Map</h1>
@@ -193,36 +268,7 @@ export default function MobileMap() {
           </button>
           <button onClick={() => setAdvanced(true)}>Advanced layers</button>
         </div>
-        {valid || fallback ? (
-          <MapCanvas
-            ref={handle}
-            context={state.mapContext ?? 'local'}
-            geometry={valid ?? fallback}
-            administrative={!!valid}
-            rows={rows}
-            year={year}
-            layer={layer}
-            model={model}
-            thresholds={state.thresholds}
-            breaks={breaks}
-            opacity={state.mapOpacity ?? 0.8}
-            visible
-            clusters={context.clusters}
-            selectedIdentity={context.targetIdentity}
-            neighbors={context.neighborIds}
-            facilities={[]}
-            camera={null}
-            onCamera={() => {}}
-            onSelect={(name) => {
-              setDistrict(name);
-              setSelected(name);
-            }}
-            label="Mobile Papua district map"
-            reduced={reduced}
-          />
-        ) : (
-          <p role="status">Loading geographic context…</p>
-        )}
+        {canvas}
         <div className="m-map-legend" aria-label="Map legend">
           {legend.map((item) => (
             <span key={item.label}>

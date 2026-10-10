@@ -33,7 +33,7 @@ const filters = async (year, district) => {
   await page.getByRole('button', { name: 'Mobile context filters' }).click();
   if (year) await page.getByLabel('Mobile year', { exact: true }).selectOption(String(year));
   if (district) await page.getByLabel('Mobile district', { exact: true }).selectOption(district);
-  await page.getByRole('button', { name: 'Apply / close' }).click();
+  await page.getByRole('button', { name: 'Apply filters' }).click();
 };
 // Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
 await page.addInitScript(() => {
@@ -50,13 +50,14 @@ try {
   assert.equal(await page.locator('aside').count(), 0);
   await fits();
   assert.ok(
-    !assets.some((s) => /DesktopApp-|charts-|gis-.*\.js|hotspot-spatial|MobileAnalysis/.test(s)),
-    'home must not load desktop, charts, GIS or heavy analytical modules',
+    !assets.some((s) => /DesktopApp-|charts-|MobileAnalysis/.test(s)),
+    'home preview may load GIS, but must not load desktop, charts or heavy analytical modules',
   );
   assert.match(
     await page.locator('main').innerText(),
     /Supplied study aggregate — not independently verified/,
   );
+  await page.getByText('Additional analytical context', { exact: true }).click();
   await page.getByRole('link', { name: 'Compare Models', exact: true }).click();
   await heading('Model Comparison');
   assert.match(
@@ -245,8 +246,8 @@ try {
   await context.setOffline(true);
   await page.reload();
   await heading('Current Intelligence');
-  assert.match(await page.locator('.m-header').innerText(), /OFFLINE/);
-  assert.match(await page.locator('.m-header').innerText(), /freshness is not established/);
+  assert.match(await page.locator('.m-status-card').innerText(), /OFFLINE/);
+  assert.match(await page.locator('.m-status-card').innerText(), /freshness is not established/);
   assert.deepEqual((await state()).districtBookmarks, ['A']);
   await page.locator('.m-bottom').getByRole('link', { name: 'District', exact: true }).click();
   await heading('District Intelligence');
@@ -277,6 +278,7 @@ try {
     /Public research files unavailable: model-performance/,
   );
   assert.match(await partial.locator('main').innerText(), /Data not available/);
+  await partial.getByText('Additional analytical context', { exact: true }).click();
   await partial.getByRole('link', { name: 'Compare Models', exact: true }).click();
   await partial.getByRole('heading', { name: 'Model Comparison', exact: true }).waitFor();
   assert.match(await partial.locator('main').innerText(), /a model ranking cannot be established/);

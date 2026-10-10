@@ -3,7 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { normalize } from '../analytics';
 import { incidence360 } from '../district-intelligence';
-import { Card, Sheet, useMobile, value, date } from './MobileApp';
+import { Card, Sheet, useMobile, value, date, MobileDataStatus, MobileSkeleton } from './MobileApp';
+import MobileSourceControls from './MobileSourceControls';
+import {
+  BarChart3,
+  MapPin,
+  TriangleAlert,
+  Map,
+  ChartLine,
+  ChevronRight,
+  Bell,
+  Info,
+} from 'lucide-react';
+const PreviewMap = lazy(() => import('./MobileMap'));
 import { districtMobileMetrics, mobileDistrictRisk } from './mobile-engine';
 const ReadinessSummary = lazy(() =>
   import('./MobileAnalysis').then((m) => ({ default: m.ReadinessSummary })),
@@ -93,10 +105,14 @@ const actions = [
   ['report', 'Generate Report'],
 ] as const;
 function Home() {
-  const { state, year, district, model, signals } = useStore();
+  const { state, year, district, model, signals, setDistrict } = useStore();
   const { evidence, data } = useMobile();
   const ranked = evidence.records
-    .filter((r) => incidence360(r) !== null)
+    .filter(
+      (r) =>
+        (district === 'All districts' || normalize(r.district) === normalize(district)) &&
+        incidence360(r) !== null,
+    )
     .sort((a, b) => incidence360(b)! - incidence360(a)!);
   const alerts = signals.filter(
     (a) =>
@@ -124,12 +140,41 @@ function Home() {
   const risks = evidence.risks.filter(
     (r) => district === 'All districts' || normalize(r.record.district) === normalize(district),
   );
+  const years = [...new Set(history.map((r) => r.year))].sort((a, b) => a - b);
+  const series = years.length
+    ? years.map((period) => {
+        const records = history.filter((r) => r.year === period);
+        return {
+          year: period,
+          cases: records.every((r) => r.values.cases !== null)
+            ? records.reduce((sum, r) => sum + r.values.cases!, 0)
+            : null,
+        };
+      })
+    : annuals
+        .map((a: any) => ({ year: a.year, cases: a.cases }))
+        .sort((a: any, b: any) => a.year - b.year);
+  const topDistrict = ranked[0]?.district ?? inc?.district;
   return (
     <>
-      <p className="m-eyebrow">MALARIASCOPE Mobile Intelligence</p>
-      <h1>Current Intelligence</h1>
-      <div className="m-card-grid">
-        <Card title={`Latest malaria burden · ${latestYear}`}>
+      <div className="m-section-title">
+        <h1>Current Intelligence</h1>
+        <p>Latest insights from malaria, climate and geospatial research data.</p>
+      </div>
+      <div className="m-card-grid m-home-kpis">
+        <Card
+          title={`Latest malaria burden · ${latestYear}`}
+          icon={BarChart3}
+          action={
+            <Link
+              className="m-card-chevron"
+              to="/mobile/surveillance"
+              aria-label="Inspect malaria burden"
+            >
+              <ChevronRight size={18} />
+            </Link>
+          }
+        >
           <strong className="m-number">
             {value(latestCases.length ? latestCases.reduce((a, b) => a + b, 0) : annual?.cases)}
           </strong>
@@ -141,52 +186,165 @@ function Home() {
           )}
           <p>
             {latestCases.length
-              ? `${latestCases.length} of ${latestRecords.length} district records have observed cases. Partial totals are not population estimates.`
+              ? `${latestCases.length} / ${latestRecords.length} district records · observed cases. Available-record totals are not population estimates.`
               : annual
                 ? 'Supplied study aggregate — not independently verified.'
                 : 'Data not available'}
           </p>
-        </Card>
-        <Card title="Highest incidence district">
-          <strong>{ranked[0]?.district ?? inc?.district ?? 'Data not available'}</strong>
-          <p>{value(ranked.length ? incidence360(ranked[0]) : inc?.value)} per 1,000</p>
-          {inc && !ranked.length && (
-            <small>Supplied study aggregate — not independently verified.</small>
+          {latestCases.length > 0 && (
+            <small>
+              {state.researchMode === 'BUILTIN'
+                ? 'Supplied study extraction — not independently audited.'
+                : 'Loaded evidence · source verification is not inferred.'}
+            </small>
           )}
         </Card>
-        <Card title="Elevated research risk">
-          <Indicators
-            items={[
-              [
-                'HIGH',
-                risks.length
-                  ? risks.filter((r) => r.calculation.category === 'HIGH').length
-                  : 'Data not available',
-              ],
-              [
-                'VERY HIGH',
-                risks.length
-                  ? risks.filter((r) => r.calculation.category === 'VERY HIGH').length
-                  : 'Data not available',
-              ],
-              [
-                'Unclassified',
-                risks.length
-                  ? risks.filter((r) => r.calculation.score === null).length
-                  : 'Data not available',
-              ],
-            ]}
-          />
-          <p>{risks.length} district(s) in selected scope. Counts use the selected risk mode.</p>
+        <Card
+          title="Highest incidence district"
+          icon={MapPin}
+          className="m-incidence-kpi"
+          action={
+            <Link
+              className="m-card-chevron"
+              to="/mobile/district"
+              onClick={() => {
+                if (topDistrict) setDistrict(topDistrict);
+              }}
+              aria-label="Inspect highest incidence district"
+            >
+              <ChevronRight size={18} />
+            </Link>
+          }
+        >
+          <strong className="m-district-name">{topDistrict ?? 'Data not available'}</strong>
+          <p className="m-incidence-value">
+            {value(ranked.length ? incidence360(ranked[0]) : inc?.value)} per 1,000
+          </p>
+          <small>
+            {inc && !ranked.length
+              ? 'Supplied study aggregate — not independently verified.'
+              : ranked.length
+                ? 'Derived from loaded district cases and valid population. Source verification is not inferred.'
+                : 'Data not available'}
+          </small>
         </Card>
-        <Card title="Active analytical alerts">
-          <strong className="m-number">{alerts.length}</strong>
-          <Link to="/mobile/alerts">Review analytical signals</Link>
+      </div>
+      <Card
+        title="Elevated research risk"
+        icon={TriangleAlert}
+        className="m-risk-card"
+        action={
+          <Link
+            className="m-card-chevron"
+            to="/mobile/surveillance"
+            aria-label="Inspect district risk classifications"
+          >
+            <ChevronRight size={18} />
+          </Link>
+        }
+      >
+        <Indicators
+          items={[
+            [
+              'HIGH',
+              risks.length
+                ? risks.filter((r) => r.calculation.category === 'HIGH').length
+                : 'Data not available',
+            ],
+            [
+              'VERY HIGH',
+              risks.length
+                ? risks.filter((r) => r.calculation.category === 'VERY HIGH').length
+                : 'Data not available',
+            ],
+            [
+              'Unclassified',
+              risks.length
+                ? risks.filter((r) => r.calculation.score === null).length
+                : 'Data not available',
+            ],
+          ]}
+        />
+        <p>
+          {risks.length} district(s) in selected scope. Counts reflect available research/model
+          outputs in the selected scope. Selected risk mode retained.
+        </p>
+      </Card>
+      <MobileDataStatus />
+      <div className="m-home-analysis">
+        <Card
+          title="Geospatial Preview"
+          icon={Map}
+          className="m-preview-card"
+          action={
+            <Link className="m-card-chevron" to="/mobile/map" aria-label="View Map">
+              <ChevronRight size={18} />
+            </Link>
+          }
+        >
+          <Suspense fallback={<MobileSkeleton label="Loading map preview" />}>
+            <PreviewMap preview />
+          </Suspense>
         </Card>
+        <Card
+          title="Recent Trend"
+          icon={ChartLine}
+          className="m-trend-card"
+          action={
+            <Link
+              className="m-card-chevron"
+              to="/mobile/surveillance"
+              aria-label="Inspect recent trend"
+            >
+              <ChevronRight size={18} />
+            </Link>
+          }
+        >
+          <h3>Malaria burden trend</h3>
+          <p>Selected scope · available observations only</p>
+          <BurdenTrend series={series} />
+          <small>
+            {years.length
+              ? 'Derived sums of loaded records. Incomplete periods and missing years remain unconnected; population estimates and uncertainty bands are not inferred.'
+              : annuals.length
+                ? 'Supplied study aggregates — not independently verified.'
+                : 'Connect observations to inspect temporal change.'}
+          </small>
+        </Card>
+      </div>
+      {alerts.length ? (
+        <Card title="Recent analytical signals" icon={Bell}>
+          {[...alerts]
+            .sort(
+              (a, b) =>
+                (Date.parse(state.alertCreated?.[b.id] ?? '') || 0) -
+                (Date.parse(state.alertCreated?.[a.id] ?? '') || 0),
+            )
+            .slice(0, 2)
+            .map((a) => (
+              <div className="m-signal-preview" key={a.id}>
+                <span className="m-badge">{a.severity}</span>
+                <strong>{a.district}</strong>
+                <p>{a.exactRule}</p>
+                <small>{date(state.alertCreated?.[a.id])}</small>
+              </div>
+            ))}
+          <Link className="m-card-link" to="/mobile/alerts">
+            View all alerts <ChevronRight size={16} />
+          </Link>
+        </Card>
+      ) : (
+        <p className="m-quiet-status">
+          <Bell size={16} />
+          No active analytical signals.
+        </p>
+      )}
+      <details className="m-home-details">
+        <summary>Additional analytical context</summary>
         <Card title="Data quality status">
           <p>
             {state.datasets.length
-              ? `${evidence.quality.reduce((s, d) => s + d.issues.length, 0)} schema validation issue(s) in ${state.datasets.length} loaded dataset(s). Validation does not establish scientific verification.`
+              ? `${evidence.quality.reduce((sum, d) => sum + d.issues.length, 0)} schema validation issue(s) in ${state.datasets.length} loaded dataset(s). Validation does not establish scientific verification.`
               : 'Data not available'}
           </p>
           <Link to="/mobile/quality">Inspect scientific integrity</Link>
@@ -195,39 +353,107 @@ function Home() {
           <strong>{model}</strong>
           <Link to="/mobile/models">Inspect validation performance</Link>
         </Card>
-      </div>
-      <Card title="Quick actions">
-        <div className="m-actions">
-          {actions.map(([path, label]) => (
-            <Link key={path} to={'/mobile/' + path}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </Card>
-      {district === 'All districts' ? (
-        <Card title="District signals">
+        <Card title="Quick actions">
+          <div className="m-actions">
+            {actions.map(([path, label]) => (
+              <Link key={path} to={'/mobile/' + path}>
+                {label}
+              </Link>
+            ))}
+          </div>
+        </Card>
+        {district === 'All districts' ? (
+          <Card title="District signals">
+            <p>Select a district to inspect its trend and evidence.</p>
+            <MobileDistrictSelect />
+          </Card>
+        ) : (
+          <Card title={district + ' · selected district'}>
+            <DistrictFacts name={district} />
+            <Link to="/mobile/district">Open full district profile</Link>
+          </Card>
+        )}
+        <Card title="Scientific scope" icon={Info}>
           <p>
-            Select a district to inspect its malaria trend, incidence trend, climate anomalies and
-            prediction signal.
+            All cards follow selected year and district, except explicitly labeled historical
+            evidence. Missing values remain visible. Research thresholds are not validated clinical
+            thresholds.
           </p>
-          <MobileDistrictSelect />
         </Card>
-      ) : (
-        <Card title={district + ' · selected district'}>
-          <DistrictFacts name={district} />
-          <Link to="/mobile/district">Open full district profile</Link>
-        </Card>
-      )}
-      <Card title="Scientific scope">
-        <p>
-          All cards follow the selected year and district. Missing values remain visible. Derived
-          research thresholds are not independently validated clinical thresholds.
-        </p>
-      </Card>
+      </details>
     </>
   );
 }
+function BurdenTrend({ series }: { series: { year: number; cases: number | null }[] }) {
+  const known = series.filter((p) => p.cases !== null);
+  if (known.length < 2)
+    return (
+      <div className="m-empty">
+        <ChartLine size={24} />
+        <strong>Trend data incomplete</strong>
+        <p>At least two observed periods are needed. Missing periods are never filled.</p>
+        <Link to="/data-center">Open Data Center</Link>
+      </div>
+    );
+  const first = series[0].year,
+    last = series.at(-1)!.year;
+  const max = Math.max(...known.map((p) => p.cases!), 1);
+  const x = (year: number) => 76 + ((year - first) / Math.max(last - first, 1)) * 178;
+  const y = (cases: number) => 140 - (cases / max) * 112;
+  return (
+    <svg
+      className="m-burden-chart"
+      viewBox="0 0 280 174"
+      role="img"
+      aria-label={`Observed malaria burden: ${series.map((p) => `${p.year}: ${p.cases ?? 'not available'}`).join('; ')}`}
+    >
+      {[0, 0.5, 1].map((f) => (
+        <g key={f}>
+          <line x1="76" x2="254" y1={y(max * f)} y2={y(max * f)} stroke="var(--m-border)" />
+          <text x="70" y={y(max * f) + 4} textAnchor="end">
+            {max * f >= 1000 ? `${value((max * f) / 1000)}k` : value(max * f)}
+          </text>
+        </g>
+      ))}
+      {series.map(
+        (p, i) =>
+          p.cases !== null && (
+            <g key={p.year}>
+              {i > 0 && series[i - 1].cases !== null && p.year === series[i - 1].year + 1 && (
+                <line
+                  x1={x(series[i - 1].year)}
+                  y1={y(series[i - 1].cases!)}
+                  x2={x(p.year)}
+                  y2={y(p.cases)}
+                  stroke="var(--m-teal)"
+                  strokeWidth="2.5"
+                />
+              )}
+              <circle
+                cx={x(p.year)}
+                cy={y(p.cases)}
+                r="3.5"
+                fill="white"
+                stroke="var(--m-teal)"
+                strokeWidth="2"
+              >
+                <title>
+                  {p.year}: {value(p.cases)} cases
+                </title>
+              </circle>
+            </g>
+          ),
+      )}
+      <text x="76" y="165">
+        {first}
+      </text>
+      <text x="254" y="165" textAnchor="end">
+        {last}
+      </text>
+    </svg>
+  );
+}
+
 function District() {
   const { state, update, district, year, model, signals } = useStore(),
     { evidence } = useMobile();
@@ -687,7 +913,7 @@ function Provenance() {
 export default function MobilePages({ page }: { page: string }) {
   if (['models', 'readiness', 'quality'].includes(page))
     return (
-      <Suspense fallback={<p role="status">Loading analytical evidence…</p>}>
+      <Suspense fallback={<MobileSkeleton label="Loading analytical evidence" />}>
         <Analysis page={page} />
       </Suspense>
     );
@@ -699,26 +925,55 @@ export default function MobilePages({ page }: { page: string }) {
   return (
     <>
       <h1>More research tools</h1>
-      <Card title="Mobile workspace">
-        <div className="m-actions">
-          <Link to="/smartwatch">MALARIASCOPE Watch</Link>
+      <MobileSourceControls expanded />
+      <MobileDataStatus />
+      <Card title="Research">
+        <div className="m-menu-list">
           {[
-            ...actions,
+            ...actions.filter(([path]) => path !== 'report'),
             ['surveillance', 'Surveillance Cards'],
-            ['quality', 'Scientific Integrity'],
-            ['provenance', 'Data Provenance'],
           ].map(([path, label]) => (
             <Link key={path} to={'/mobile/' + path}>
               {label}
+              <ChevronRight size={18} />
             </Link>
           ))}
+          <Link to="/climate">
+            Climate intelligence · desktop <ChevronRight size={18} />
+          </Link>
+        </div>
+      </Card>
+      <Card title="Data">
+        <div className="m-menu-list">
+          <Link to="/mobile/quality">
+            Scientific Integrity <ChevronRight size={18} />
+          </Link>
+          <Link to="/mobile/provenance">
+            Data Provenance <ChevronRight size={18} />
+          </Link>
+          <Link to="/mobile/report">
+            Generate Report <ChevronRight size={18} />
+          </Link>
+          <Link to="/data-center">
+            Data Center · desktop <ChevronRight size={18} />
+          </Link>
         </div>
       </Card>
       <Card title="Saved districts">
         <Bookmarks />
       </Card>
-      <Card title="Desktop workspace">
-        <Link to="/dashboard">Open full desktop application</Link>
+      <Card title="System">
+        <div className="m-menu-list">
+          <Link to="/dashboard">
+            Open full desktop application <ChevronRight size={18} />
+          </Link>
+          <Link to="/settings">
+            Settings <ChevronRight size={18} />
+          </Link>
+          <Link to="/about">
+            About MALARIASCOPE <ChevronRight size={18} />
+          </Link>
+        </div>
       </Card>
     </>
   );

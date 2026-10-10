@@ -97,11 +97,11 @@ try {
   await page.setViewportSize({ width: 812, height: 375 });
   await page.goto(base + '/mobile');
   await page.getByRole('button', { name: 'Mobile context filters' }).click();
-  const sheet = page.getByRole('dialog', { name: 'Mobile context', exact: true });
+  const sheet = page.getByRole('dialog', { name: 'Filters', exact: true });
   await sheet.waitFor();
   assert.ok(await sheet.evaluate((el) => el.getBoundingClientRect().height <= innerHeight - 10));
   await page.getByLabel('Mobile year', { exact: true }).selectOption('2024');
-  await page.getByRole('button', { name: 'Apply / close' }).click();
+  await page.getByRole('button', { name: 'Apply filters' }).click();
   assert.match(await page.locator('.m-context-line').innerText(), /2024/);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.deepEqual(errors, []);
