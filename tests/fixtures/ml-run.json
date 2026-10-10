@@ -1,0 +1,154 @@
+{
+  "schema": "malariascope-training-run-v2",
+  "datasetHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "trainingHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "source": "Synthetic browser test fixture",
+  "license": "TEST ONLY",
+  "classification": "SYNTHETIC",
+  "seed": 19,
+  "protocol": "Fixture for UI testing only; no research output",
+  "trainingStart": 2020,
+  "trainingEnd": 2024,
+  "trainingRows": 15,
+  "testYear": 2025,
+  "environment": {
+    "python": "test",
+    "numpy": "test",
+    "scikitLearn": "test"
+  },
+  "codeHashes": {
+    "train.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "selection": {
+    "Persistence": {
+      "status": "FIXED BASELINE",
+      "parameters": {},
+      "folds": []
+    },
+    "Random Forest": {
+      "status": "FIXED TEST MODEL",
+      "parameters": {
+        "max_depth": 5
+      },
+      "folds": []
+    }
+  },
+  "excluded": [],
+  "ignoredFuture": [],
+  "limitations": ["Synthetic fixture \u2014 not observed data"],
+  "rollingOrigin": [],
+  "leaderboard": [
+    {
+      "model": "Persistence",
+      "validationPeriod": "2025",
+      "metrics": {
+        "n": 3,
+        "mae": 5,
+        "rmse": 5,
+        "bias": 5,
+        "medianAbsoluteError": 5,
+        "r2": 0.99625
+      },
+      "pairedComparisons": []
+    },
+    {
+      "model": "Random Forest",
+      "validationPeriod": "2025",
+      "metrics": {
+        "n": 3,
+        "mae": 4,
+        "rmse": 6.928203230275509,
+        "bias": 4,
+        "medianAbsoluteError": 0,
+        "r2": 0.9928
+      },
+      "pairedComparisons": [
+        {
+          "reference": "Persistence",
+          "n": 3,
+          "maeDifference": -1,
+          "lower": -5,
+          "upper": 7,
+          "method": "Synthetic paired test interval",
+          "interpretation": "Descriptive test only",
+          "crossesZero": true
+        }
+      ]
+    }
+  ],
+  "predictions": [
+    {
+      "district": "A",
+      "year": 2025,
+      "cases": 100,
+      "model": "Persistence",
+      "prediction": 105,
+      "residual": 5,
+      "absoluteError": 5,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    },
+    {
+      "district": "B",
+      "year": 2025,
+      "cases": 200,
+      "model": "Persistence",
+      "prediction": 205,
+      "residual": 5,
+      "absoluteError": 5,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    },
+    {
+      "district": "C",
+      "year": 2025,
+      "cases": 300,
+      "model": "Persistence",
+      "prediction": 305,
+      "residual": 5,
+      "absoluteError": 5,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    },
+    {
+      "district": "A",
+      "year": 2025,
+      "cases": 100,
+      "model": "Random Forest",
+      "prediction": 100,
+      "residual": 0,
+      "absoluteError": 0,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    },
+    {
+      "district": "B",
+      "year": 2025,
+      "cases": 200,
+      "model": "Random Forest",
+      "prediction": 200,
+      "residual": 0,
+      "absoluteError": 0,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    },
+    {
+      "district": "C",
+      "year": 2025,
+      "cases": 300,
+      "model": "Random Forest",
+      "prediction": 312,
+      "residual": 12,
+      "absoluteError": 12,
+      "lower": null,
+      "upper": null,
+      "classification": "SYNTHETIC"
+    }
+  ],
+  "cohortMode": "CLIMATE COMPLETE CASE"
+}

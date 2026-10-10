@@ -392,3 +392,7 @@ Early Warning Center supports saved-rule search, status/priority filters, explic
 ## Research completion & optional services
 
 [Research Operations & Integration](docs/RESEARCH-COMPLETION.md) adds persistent rule drafts, complete backup/restore, report archives, source/resource review, periodic surveillance, portable models and local spatial significance. The documented Python pipeline and authenticated service are optional and require authorized data and owner deployment. Smartwatch remains a browser demo. Missing official outcomes, denominator records and independent verification remain explicitly unavailable.
+
+## Machine learning audit & audited training protocol
+
+See [detailed ML audit](docs/ML-AUDIT.md) for fixed temporal/provenance issues and remaining data, validation and MLOps requirements. The optional `--tune` pipeline produces run v2, a no-climate comparator, paired uncertainty and model provenance. Model Laboratory imports and checks captured runs without replacing supplied study evidence.
