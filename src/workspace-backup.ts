@@ -1,3 +1,4 @@
+import { validateTrainingRun } from './training-run.ts';
 import { validArchivedReport } from './report-archive-validation.ts';
 import { usableWorkspace, workspaceStorageKey } from './workspace-storage.ts';
 export const backupSchema = 'malariascope-workspace-backup-v2';
@@ -15,6 +16,7 @@ export const companionKeys = [
   'malariascope-resource-evidence',
   'malariascope-boundary-crosswalk',
   'malariascope-periodic-surveillance',
+  'malariascope-training-runs',
 ] as const;
 export type Backup = {
   schema: typeof backupSchema;
@@ -63,6 +65,10 @@ export function validateBackup(value: unknown): asserts value is Backup {
     if (key.endsWith('-view') || key.endsWith('-screen')) continue;
     const data: unknown = JSON.parse(raw);
     if (data === null || typeof data !== 'object') throw Error(`Invalid companion data: ${key}`);
+    if (key === 'malariascope-training-runs') {
+      if (!Array.isArray(data)) throw Error('Invalid saved training runs');
+      data.forEach(validateTrainingRun);
+    }
     if (
       key === 'malariascope-prospective' &&
       (!Array.isArray(data) ||
