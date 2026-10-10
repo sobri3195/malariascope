@@ -61,6 +61,7 @@ try {
   await label('Context dataset').waitFor();
   const before = await state();
   await label('Context year').selectOption('2024');
+  await page.locator('.dashboard-extra-filters > summary').click();
   await page.getByLabel('Global year', { exact: true }).waitFor();
   assert.equal(await label('Global year').inputValue(), '2024');
   assert.equal(new URL(page.url()).searchParams.get('year'), '2024');

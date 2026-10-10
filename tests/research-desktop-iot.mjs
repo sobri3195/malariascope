@@ -30,7 +30,7 @@ const context = '?year=2025&district=Kota%20Jayapura&model=Random%20Forest&datas
 try {
   await go('/dashboard');
   assert.match(await page.locator('.metric').first().innerText(), /288,131/);
-  await page.getByLabel('Global year', { exact: true }).selectOption('2020');
+  await page.getByLabel('Context year', { exact: true }).selectOption('2020');
   assert.match(await page.locator('.metric').first().innerText(), /104,544/);
   await go('/dashboard' + context);
   assert.match(await page.locator('.metric').first().innerText(), /69,944/);
