@@ -1,3 +1,4 @@
+import WorkspaceManagement from './WorkspaceManagement';
 import AnalyticalDemoControls from './AnalyticalDemoControls';
 import BrandMark from './BrandMark';
 import {
@@ -93,6 +94,7 @@ const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
 const ForecastWorkbench = lazy(() => import('./ForecastWorkbench'));
 const District360 = lazy(() => import('./DistrictIntelligence360'));
 const SpatialLab = lazy(() => import('./SpatialLab'));
+const ResearchOperations = lazy(() => import('./ResearchOperations'));
 const modules: [string, string, React.ElementType][] = [
   ['dashboard', 'Command Dashboard', Grid2X2],
   ['risk-map', 'Geospatial Hotspot Intelligence', MapIcon],
@@ -118,6 +120,7 @@ const modules: [string, string, React.ElementType][] = [
   ['presentation', 'Presentation Mode', Play],
   ['prospective-registry', 'Prospective Registry', Database],
   ['model-monitoring', 'Model Monitoring', Activity],
+  ['research-operations', 'Research Operations & Integration', FlaskConical],
   ['aplikasi-desktop', 'Desktop Workstation', Grid2X2],
   ['iot', 'Environmental IoT', Wind],
 ];
@@ -942,7 +945,11 @@ function Surveillance() {
               setPage(0);
             }}
           />
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            aria-label="Sort surveillance observations"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="cases">Sort by cases</option>
             <option value="district">Sort by district</option>
           </select>
@@ -997,7 +1004,11 @@ function Climate() {
       />
       <Filters />
       <div className="toolbar">
-        <select value={variable} onChange={(e) => setVariable(e.target.value as typeof variable)}>
+        <select
+          aria-label="Climate variable"
+          value={variable}
+          onChange={(e) => setVariable(e.target.value as typeof variable)}
+        >
           <option>rainfall</option>
           <option>temperature</option>
           <option>humidity</option>
@@ -1568,7 +1579,11 @@ function Alerts() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select
+          aria-label="Alert status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
           {['ALL', 'NEW', 'REVIEWED', 'ACKNOWLEDGED', 'RESOLVED'].map((s) => (
             <option key={s}>{s}</option>
           ))}
@@ -1691,6 +1706,7 @@ function SettingsPage() {
   return (
     <>
       <Heading title="System Settings" sub="Configure local behavior and save analytical states." />
+      <WorkspaceManagement />
       <div className="two-col">
         <Panel title="General & accessibility">
           <label className="form-row">
@@ -2084,6 +2100,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
     return this.state.error ? (
       <main className="fatal">
         <h1>The workspace could not be rendered.</h1>
+
         <p>Your local datasets remain in browser storage. Reload to retry.</p>
         <Button onClick={() => location.reload()}>Reload workspace</Button>
       </main>
@@ -2380,6 +2397,7 @@ function App() {
             />
             <Route path="/prospective-registry" element={<ProspectiveRegistry />} />
             <Route path="/model-monitoring" element={<ProspectiveRegistry monitoring />} />
+            <Route path="/research-operations" element={<ResearchOperations />} />
             <Route path="/risk-map" element={<GIS />} />
             <Route path="/surveillance" element={<Surveillance />} />
             <Route

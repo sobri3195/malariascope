@@ -19,12 +19,18 @@ export default function WorkspaceStorageStatus() {
       role="alert"
     >
       <strong>
-        {recovery ? 'Saved workspace needs recovery' : 'Workspace changes are not saved'}
+        {storageIssue === 'conflict'
+          ? 'Workspace changed in another tab'
+          : recovery
+            ? 'Saved workspace needs recovery'
+            : 'Workspace changes are not saved'}
       </strong>
       <p>
-        {recovery
-          ? 'The saved workspace could not be read safely. Its original contents have not been overwritten. You can continue in this session and download a backup before replacing it.'
-          : 'Browser storage is unavailable or full. Current changes remain in memory; export a backup before leaving or reloading.'}
+        {storageIssue === 'conflict'
+          ? 'Automatic saving is paused to prevent overwriting another tab. Export this session, then choose which version to keep.'
+          : recovery
+            ? 'The saved workspace could not be read safely. Its original contents have not been overwritten. You can continue in this session and download a backup before replacing it.'
+            : 'Browser storage is unavailable or full. Current changes remain in memory; export a backup before leaving or reloading.'}
       </p>
       <div>
         <button onClick={() => download('workspace-session-backup.json', backupWorkspace())}>
@@ -44,8 +50,15 @@ export default function WorkspaceStorageStatus() {
             Download original saved workspace
           </button>
         )}
+        {storageIssue === 'conflict' && (
+          <button onClick={() => location.reload()}>Load latest saved workspace</button>
+        )}
         <button onClick={retryStorage}>
-          {recovery ? 'Replace saved workspace with current session' : 'Retry saving workspace'}
+          {storageIssue === 'conflict'
+            ? 'Keep this session and replace saved version'
+            : recovery
+              ? 'Replace saved workspace with current session'
+              : 'Retry saving workspace'}
         </button>
       </div>
     </section>

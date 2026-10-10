@@ -24,7 +24,7 @@ This audit reviews the existing research application across its analytical modul
 | Watch companion demonstration                                             | `watch.mjs`                                        |
 | Cross-shell storage recovery, quota handling and study-source retry       | `workspace-recovery.mjs`                           |
 
-These are the 21 current browser scripts. The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
+The runner now discovers 22 browser scripts (including research completion). The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
 
 ## Reliability improvements
 
@@ -39,3 +39,7 @@ Research-source loading failures now offer a retry in the shared source controls
 Run typecheck, lint, unit tests and build, then applicable scripts from the table with `APP_URL` and `CHROMIUM_PATH` configured as described in [testing standard](../18-testing-standard.md). Do not rebuild while browser scripts read `dist`.
 
 Public study artifacts, synthetic fixtures, scientific formulas and default research configuration remain unchanged. Unconnected facilities, real environmental sensors, trained model artifacts, independent verification, secure multi-user storage and prospective outcomes remain external requirements. A successful software audit does not supply those missing inputs. Remote CI/deployment status is reported separately from local browser verification.
+
+## Research completion acceptance
+
+`tests/research-completion.mjs` verifies cross-route/reload draft recovery, portable inference, periodic suppression, complete backup preview, responsive layouts and WCAG checks of the new operations view. See [Research completion](RESEARCH-COMPLETION.md) for extended engine/Python/three-browser/performance checks and external prerequisites.

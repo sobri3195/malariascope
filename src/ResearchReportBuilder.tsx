@@ -1,3 +1,4 @@
+import ReportArchive from './ReportArchive';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from './store';
 import { download } from './analytics';
@@ -316,6 +317,10 @@ export default function ResearchReportBuilder({
   }
   return (
     <div className="research-report-builder">
+      <ReportArchive
+        report={generated?.report || null}
+        onLoad={(report) => setGenerated({ report, key })}
+      />
       <div className="no-print">
         <h1>Professional Research Report Builder</h1>
         <p>

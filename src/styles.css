@@ -5,7 +5,7 @@
   font-synthesis: none;
   font-weight: 400;
   --teal: #168478;
-  --muted: #62777e;
+  --muted: #465f68;
   --border: #e4eaec;
   --navy: #133e45;
 }
@@ -159,7 +159,7 @@ h3 {
   font-size: 8px;
   letter-spacing: 1.5px;
   font-weight: 650;
-  color: #62777e;
+  color: #465f68;
   padding: 4px 12px 10px;
 }
 .nav-group:not(:first-child) {
@@ -247,7 +247,7 @@ h3 {
 .local-user small {
   display: block;
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   margin-top: 4px;
   font-weight: 400;
 }
@@ -271,7 +271,7 @@ h3 {
   align-items: center;
   gap: 11px;
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
 }
 .breadcrumb strong {
   font-weight: 500;
@@ -290,7 +290,7 @@ h3 {
   border: 0;
   background: transparent;
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
 }
 .search-trigger kbd {
   font-family: inherit;
@@ -357,12 +357,12 @@ h3 {
   font-size: 8px;
   letter-spacing: 1.6px;
   font-weight: 650;
-  color: #62777e;
+  color: #465f68;
   margin-bottom: 8px;
 }
 .page-heading p {
   font-size: 11px;
-  color: #62777e;
+  color: #465f68;
   margin-top: 7px;
   line-height: 1.5;
 }
@@ -381,20 +381,20 @@ h3 {
   line-height: 1.4;
   border-radius: 4px;
   background: #f0f3f4;
-  color: #87969b;
+  color: #465f68;
   padding: 4px 7px;
   font-weight: 550;
 }
 .badge.teal {
-  color: #278777;
+  color: #186454;
   background: #e7f3ed;
 }
 .badge.amber {
-  color: #a57b35;
+  color: #7a541e;
   background: #fbf2e1;
 }
 .badge.red {
-  color: #b95f53;
+  color: #974538;
   background: #faeeeb;
 }
 .button {
@@ -428,7 +428,7 @@ h3 {
   border: 0;
   background: none;
   padding: 4px;
-  color: #62777e;
+  color: #465f68;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -448,7 +448,7 @@ h3 {
   align-items: center;
   gap: 8px;
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   border-right: 1px solid #e8edef;
   padding: 0 15px;
 }
@@ -472,7 +472,7 @@ h3 {
   gap: 6px;
   font-size: 8px;
   white-space: nowrap;
-  color: #62777e;
+  color: #465f68;
   padding-left: 10px;
 }
 .metrics {
@@ -498,7 +498,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 7px;
-  color: #62777e;
+  color: #465f68;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.65px;
@@ -519,7 +519,7 @@ h3 {
 }
 .metric-hint {
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -553,7 +553,7 @@ h3 {
 }
 .panel-head p {
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   margin-top: 5px;
 }
 .text-link {
@@ -561,7 +561,7 @@ h3 {
   align-items: center;
   gap: 5px;
   font-size: 9px;
-  color: #4e837a;
+  color: #32675e;
   background: none;
   border: 0;
   padding: 0;
@@ -700,7 +700,7 @@ h3 {
   margin-bottom: 15px;
 }
 .map-controls small {
-  color: #62777e;
+  color: #465f68;
 }
 .map-scale {
   position: absolute;
@@ -730,7 +730,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  color: #62777e;
+  color: #465f68;
   font-size: 8px;
 }
 .panel-foot > span,
@@ -750,13 +750,13 @@ h3 {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px;
   font-weight: 400;
-  color: #62777e;
+  color: #465f68;
   letter-spacing: 0;
   margin-left: 5px;
 }
 .chart-note {
   font-size: 8px;
-  color: #62777e;
+  color: #465f68;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -764,7 +764,7 @@ h3 {
 }
 .chart-note span:last-child {
   margin-left: auto;
-  color: #62777e;
+  color: #465f68;
 }
 .empty {
   padding: 32px 20px;
@@ -773,7 +773,7 @@ h3 {
   align-items: center;
   text-align: center;
   gap: 9px;
-  color: #62777e;
+  color: #465f68;
   font-size: 11px;
   min-height: 155px;
   justify-content: center;
@@ -790,11 +790,11 @@ h3 {
 .empty strong {
   font-size: 12px;
   font-weight: 550;
-  color: #718a84;
+  color: #465f68;
 }
 .empty p {
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
   max-width: 310px;
   line-height: 1.7;
 }
@@ -803,7 +803,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 3px;
-  color: #5a9b8c;
+  color: #32675e;
   margin-top: 4px;
 }
 .model-comparison {
@@ -829,7 +829,7 @@ h3 {
 .model-comparison small {
   font-family: 'DM Sans', sans-serif;
   font-size: 8px;
-  color: #93a1a4;
+  color: #465f68;
   font-weight: 400;
 }
 .bar-track {
@@ -852,7 +852,7 @@ h3 {
   border-radius: 4px;
   font-size: 9px;
   line-height: 1.6;
-  color: #6c877e;
+  color: #465f68;
 }
 .insight svg {
   flex-shrink: 0;
@@ -874,7 +874,7 @@ h3 {
   gap: 8px;
   align-items: center;
   font-size: 9px;
-  color: #78908c;
+  color: #465f68;
   padding: 10px 0;
   border-bottom: 1px solid #f0f3f2;
 }
@@ -897,13 +897,13 @@ h3 {
   gap: 10px;
   font-size: 9px;
   line-height: 1.9;
-  color: #62777e;
+  color: #465f68;
   padding: 10px 0;
 }
 .notes strong {
   font-size: 10px;
   font-weight: 550;
-  color: #647d77;
+  color: #465f68;
 }
 .note-icon {
   background: #eef4f1;
@@ -927,12 +927,12 @@ h3 {
   font-size: 10px;
 }
 .readiness-snapshot strong {
-  color: #6a847c;
+  color: #465f68;
   font-weight: 550;
 }
 .readiness-snapshot p {
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   line-height: 1.6;
   margin-top: 7px;
 }
@@ -940,7 +940,7 @@ footer {
   display: flex;
   justify-content: space-between;
   font-size: 8px;
-  color: #62777e;
+  color: #465f68;
   gap: 10px;
   padding: 24px 0 20px;
   margin-top: 2px;
@@ -968,7 +968,7 @@ footer > span:last-child {
   flex-wrap: wrap;
   padding: 14px 20px;
   font-size: 11px;
-  color: #75898d;
+  color: #465f68;
 }
 .toolbar input[type='number'] {
   width: 110px;
@@ -993,7 +993,7 @@ table {
 th {
   padding: 13px 20px;
   background: #f8fafb;
-  color: #62777e;
+  color: #465f68;
   font-weight: 550;
   font-size: 9px;
   white-space: nowrap;
@@ -1003,7 +1003,7 @@ th {
 td {
   padding: 13px 20px;
   border-bottom: 1px solid #edf1f2;
-  color: #657c80;
+  color: #465f68;
   white-space: nowrap;
 }
 td a {
@@ -1018,7 +1018,7 @@ tbody tr:hover {
   justify-content: space-between;
   padding: 15px 20px;
   font-size: 10px;
-  color: #8e9da1;
+  color: #465f68;
 }
 .notice {
   padding: 13px 16px;
@@ -1028,7 +1028,7 @@ tbody tr:hover {
   background: #eef5f1;
   font-size: 11px;
   line-height: 1.8;
-  color: #607f74;
+  color: #3f6254;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1039,7 +1039,7 @@ tbody tr:hover {
 .amber-notice {
   background: #faf4e9;
   border-color: #eee2ce;
-  color: #9a7a42;
+  color: #77551f;
 }
 .tabs {
   display: flex;
@@ -1054,16 +1054,16 @@ tbody tr:hover {
   font-size: 11px;
   white-space: nowrap;
   padding: 12px 15px;
-  color: #62777e;
+  color: #465f68;
   border-bottom: 2px solid transparent;
 }
 .tabs button.active {
-  color: #25877a;
-  border-bottom-color: #25877a;
+  color: #186454;
+  border-bottom-color: #186454;
 }
 .body-copy {
   padding: 15px 20px;
-  color: #7f9496;
+  color: #465f68;
   font-size: 12px;
   line-height: 1.8;
 }
@@ -1080,7 +1080,7 @@ tbody tr:hover {
   margin: 10px 0;
   background: #f4f7f6;
   border-radius: 5px;
-  color: #537c71;
+  color: #32675e;
   font-size: 11px;
   overflow-wrap: anywhere;
 }
@@ -1090,7 +1090,7 @@ tbody tr:hover {
   justify-content: space-between;
   padding: 14px 20px;
   font-size: 12px;
-  color: #768d8e;
+  color: #465f68;
   gap: 15px;
   border-bottom: 1px solid #f1f4f4;
 }
@@ -1116,7 +1116,7 @@ dl {
   overflow-wrap: anywhere;
 }
 dt {
-  color: #8a9a9f;
+  color: #465f68;
 }
 dd {
   margin: 0;
@@ -1128,7 +1128,7 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   padding: 20px;
-  color: #729189;
+  color: #465f68;
   background: #fafcfc;
   margin: 10px 20px 20px;
   border-radius: 5px;
@@ -1176,7 +1176,7 @@ pre {
 }
 .alert-row p {
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
 }
 .alert-row > input {
   min-width: 230px;
@@ -1198,7 +1198,7 @@ pre {
 .fine-print {
   padding: 13px 20px;
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
   line-height: 1.8;
 }
 .panel > .button {
@@ -1207,7 +1207,7 @@ pre {
 .scenario-result {
   padding: 28px 20px;
   text-align: center;
-  color: #78978b;
+  color: #3f6254;
   line-height: 2;
 }
 .scenario-result > span {
@@ -1233,13 +1233,13 @@ pre {
   margin: 8px 20px 15px;
   padding: 35px 20px;
   border-radius: 8px;
-  color: #6c9687;
+  color: #3f6254;
   font-size: 12px;
   cursor: pointer;
 }
 .upload > span {
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
 }
 .upload input {
   max-width: 250px;
@@ -1284,7 +1284,7 @@ pre {
   gap: 10px;
   border-top: 1px solid var(--border);
   font-size: 10px;
-  color: #62777e;
+  color: #465f68;
 }
 .snapshot input {
   width: 150px;
@@ -1308,7 +1308,7 @@ pre {
   font-weight: 500;
 }
 .ranking .rank {
-  color: #a0b2ae;
+  color: #465f68;
 }
 .ranking .badge {
   font-size: 6px;
@@ -1900,7 +1900,7 @@ pre {
 .spatial-stats span {
   font-size: 8px;
   letter-spacing: 0.6px;
-  color: #62777e;
+  color: #465f68;
 }
 .spatial-stats strong {
   font-size: 26px;
@@ -1932,7 +1932,7 @@ pre {
 }
 .district-drawer > p {
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
   margin: 7px 0;
 }
 .district-drawer dl {
@@ -1984,7 +1984,7 @@ pre {
   flex-direction: column;
   gap: 7px;
   font-size: 9px;
-  color: #62777e;
+  color: #465f68;
 }
 .advanced-filters input {
   width: 100px;
@@ -2012,12 +2012,12 @@ pre {
   display: block;
   font-size: 9px;
   line-height: 1.7;
-  color: #62777e;
+  color: #465f68;
   margin-top: 5px;
 }
 
 .empty p {
-  color: #6e817f;
+  color: #465f68;
   font-size: 11px;
 }
 .fine-print {
@@ -2036,7 +2036,7 @@ pre {
   color: #6b7d82;
 }
 .page-heading p {
-  color: #687d83;
+  color: #465f68;
 }
 .data-readiness {
   background: #fff;

@@ -1,11 +1,94 @@
+import { validExpression } from './rule-expression.ts';
+import { validCondition } from './analytics.ts';
 export const workspaceStorageKey = 'malariascope-v1';
-export type StorageIssue = 'invalid' | 'unavailable' | 'write-failed' | null;
+export type StorageIssue = 'invalid' | 'unavailable' | 'write-failed' | 'conflict' | null;
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v);
 
 /** Structural validation protects consumers; scientific validity remains a separate audit. */
 export function usableWorkspace(value: unknown): value is Record<string, unknown> {
   if (!object(value)) return false;
+  if (value.__workspaceVersion !== undefined && value.__workspaceVersion !== 2) return false;
+  const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string');
+  if (value.districtBookmarks !== undefined && !strings(value.districtBookmarks)) return false;
+  if (value.readinessDistricts !== undefined && !strings(value.readinessDistricts)) return false;
+  if (
+    value.rules !== undefined &&
+    (!Array.isArray(value.rules) ||
+      value.rules.some(
+        (r) =>
+          !object(r) ||
+          typeof r.id !== 'string' ||
+          typeof r.enabled !== 'boolean' ||
+          typeof r.severity !== 'string' ||
+          ['name', 'description', 'category'].some(
+            (k) => r[k] !== undefined && typeof r[k] !== 'string',
+          ) ||
+          !validCondition(r as any) ||
+          (r.expression !== undefined && !validExpression(r.expression)) ||
+          (r.secondary !== undefined &&
+            (!object(r.secondary) || !validCondition(r.secondary as any))),
+      ))
+  )
+    return false;
+  if (
+    value.snapshots !== undefined &&
+    (!Array.isArray(value.snapshots) ||
+      value.snapshots.some(
+        (r) =>
+          !object(r) ||
+          !['id', 'name', 'district', 'model', 'layer', 'date'].every(
+            (k) => typeof r[k] === 'string',
+          ) ||
+          !Number.isInteger(r.year),
+      ))
+  )
+    return false;
+  if (
+    value.audit !== undefined &&
+    (!Array.isArray(value.audit) ||
+      value.audit.some(
+        (r) => !object(r) || !['time', 'event', 'details'].every((k) => typeof r[k] === 'string'),
+      ))
+  )
+    return false;
+  if (
+    value.selection !== undefined &&
+    (!object(value.selection) ||
+      !Number.isInteger(value.selection.year) ||
+      typeof value.selection.district !== 'string' ||
+      typeof value.selection.model !== 'string')
+  )
+    return false;
+  if (
+    value.riskScenario !== undefined &&
+    (!object(value.riskScenario) ||
+      typeof value.riskScenario.active !== 'boolean' ||
+      !object(value.riskScenario.weights) ||
+      !['observed', 'predicted', 'neighbor'].every(
+        (k) =>
+          typeof (value.riskScenario as any).weights[k] === 'number' &&
+          Number.isFinite((value.riskScenario as any).weights[k]) &&
+          (value.riskScenario as any).weights[k] >= 0,
+      ))
+  )
+    return false;
+  if (
+    value.alertStates !== undefined &&
+    (!object(value.alertStates) ||
+      Object.values(value.alertStates).some(
+        (r) => !object(r) || typeof r.status !== 'string' || typeof r.note !== 'string',
+      ))
+  )
+    return false;
+  if (
+    value.geometry !== undefined &&
+    value.geometry !== null &&
+    (!object(value.geometry) ||
+      value.geometry.type !== 'FeatureCollection' ||
+      !Array.isArray(value.geometry.features))
+  )
+    return false;
   const arrays = [
     'datasets',
     'rules',
@@ -15,6 +98,50 @@ export function usableWorkspace(value: unknown): value is Record<string, unknown
     'analyticalScenarios',
     'alertLog',
   ];
+  if (
+    value.scientificSources !== undefined &&
+    (!Array.isArray(value.scientificSources) ||
+      value.scientificSources.some(
+        (r) =>
+          !object(r) ||
+          typeof r.id !== 'string' ||
+          typeof r.kind !== 'string' ||
+          !['name', 'source', 'checksum', 'created'].every((k) => typeof r[k] === 'string') ||
+          !Array.isArray(r.records) ||
+          r.records.some(
+            (x) => !object(x) || typeof x.district !== 'string' || !Number.isInteger(x.year),
+          ),
+      ))
+  )
+    return false;
+  if (
+    value.alertLog !== undefined &&
+    (!Array.isArray(value.alertLog) ||
+      value.alertLog.some(
+        (r) =>
+          !object(r) ||
+          typeof r.id !== 'string' ||
+          typeof r.district !== 'string' ||
+          !object(r.ruleSnapshot) ||
+          !object(r.sourceDataset) ||
+          !Array.isArray(r.triggeringData),
+      ))
+  )
+    return false;
+  if (
+    value.readinessMetadata !== undefined &&
+    (!object(value.readinessMetadata) ||
+      Object.values(value.readinessMetadata).some(
+        (group) =>
+          !object(group) ||
+          Object.values(group).some(
+            (entry) =>
+              !object(entry) ||
+              !['status', 'note', 'updatedAt'].every((k) => typeof entry[k] === 'string'),
+          ),
+      ))
+  )
+    return false;
   const records = [
     'alertStates',
     'checklist',
@@ -75,7 +202,7 @@ export function readWorkspace<T extends object>(defaults: T, storage: Pick<Stora
 }
 export function saveWorkspace(value: object, storage: Pick<Storage, 'setItem'>): boolean {
   try {
-    storage.setItem(workspaceStorageKey, JSON.stringify(value));
+    storage.setItem(workspaceStorageKey, JSON.stringify({ ...value, __workspaceVersion: 2 }));
     return true;
   } catch {
     return false;

@@ -292,8 +292,8 @@ export default function WorkspaceUX({
   ]
     .filter((d) => d !== 'All districts')
     .sort();
+  const pendingChord = useRef(0);
   useEffect(() => {
-    let pending = 0;
     const listener = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -312,15 +312,15 @@ export default function WorkspaceUX({
         e.altKey ||
         e.repeat
       ) {
-        pending = 0;
+        pendingChord.current = 0;
         return;
       }
       const key = e.key.toLowerCase();
-      if (pending && Date.now() - pending < 1200 && chordRoutes[key]) {
+      if (pendingChord.current && Date.now() - pendingChord.current < 1200 && chordRoutes[key]) {
         e.preventDefault();
         navigate('/' + chordRoutes[key]);
-        pending = 0;
-      } else pending = key === 'g' ? Date.now() : 0;
+        pendingChord.current = 0;
+      } else pendingChord.current = key === 'g' ? Date.now() : 0;
     };
     const open = () => {
       setPanel(null);
@@ -541,6 +541,7 @@ export default function WorkspaceUX({
       </section>
       <div
         className="ux-notifications no-print"
+        role="region"
         aria-live="polite"
         aria-label="Workspace notifications"
       >

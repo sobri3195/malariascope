@@ -266,7 +266,6 @@ This is a browser presentation companion, not a patient monitor, diagnostic devi
 
 Validation: `npm run typecheck`, `npm run lint`, `npm run build`, `npm test`, and `APP_URL=http://127.0.0.1:4173 node tests/watch.mjs` against a production preview. The watch suite covers all screens, source-derived risk, filters, actual alerts, notification dismissal, readiness, missing inputs, private-field exclusion, direct refresh, screen persistence, keyboard/swipe/autoplay/reduced motion, 320px phones, tablet/landscape sizing and shared desktop state. Browser fixtures are synthetic and never enter public research files.
 
-
 ## No API key map architecture
 
 Before this audit, Leaflet requested CARTO tiles on every canvas. Now the default is
@@ -296,13 +295,13 @@ map joins immediately, but validation does not establish independent source veri
 
 Data Center provides header-only CSV templates under `/data/templates/`:
 
-| Dataset role | Required fields | Optional fields |
-| --- | --- | --- |
-| Observed malaria | district, year, cases | district_code, population, incidence, rainfall, temperature, humidity, prediction, model (legacy combined imports) |
-| Population | district, year, population | district_code |
-| Climate observations | district, year, at least one of rainfall/temperature/humidity | district_code and remaining climate variables |
-| Model predictions | district, year, model, prediction, trainingPeriod, validationPeriod, outputClassification | district_code |
-| District risk | district, year, risk, score, method, outputClassification | district_code |
+| Dataset role         | Required fields                                                                           | Optional fields                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Observed malaria     | district, year, cases                                                                     | district_code, population, incidence, rainfall, temperature, humidity, prediction, model (legacy combined imports) |
+| Population           | district, year, population                                                                | district_code                                                                                                      |
+| Climate observations | district, year, at least one of rainfall/temperature/humidity                             | district_code and remaining climate variables                                                                      |
+| Model predictions    | district, year, model, prediction, trainingPeriod, validationPeriod, outputClassification | district_code                                                                                                      |
+| District risk        | district, year, risk, score, method, outputClassification                                 | district_code                                                                                                      |
 
 District is nonempty text (maximum 100 characters), years are integers 1900–2100, observed cases
 are nonnegative integers, population is positive, rainfall/prediction are nonnegative, humidity
@@ -389,3 +388,7 @@ Saved workspace structure is checked before use. If local state cannot be read s
 ## Workspace interaction improvements
 
 Early Warning Center supports saved-rule search, status/priority filters, explicit unsaved-edit notices and draft preservation while filtering. Shared navigation waits for lazy-loaded headings and announces page changes across interface shells without disturbing query-only context updates. See [Workspace UX polish](docs/WORKSPACE-UX-POLISH.md) for behavior, limits and browser coverage.
+
+## Research completion & optional services
+
+[Research Operations & Integration](docs/RESEARCH-COMPLETION.md) adds persistent rule drafts, complete backup/restore, report archives, source/resource review, periodic surveillance, portable models and local spatial significance. The documented Python pipeline and authenticated service are optional and require authorized data and owner deployment. Smartwatch remains a browser demo. Missing official outcomes, denominator records and independent verification remain explicitly unavailable.

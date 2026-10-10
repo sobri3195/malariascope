@@ -21,3 +21,7 @@ Connect legitimate authorized sensors or public feeds with calibration, freshnes
 ## Governance and accessibility
 
 Clarify application/data licensing with the owner and pursue independent accessibility and scientific review where appropriate. Define acceptance evidence for each proposed item using [planning](04-planner-agent.md) and [testing](18-testing-standard.md). No roadmap item authorizes operational recommendations or automatic clinical decisions.
+
+## Implemented foundations
+
+See [Research completion](docs/RESEARCH-COMPLETION.md) for the executable training/backtest pipeline, portable artifacts, optional authenticated services, draft recovery, full backups and research review workflows. Source reconciliation, original licensed records, independent verification, live sensors and production service deployment still depend on external evidence/configuration. Smartwatch remains a browser demonstration by user choice.

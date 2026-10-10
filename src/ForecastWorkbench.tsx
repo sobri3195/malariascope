@@ -1,3 +1,5 @@
+import { bootstrapMAE } from './forecast-uncertainty';
+import ModelArtifactPanel from './ModelArtifactPanel';
 import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
@@ -66,6 +68,7 @@ function ScatterPlot({
     <>
       <div
         className="forecast-chart"
+        role="group"
         aria-label={residual ? 'Residual plot' : 'Observed-versus-predicted scatterplot'}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -153,7 +156,11 @@ function Distribution({ evaluation }: { evaluation: ModelEvaluation }) {
   const histogram = residualHistogram(evaluation.pairs);
   return histogram.length ? (
     <>
-      <div className="forecast-histogram" aria-label={`${evaluation.model} residual distribution`}>
+      <div
+        className="forecast-histogram"
+        role="group"
+        aria-label={`${evaluation.model} residual distribution`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={histogram} margin={{ top: 12, right: 8, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 4" vertical={false} />
@@ -731,6 +738,7 @@ export default function ForecastWorkbench({
                   </p>
                   <div
                     className="forecast-chart"
+                    role="group"
                     aria-label="District observed and predicted history"
                   >
                     <ResponsiveContainer width="100%" height="100%">
@@ -903,6 +911,27 @@ export default function ForecastWorkbench({
           ))}
         </div>
       </Panel>
+      {source === 'LOADED' && (
+        <Panel title="Loaded-data MAE uncertainty">
+          <p>
+            District-cluster percentile bootstrap: 999 replicates, seed 2025. At least three
+            districts required. These intervals describe loaded paired errors, not prospective
+            prediction coverage or independently verified superiority.
+          </p>
+          {evaluations.map((e) => {
+            const ci = bootstrapMAE(e.pairs);
+            return (
+              <p key={e.model}>
+                {e.model}:{' '}
+                {ci
+                  ? `${num(ci.lower)} – ${num(ci.upper)} · ${ci.districts} districts`
+                  : 'Insufficient paired district evidence'}
+              </p>
+            );
+          })}
+        </Panel>
+      )}
+      {laboratory && <ModelArtifactPanel />}
       <Panel title="Validation, provenance, and data quality">
         <p>
           MAE = mean |prediction − observed|; RMSE = square root of mean squared residual; R² = 1 −

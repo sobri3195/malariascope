@@ -61,7 +61,7 @@ test('unavailable storage and quota failures are explicit and do not throw', () 
     }),
     true,
   );
-  assert.deepEqual(JSON.parse(content), defaults);
+  assert.deepEqual(JSON.parse(content), { ...defaults, __workspaceVersion: 2 });
 });
 test('structural checks do not claim scientific validation or reject missing optional observations', () => {
   assert.equal(

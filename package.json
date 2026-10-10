@@ -10,7 +10,12 @@
     "lint": "eslint src",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test src/*.test.ts",
-    "test:browser": "node scripts/run-browser-acceptance.mjs"
+    "test:browser": "node scripts/run-browser-acceptance.mjs",
+    "test:cross-browser": "node scripts/cross-browser-smoke.mjs",
+    "test:performance": "node --experimental-strip-types scripts/performance-benchmark.mjs",
+    "test:research": "python -m unittest research.test_pipeline services.test_service services.test_dispatch -v",
+    "test:coverage": "node --experimental-strip-types --experimental-test-coverage --test-coverage-exclude=\"**/*.test.ts\" --test-coverage-exclude=\"**/node_modules/**\" --test-coverage-lines=70 --test-coverage-branches=55 --test-coverage-functions=70 --test src/*.test.ts",
+    "test:accessibility": "node scripts/accessibility-audit.mjs"
   },
   "dependencies": {
     "@turf/turf": "^7.3.0",
@@ -23,6 +28,7 @@
     "recharts": "^3.8.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.58.2",
     "@types/leaflet": "^1.9.21",
     "@types/papaparse": "^5.5.2",

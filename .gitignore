@@ -5,3 +5,8 @@ dist/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+__pycache__/
+*.sqlite3
+research-output/
+coverage/

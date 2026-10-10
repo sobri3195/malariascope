@@ -174,6 +174,16 @@ export function Provider({ children }: { children: ReactNode }) {
       setStorageIssue('write-failed');
     }
   }, [state]);
+  useEffect(() => {
+    const changed = (event: StorageEvent) => {
+      if (event.key === 'malariascope-v1') {
+        persistenceBlocked.current = true;
+        setStorageIssue('conflict');
+      }
+    };
+    window.addEventListener('storage', changed);
+    return () => window.removeEventListener('storage', changed);
+  }, []);
   function retryStorage() {
     try {
       if (!saveWorkspace(state, window.localStorage)) {
