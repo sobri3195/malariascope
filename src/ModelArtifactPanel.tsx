@@ -67,6 +67,10 @@ export default function ModelArtifactPanel() {
             accept=".json"
             onChange={(e) => {
               const f = e.target.files?.[0];
+              if (f && f.size > 20000000) {
+                setError('Artifact exceeds 20 MB');
+                return;
+              }
               if (f)
                 void f
                   .text()

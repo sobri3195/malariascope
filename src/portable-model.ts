@@ -86,6 +86,11 @@ export function validatePortableModel(value: unknown): asserts value is Portable
     a.scale.some((x) => !Number.isFinite(x) || x <= 0)
   )
     throw Error('Invalid preprocessing.');
+  const validationStart = /^(\d{4})(?:\b|-)/.exec(a.validationPeriod);
+  if (validationStart && a.trainingEnd >= Number(validationStart[1]))
+    throw Error('Training period overlaps declared validation period.');
+  if (a.provenance && !/^\d{4}$/.test(a.validationPeriod))
+    throw Error('Audited annual artifact requires a declared validation year.');
   if (a.provenance !== undefined) {
     const p = a.provenance;
     if (

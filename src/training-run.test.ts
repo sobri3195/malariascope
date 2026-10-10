@@ -190,3 +190,10 @@ test('unreadable ML libraries retain original values and cannot silently become 
   });
   assert.match(unavailable.issue, /unavailable/);
 });
+
+test('artifact cannot declare validation earlier than its training cutoff', () => {
+  assert.throws(
+    () => validatePortableModel({ ...model, trainingEnd: 2025, validationPeriod: '2025' }),
+    /overlaps/,
+  );
+});
