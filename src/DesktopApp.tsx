@@ -649,7 +649,11 @@ function Dashboard({
         </Panel>
         <Panel
           title="Malaria burden over time"
-          sub="Reported cases · 2020–2025"
+          sub={
+            trends.length
+              ? `Reported cases · ${trends[0].year}–${trends[trends.length - 1].year}`
+              : 'Reported cases · no annual series connected'
+          }
           action={<Provenance field="annual cases" />}
         >
           <div className="chart-stat">
@@ -671,37 +675,47 @@ function Dashboard({
           }
         >
           {rank.length ? (
-            <>
-              <div className="ranking-head" aria-hidden="true">
-                <span>Rank</span>
-                <span>District</span>
-                <span>Cases</span>
-                <span>Risk level</span>
-              </div>
-              <div className="ranking">
-                {rank.slice(0, 5).map((r, i) => (
-                  <NavLink
-                    to={`/district-intelligence?district=${encodeURIComponent(r.district)}&year=${year}`}
-                    key={r.district}
-                  >
-                    <span className="rank">{String(i + 1).padStart(2, '0')}</span>
-                    <strong>{r.district}</strong>
-                    <span>{fmt(value(r))}</span>
-                    <Badge
-                      tone={
-                        risk(r, state.thresholds) === 'VERY HIGH'
-                          ? 'red'
-                          : risk(r, state.thresholds) === 'HIGH'
-                            ? 'amber'
-                            : 'neutral'
-                      }
-                    >
-                      {risk(r, state.thresholds)}
-                    </Badge>
-                  </NavLink>
-                ))}
-              </div>
-            </>
+            <div className="ranking table-scroll">
+              <table className="priority-table" aria-label="District surveillance priorities">
+                <thead>
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">District</th>
+                    <th scope="col">{predicted ? 'Predicted cases' : 'Reported cases'}</th>
+                    <th scope="col">Observed risk</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rank.slice(0, 5).map((r, i) => (
+                    <tr key={r.district}>
+                      <td className="rank">{String(i + 1).padStart(2, '0')}</td>
+                      <th scope="row">
+                        <NavLink
+                          className="text-link"
+                          to={`/district-intelligence?district=${encodeURIComponent(r.district)}&year=${year}`}
+                        >
+                          {r.district}
+                        </NavLink>
+                      </th>
+                      <td>{fmt(value(r))}</td>
+                      <td>
+                        <Badge
+                          tone={
+                            risk(r, state.thresholds) === 'VERY HIGH'
+                              ? 'red'
+                              : risk(r, state.thresholds) === 'HIGH'
+                                ? 'amber'
+                                : 'neutral'
+                          }
+                        >
+                          {risk(r, state.thresholds)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <Empty
               title="District surveillance not connected"

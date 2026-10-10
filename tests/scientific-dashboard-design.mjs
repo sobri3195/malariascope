@@ -86,6 +86,24 @@ assert.deepEqual(
 );
 await page.goto(`${base}/mobile`);
 await expect(page.locator('main')).toBeVisible();
+const failure = await browser.newPage();
+failure.on('pageerror', (e) => errors.push(e.message));
+await failure.route('**/*', (r) =>
+  new URL(r.request().url()).origin === new URL(base).origin ? r.continue() : r.abort(),
+);
+await failure.route('**/data/verified/manifest.json', (r) =>
+  r.fulfill({ status: 503, body: 'Unavailable' }),
+);
+await failure.goto(`${base}/dashboard`);
+await expect(failure.getByRole('heading', { name: 'Evidence coverage unavailable' })).toBeVisible({
+  timeout: 30000,
+});
+await failure.unroute('**/data/verified/manifest.json');
+await failure.getByRole('button', { name: 'Retry evidence loading', exact: true }).click();
+await expect(failure.getByRole('heading', { name: 'Evidence coverage', exact: true })).toBeVisible({
+  timeout: 30000,
+});
+await failure.close();
 assert.deepEqual(errors, []);
 await browser.close();
 console.log(

@@ -21,3 +21,13 @@ The Command Dashboard leads with its title, synchronized global context, and dat
 InterVariable.woff2 is distributed with its SIL Open Font License in `public/fonts/Inter-LICENSE.txt`, sourced from https://github.com/rsms/inter. Desktop typography does not depend on external Google Fonts requests.
 
 `tests/scientific-dashboard-design.mjs` checks 1440×900, 1600×1000, 1920×1080, 2560×1440, tablet 768×1024, and narrow fallback layouts at 390×844 and 320×740. It captures screenshots under `/tmp/malariascope-design`, tests overflow/map width, real/empty/synthetic source states, global filters, technical-details disclosure, command palette, main-content axe accessibility, and preservation of `/mobile`. Existing browser regression suites cover the remaining scientific workflows.
+
+Final local verification passed: 181 unit tests, typecheck, lint, and production build; 23/23 browser acceptance suites; zero detected main-content axe violations across 24 routes. The final semantic-table and dynamic-period refinements were additionally checked by dashboard/responsive/accessibility acceptance and the import/alerts/readiness smoke test. Failed evidence loading and successful retry are also covered. These checks do not establish scientific or operational validation.
+
+## Review screenshots
+
+The screenshots show the supplied retrospective study package and the honestly disconnected primary-dataset state. Transient notifications are omitted from the screenshot capture only.
+
+![Scientific research dashboard](screenshots/scientific-dashboard.png)
+
+![No primary dataset](screenshots/scientific-dashboard-empty.png)
