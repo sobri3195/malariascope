@@ -1,6 +1,7 @@
 /* Dedicated /mobile scope; caches public research assets, never uploaded records. */
-const CACHE = 'malariascope-mobile-v4';
+const CACHE = 'malariascope-mobile-v5';
 const PUBLIC = [
+  '/fonts/InterVariable.woff2',
   '/brand/malariascope-mark.svg',
   '/favicon.svg',
   '/favicon.ico',

@@ -1,4 +1,4 @@
-import AnalyticalDemoControls from '../AnalyticalDemoControls';
+import MobileSourceControls from './MobileSourceControls';
 import BrandMark from '../BrandMark';
 import React, {
   createContext,
@@ -11,7 +11,25 @@ import React, {
   type ReactNode,
 } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Map, Bell, Target, Menu, ArrowLeft } from 'lucide-react';
+import {
+  Home,
+  Map,
+  Bell,
+  Target,
+  Menu,
+  ArrowLeft,
+  Filter,
+  CalendarDays,
+  MapPin,
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Info,
+  Database,
+  Cloud,
+  Network,
+} from 'lucide-react';
+import { forecastModels } from '../forecasting';
 import { useStore } from '../store';
 import { riskModes, type SpatialRiskInputs } from '../risk-engine';
 import { validateGeometry } from '../geometry';
@@ -32,6 +50,8 @@ const Context = createContext<{
   data: Research | null;
   online: boolean;
   cached: boolean;
+  cacheStatus: boolean;
+  refreshPublic: () => void;
   evidence: ReturnType<typeof mobileEvidence>;
 }>(null!);
 export const useMobile = () => useContext(Context);
@@ -41,10 +61,30 @@ export const date = (s: string | undefined) =>
   s && Number.isFinite(Date.parse(s))
     ? new Date(s).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' }) + ' ICT'
     : 'Data not available';
-export function Card({ title, children }: { title: string; children: ReactNode }) {
+export function Card({
+  title,
+  children,
+  icon: Icon,
+  action,
+  className = '',
+}: {
+  title: string;
+  children: ReactNode;
+  icon?: React.ElementType;
+  action?: ReactNode;
+  className?: string;
+}) {
   return (
-    <section className="m-card">
-      <h2>{title}</h2>
+    <section className={`m-card ${className}`}>
+      <div className="m-card-head">
+        {Icon && (
+          <span className="m-icon-circle">
+            <Icon size={22} />
+          </span>
+        )}
+        <h2>{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -94,6 +134,7 @@ export function Sheet({
           }
         }}
       >
+        <span className="m-sheet-handle" aria-hidden="true" />
         <header>
           <h2>{title}</h2>
           <button aria-label="Close panel" onClick={onClose}>
@@ -134,6 +175,7 @@ export default function MobileApp() {
     district,
     setDistrict,
     model,
+    setModel,
     riskMode,
     setRiskMode,
   } = useStore();
@@ -269,14 +311,6 @@ export default function MobileApp() {
       navigator.serviceWorker?.removeEventListener('message', message);
     };
   }, []);
-  const validGIS = useMemo(() => {
-    try {
-      validateGeometry(state.geometry);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [state.geometry]);
   const cached = !online || !!data?.cached;
   const years = [
     ...new Set([year, 2020, 2025, ...state.datasets.flatMap((d) => d.rows.map((r) => r.year))]),
@@ -299,56 +333,57 @@ export default function MobileApp() {
             : data,
         online,
         cached,
+        cacheStatus,
+        refreshPublic: () => setRetry((n) => n + 1),
         evidence,
       }}
     >
-      <div className="mobile-app">
-        <AnalyticalDemoControls />
+      <div className={`mobile-app ${state.reduced ? 'm-reduced' : ''}`}>
         <header className="m-header">
           <div>
             <NavLink to="/mobile" className="malariascope-brand-line">
-              <BrandMark size={28} />
+              <BrandMark size={40} />
               MALARIASCOPE
             </NavLink>
             <p>Malaria Spatial Early-Warning &amp; Risk Intelligence</p>
           </div>
           <button onClick={() => setFilters(true)} aria-label="Mobile context filters">
-            Filters
+            <Filter size={19} /> Filters
           </button>
-          <div className="m-context-line">
-            {year} · {district} · {riskMode}
-          </div>
-          <div className="m-connectivity">
-            <strong>{online && !data?.cached ? 'ONLINE' : 'OFFLINE / CACHED FALLBACK'}</strong>
-            {cacheStatus && <span>DATA CACHED</span>}
-          </div>
-          {cached && (
-            <p className="m-warning">
-              Cached/local evidence — freshness is not established. Check observation periods and
-              source registration dates.{' '}
-              {data?.cachedAt && `Public assets cached: ${date(data.cachedAt)}.`}
-              <button onClick={() => setRetry((n) => n + 1)}>Refresh public evidence</button>
-            </p>
-          )}
-          <div className="m-source-status" aria-label="Mobile data status">
+          <div className="m-context-line" aria-label="Selected mobile context">
             {[
-              ['Malaria Data', sourceStatus(evidence.records, ['cases'], cached)],
-              ['Climate Data', sourceStatus(evidence.records, ['rainfall', 'temperature'], cached)],
-              ['GIS Data', validGIS ? (cached ? 'Cached' : 'Connected') : 'Not Connected'],
-              ['Model Output', sourceStatus(evidence.records, ['prediction'], cached)],
-            ].map(([label, status]) => (
-              <span key={label}>
-                {label}
-                <b>{status}</b>
-              </span>
+              [CalendarDays, String(year), 'year'],
+              [MapPin, district, 'district'],
+              [BarChart3, riskMode.replaceAll('_', ' '), 'risk mode'],
+            ].map(([Icon, label, kind]: any) => (
+              <button
+                key={kind}
+                aria-label={`Change mobile ${kind}: ${label}`}
+                onClick={() => setFilters(true)}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+                <ChevronDown size={15} />
+              </button>
             ))}
           </div>
         </header>
         <main className="m-main" id="mobile-main">
-          <p className="m-disclaimer">
-            RETROSPECTIVE RESEARCH DATA · Research prototype · Decision Support — Not Autonomous
-            Clinical or Operational Recommendations
-          </p>
+          <NavLink className="m-prototype" to="/mobile/provenance">
+            <Info size={24} />
+            <div>
+              <strong>
+                Retrospective research prototype · Not for autonomous clinical or operational
+                recommendations.
+              </strong>
+              <p>
+                Source data and uploaded geometry are preserved. Analytical signals remain traceable
+                to their evidence source.
+              </p>
+            </div>
+            <ChevronRight size={18} />
+          </NavLink>
+          {route.pathname !== '/mobile/more' && <MobileSourceControls />}
           {evidence.configuration.experimental && (
             <p className="m-warning">
               EXPERIMENTAL RISK CONFIGURATION — NOT VERIFIED RESEARCH OUTPUT.
@@ -366,18 +401,10 @@ export default function MobileApp() {
             </Card>
           )}
           {!data ? (
-            <div className="m-loading" role="status">
-              Loading existing research evidence…
-            </div>
+            <MobileSkeleton label="Loading existing research evidence" />
           ) : (
             <MobileBoundary key={route.pathname}>
-              <Suspense
-                fallback={
-                  <div className="m-loading" role="status">
-                    Loading mobile module…
-                  </div>
-                }
-              >
+              <Suspense fallback={<MobileSkeleton label="Loading mobile module" />}>
                 <Routes>
                   <Route path="/mobile" element={<Pages page="home" />} />
                   <Route path="/mobile/map" element={<MobileMap />} />
@@ -422,7 +449,7 @@ export default function MobileApp() {
           ))}
         </nav>
         {filters && (
-          <Sheet title="Mobile context" onClose={() => setFilters(false)}>
+          <Sheet title="Filters" onClose={() => setFilters(false)}>
             <label>
               Year
               <select
@@ -464,6 +491,18 @@ export default function MobileApp() {
               </select>
             </label>
             <label>
+              Model
+              <select
+                aria-label="Mobile filter model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                {forecastModels.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </label>
+            <label>
               Dataset
               <select
                 aria-label="Mobile dataset"
@@ -483,7 +522,32 @@ export default function MobileApp() {
                 ))}
               </select>
             </label>
-            <button onClick={() => setFilters(false)}>Apply / close</button>
+            <p className="m-filter-note">
+              Filters synchronize immediately. Reset keeps the selected dataset.
+            </p>
+            <div className="m-sheet-actions">
+              <button className="m-primary" onClick={() => setFilters(false)}>
+                Apply filters
+              </button>
+              <button
+                onClick={() => {
+                  setYear(Math.max(...years));
+                  setDistrict('All districts');
+                  setRiskMode('OBSERVED RISK');
+                  setModel('Persistence');
+                }}
+              >
+                Reset
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                setFilters(false);
+                navigate('/settings');
+              }}
+            >
+              Open advanced settings
+            </button>
             <button
               onClick={() => {
                 setFilters(false);
@@ -497,5 +561,89 @@ export default function MobileApp() {
         )}
       </div>
     </Context.Provider>
+  );
+}
+
+export function MobileSkeleton({ label }: { label: string }) {
+  return (
+    <div className="m-skeleton" role="status" aria-label={label}>
+      <span className="m-sr-only">{label}…</span>
+      <div className="m-skeleton-grid">
+        <i />
+        <i />
+      </div>
+      <i className="m-skeleton-wide" />
+      <i className="m-skeleton-map" />
+      <i className="m-skeleton-wide" />
+    </div>
+  );
+}
+export function MobileDataStatus() {
+  const { state } = useStore();
+  const { data, online, cached, cacheStatus, evidence, refreshPublic } = useMobile();
+  let validGIS = false;
+  try {
+    validateGeometry(state.geometry);
+    validGIS = true;
+  } catch {
+    /* Unavailable administrative geometry remains disconnected. */
+  }
+  const items = [
+    ['Malaria Data', sourceStatus(evidence.records, ['cases'], cached), Database],
+    ['Climate Data', sourceStatus(evidence.records, ['rainfall', 'temperature'], cached), Cloud],
+    ['GIS Data', validGIS ? (cached ? 'Cached' : 'Connected') : 'Not Connected', Map],
+    ['Model Output', sourceStatus(evidence.records, ['prediction'], cached), Network],
+  ] as const;
+  return (
+    <Card title="Data Sources & Model Status" icon={Database} className="m-status-card">
+      <div className="m-connectivity">
+        <span>{online && !data?.cached ? 'ONLINE' : 'OFFLINE / CACHED FALLBACK'}</span>
+        {cacheStatus && <span>DATA CACHED</span>}
+      </div>
+      <div className="m-source-status" aria-label="Mobile data status">
+        {items.map(([label, status, Icon]) => (
+          <LinkStatus key={label} label={label} status={status} icon={Icon} />
+        ))}
+      </div>
+      <small>
+        Browser connectivity; source availability is assessed separately.{' '}
+        {state.active
+          ? 'Joined district evidence; primary source: ' +
+            (state.datasets.find((d) => d.id === state.active)?.name ?? state.active)
+          : 'Supplied summaries remain separate from an active user dataset.'}
+      </small>
+      {cached && (
+        <p className="m-cache-note">
+          Cached/local evidence — freshness is not established.{' '}
+          {data?.cachedAt && `Public assets cached: ${date(data.cachedAt)}.`}
+          <button onClick={refreshPublic}>Refresh public evidence</button>
+        </p>
+      )}
+      <NavLink className="m-card-link" to="/mobile/provenance">
+        Inspect sources <ChevronRight size={16} />
+      </NavLink>
+    </Card>
+  );
+}
+function LinkStatus({
+  label,
+  status,
+  icon: Icon,
+}: {
+  label: string;
+  status: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <NavLink to="/mobile/provenance" className="m-status-tile">
+      <span>
+        <Icon size={19} />
+        {label}
+      </span>
+      <strong>
+        <i className={`m-status-dot status-${status.toLowerCase().replaceAll(' ', '-')}`} />
+        {status}
+      </strong>
+    </NavLink>
   );
 }
