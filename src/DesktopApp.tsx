@@ -97,6 +97,16 @@ import './scientific-design.css';
 const ProspectiveRegistry = lazy(() => import('./ProspectiveRegistry'));
 const MapView = lazy(() => import('./Map'));
 const AseanWorkspace = lazy(() => import('./asean/Workspace'));
+const ResearchIntelligence = lazy(() => import('./research-evidence/Workspace'));
+const StudyScopeLinks = lazy(() =>
+  import('./research-evidence/Panels').then((m) => ({ default: m.StudyScopeLinks })),
+);
+const StudyClimatePanel = lazy(() =>
+  import('./research-evidence/Panels').then((m) => ({ default: m.StudyClimatePanel })),
+);
+const StudyBenchmarkPanel = lazy(() =>
+  import('./research-evidence/Panels').then((m) => ({ default: m.StudyBenchmarkPanel })),
+);
 const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
 const ScientificIntegrityCenter = lazy(() => import('./ScientificIntegrityCenter'));
 const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
@@ -573,6 +583,9 @@ function Dashboard({
         <Filters />
       </details>
       {state.researchMode !== 'DEMO' && <EvidenceCoverage />}
+      <Suspense fallback={null}>
+        <StudyScopeLinks />
+      </Suspense>
 
       <div className="metrics">
         <Metric
@@ -1003,7 +1016,7 @@ function District({ summary }: { summary: any }) {
   );
 }
 function Climate() {
-  const { rows, district } = useData();
+  const { rows, district, state } = useData();
   const [variable, setVariable] = useState<'rainfall' | 'temperature' | 'humidity'>('rainfall'),
     [lag, setLag] = useState(0);
   const selected = rows.filter((r) => district === 'All districts' || r.district === district);
@@ -1073,14 +1086,27 @@ function Climate() {
         Observed association only. Annual data cannot support monthly seasonality or monthly lag
         inference.
       </div>
+      {state.researchMode === 'BUILTIN' && (
+        <Suspense fallback={<p role="status">Loading study climate evidence…</p>}>
+          <StudyClimatePanel />
+        </Suspense>
+      )}
     </>
   );
 }
 function Models({ models, forecast = false }: { models: any[]; forecast?: boolean }) {
+  const { state } = useStore();
   return (
-    <Suspense fallback={<WorkspaceSkeleton label="Loading forecasting workbench…" />}>
-      <ForecastWorkbench study={models} filters={<Filters />} laboratory={!forecast} />
-    </Suspense>
+    <>
+      <Suspense fallback={<WorkspaceSkeleton label="Loading forecasting workbench…" />}>
+        <ForecastWorkbench study={models} filters={<Filters />} laboratory={!forecast} />
+      </Suspense>
+      {!forecast && state.researchMode === 'BUILTIN' && (
+        <Suspense fallback={<p role="status">Loading benchmark evidence…</p>}>
+          <StudyBenchmarkPanel />
+        </Suspense>
+      )}
+    </>
   );
 }
 function DataCenter() {
@@ -2265,6 +2291,10 @@ function App() {
                 <Globe size={17} />
                 <span>ASEAN Map Explorer</span>
               </NavLink>
+              <NavLink to="/research-intelligence" onClick={() => setMobile(false)}>
+                <FlaskConical size={17} />
+                <span>Research Intelligence</span>
+              </NavLink>
               {modules
                 .slice(0, 12)
                 .filter(
@@ -2360,7 +2390,9 @@ function App() {
               <strong>
                 {path === 'asean-map'
                   ? 'ASEAN Map Explorer'
-                  : modules.find((m) => m[0] === path)?.[1] || 'Dashboard'}
+                  : path === 'research-intelligence'
+                    ? 'Research Intelligence'
+                    : modules.find((m) => m[0] === path)?.[1] || 'Dashboard'}
               </strong>
             </div>
             <div className="topbar-actions">
@@ -2397,16 +2429,18 @@ function App() {
         <NavLink className="mobile-workspace-link" to="/mobile">
           <Smartphone size={17} /> Open the dedicated mobile workspace <ChevronRight size={16} />
         </NavLink>
-        {path !== 'asean-map' && <AnalyticalDemoControls />}
+        {!['asean-map', 'research-intelligence'].includes(path) && <AnalyticalDemoControls />}
         <WorkspaceUX
-          hideContext={path === 'asean-map'}
+          hideContext={['asean-map', 'research-intelligence'].includes(path)}
           modules={modules}
           models={
             state.researchMode === 'DEMO' ? [] : (research?.performance ?? data?.models ?? [])
           }
           provenance={data?.provenance ?? {}}
         />
-        {!['/methodology', '/dashboard', '/asean-map'].includes(location.pathname) && (
+        {!['/methodology', '/dashboard', '/asean-map', '/research-intelligence'].includes(
+          location.pathname,
+        ) && (
           <div className="safety-banner">
             <ShieldCheck size={16} />
             <span>{safety}</span>
@@ -2415,7 +2449,9 @@ function App() {
         )}
         {researchError && <p role="alert">{researchError}</p>}
         {state.researchMode === 'BUILTIN' &&
-          !['/methodology', '/dashboard', '/asean-map'].includes(location.pathname) && (
+          !['/methodology', '/dashboard', '/asean-map', '/research-intelligence'].includes(
+            location.pathname,
+          ) && (
             <div className="notice">
               RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently
               audited.
@@ -2460,6 +2496,14 @@ function App() {
             <Route path="/prospective-registry" element={<ProspectiveRegistry />} />
             <Route path="/model-monitoring" element={<ProspectiveRegistry monitoring />} />
             <Route path="/research-operations" element={<ResearchOperations />} />
+            <Route
+              path="/research-intelligence"
+              element={
+                <Suspense fallback={<WorkspaceSkeleton label="Loading research intelligence" />}>
+                  <ResearchIntelligence />
+                </Suspense>
+              }
+            />
             <Route path="/risk-map" element={<GIS />} />
             <Route
               path="/asean-map"
