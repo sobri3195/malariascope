@@ -1,0 +1,21 @@
+{
+  "name": "ASEAN country navigation outlines",
+  "provider": "Natural Earth, distributed by datasets/geo-countries",
+  "url": "https://github.com/datasets/geo-countries/tree/ca3b7150caa5d3cc3fb108a87fc6e3d57bd97d99",
+  "sourceArtifactURL": "https://raw.githubusercontent.com/datasets/geo-countries/ca3b7150caa5d3cc3fb108a87fc6e3d57bd97d99/data/countries.geojson",
+  "sourceArtifactSha256": "392a03db8aa3ba82c105852655620129b11182b95dfc34ef046827ea7d0e5b8c",
+  "sha256": "829037dbb087956ee94c9c419b510c1c3723f27dc362d81e61bfd4ea89fd4814",
+  "license": "Public domain",
+  "licenseURL": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "retrieved": "2026-10-20",
+  "referencePeriod": "Country context; cartographic boundaries are not a current legal determination",
+  "geographicResolution": "Natural Earth 1:10m ADM0 country context",
+  "crs": "EPSG:4326",
+  "version": "ca3b7150caa5d3cc3fb108a87fc6e3d57bd97d99",
+  "transformations": [
+    "Exact eleven-feature ISO alpha-3 subset; coordinate arrays unchanged; JSON whitespace compacted"
+  ],
+  "missingness": "All 11 requested members represented, including Timor-Leste; no ADM1 boundaries included",
+  "updateFrequency": "Pinned static snapshot; manual review required",
+  "limitations": "Context navigation only. Generalized coastlines, disputed areas and boundary vintage must not be treated as authoritative administrative or legal claims."
+}
