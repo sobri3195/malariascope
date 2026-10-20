@@ -13,7 +13,12 @@ type Props = {
   districts: string[];
   years: number[];
 };
-export function LayerControl({ filters: f, patch, districts }: Props) {
+export function LayerControl({
+  filters: f,
+  patch,
+  districts,
+  onMetadata,
+}: Props & { onMetadata?: () => void }) {
   return (
     <details className="asean-controls" open>
       <summary>Layer Control Center & filters</summary>
@@ -92,25 +97,29 @@ export function LayerControl({ filters: f, patch, districts }: Props) {
                 .map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.title}
-                    {i.field === null ? ' · not connected' : ''}
+                    {i.field === null && i.id !== 'boundaries' ? ' · not connected' : ''}
                   </option>
                 ))}
             </optgroup>
           ))}
         </select>
       </label>
+      <button onClick={onMetadata}>Dataset information</button>
       <label>
         <input
           type="checkbox"
           checked={f.visible}
           onChange={(e) => patch({ visible: e.target.checked })}
         />
-        Show thematic layer
+        {f.indicator === 'boundaries' ? 'Show administrative fill' : 'Show thematic layer'}
       </label>
       <label>
-        Thematic opacity: {Math.round(f.opacity * 100)}%
+        {f.indicator === 'boundaries' ? 'Administrative fill opacity' : 'Thematic opacity'}:{' '}
+        {Math.round(f.opacity * 100)}%
         <input
-          aria-label="Thematic opacity"
+          aria-label={
+            f.indicator === 'boundaries' ? 'Administrative fill opacity' : 'Thematic opacity'
+          }
           type="range"
           min="0"
           max="1"

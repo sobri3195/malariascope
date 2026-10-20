@@ -2406,7 +2406,7 @@ function App() {
           }
           provenance={data?.provenance ?? {}}
         />
-        {!['/methodology', '/dashboard'].includes(location.pathname) && (
+        {!['/methodology', '/dashboard', '/asean-map'].includes(location.pathname) && (
           <div className="safety-banner">
             <ShieldCheck size={16} />
             <span>{safety}</span>
@@ -2415,7 +2415,7 @@ function App() {
         )}
         {researchError && <p role="alert">{researchError}</p>}
         {state.researchMode === 'BUILTIN' &&
-          !['/methodology', '/dashboard'].includes(location.pathname) && (
+          !['/methodology', '/dashboard', '/asean-map'].includes(location.pathname) && (
             <div className="notice">
               RETROSPECTIVE RESEARCH DATA · VERIFIED RESEARCH EXTRACTION · not independently
               audited.

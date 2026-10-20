@@ -50,16 +50,19 @@ try {
       .or(page.getByRole('complementary', { name: 'Region detail panel' }))
       .getByRole('heading', { name: 'Cambodia', exact: true }),
   ).toBeVisible();
-  await expect(page.getByTestId('region-value')).toContainText('Unavailable');
+  await expect(page.getByTestId('region-value')).toContainText('ADM0');
   await page.getByLabel('Geographic search', { exact: true }).fill('Indonesia');
   await page.getByRole('button', { name: 'Go', exact: true }).click();
   await page.getByRole('button', { name: 'Explore available Papua ADM2 data' }).click();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
+  await page.getByLabel('Regional indicator').selectOption('cases');
   await expect(page.getByLabel('Study district')).toContainText('Biak Numfor');
   await expect(
     page.getByRole('button', { name: 'Inspect district Biak Numfor', exact: true }),
   ).toBeAttached();
   await page.getByLabel('Study district').selectOption('Biak Numfor');
   await expect(page.getByTestId('region-value')).toContainText('4,306');
+  await page.locator('.asean-timeline-drawer > summary').click();
   await page.getByLabel('Reporting year', { exact: true }).selectOption('2020');
   await expect(page.getByTestId('region-value')).toContainText('641');
   await page.getByRole('button', { name: 'Next year', exact: true }).click();
@@ -130,6 +133,7 @@ try {
   await expect(page.getByTestId('region-value')).toContainText('Unavailable');
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeDisabled();
   await page.reload();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
   await expect(page.getByLabel('Regional indicator')).toHaveValue('deaths');
   await expect(page.getByTestId('region-value')).toContainText('Unavailable');
   await page.getByRole('button', { name: 'Reset map & filters', exact: true }).click();
@@ -138,8 +142,10 @@ try {
   const config = JSON.parse(await readFile(await (await configDownload).path(), 'utf8'));
   if (config.filters.area !== 'asean' || config.filters.camera[2] > 4)
     throw Error('Reset did not restore the ASEAN extent');
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
   await page.getByLabel('Thailand', { exact: true }).check();
   await page.getByLabel('Viet Nam', { exact: true }).check();
+  await page.locator('#asean-comparison-drawer > summary').click();
   await expect(
     page.getByRole('region', { name: 'Regional comparison' }).locator('tbody tr'),
   ).toHaveCount(2);

@@ -16,6 +16,18 @@ No epidemiological observations are invented to populate empty countries. Papua 
 
 ## Implemented behavior
 
+### Map composition and interaction redesign
+
+The first regional implementation retained a fixed 510px canvas, permanent layer sidebar and expanded timeline. It fitted navigation presets to hardcoded bounds, did not refit after container changes and showed the study palette even at a country-only extent. These choices reduced the usable map area and mixed administrative context with thematic evidence.
+
+The redesign uses a desktop canvas of at least 70vh, fractional zoom steps and bounds derived from the actual selected country/study/district geometry. ResizeObserver updates the Leaflet size and fits the selected geography when no explicit saved camera is in use; saved cameras retain their center/zoom. Opening a panel refits with padding for its occupied area. Country and district selections clear the previous camera. Clickable ASEAN/country/Papua-study breadcrumbs provide the reverse path; Papua is explicitly a study extent, not a fabricated ADM1 boundary. The existing `/risk-map` district GIS and dashboard/mobile maps remain available, while `/asean-map` opens the regional experience by default.
+
+Layers and Tools are collapsible floating panels. On mobile they use a map-contained bottom sheet, with navigation controls above it. A compact annual timeline expands on demand. The contextual legend starts with administrative context, and only shows epidemiological bins when an active thematic study layer has values. A provenance strip exposes dataset, period, availability, source/license, retrieval date and EPSG:4326. The existing source manifest and ledger links remain available. Unsupported indicators remain explicitly unavailable.
+
+`MapChrome.tsx` owns breadcrumbs, contextual legend and provenance; `MapTools.tsx` owns the tool UI; `RegionalCanvas.tsx` owns map/layer lifecycle and real vertex placement. `measurement.ts` calculates great-circle distance and spherical polygon area through the existing Turf dependency. Tools accept map taps or keyboard-entered coordinates, support undo/clear/finish and export drawn study polygons with their method and USER-DRAWN classification. Polygon intersection lists the loaded study districts it touches; it never apportions district case counts into a custom area. Measurements are exploratory, not survey-grade. Invalid coordinates, self intersections, degenerate polygons, more than 256 vertices and polygons crossing the antimeridian are rejected (split antimeridian polygons first). ASEAN country geometry itself does not cross that meridian. Measurements run only when explicitly finished, against the nine available study polygons.
+
+No new mapping provider, database, dependency, API credential or backend process is introduced. Only local vector context is offered as a basemap; external/raster providers remain unconfigured. No province/place gazetteer, monthly/weekly observations or national surveillance feed is implied.
+
 - Eleven clickable country polygons, keyboard selection, country/ISO/district autocomplete, multi-country comparisons, ASEAN/Indonesia/Papua/Greater Mekong presets, pan/zoom, reset/fit, fullscreen, scale, pointer/tap coordinates and coordinate copying.
 - Separate country and study layers, visibility, thematic opacity, ordering, explanatory legends, missing-data styling and model-output dashed outlines. One thematic indicator is displayed at a time to avoid silent unit overlays.
 - The fixed, checksummed Papua adapter connects reported cases, incidence, rainfall, mean temperature, humidity, at-risk population and saved model outputs. Incidence uses cases / available at-risk population × 1,000, with supplied study incidence as a documented fallback. National observations are always unavailable, including Indonesia: no study-to-national aggregation is performed.
@@ -68,7 +80,7 @@ Any future national adapter must retain denominator definitions, reporting perio
 
 ## Remaining capabilities and blocked integrations
 
-National/subnational feeds outside the supplied study, ADM1 geometry, monthly/weekly or parasite/case-classification filters, deaths/testing, raster basemaps/environmental products, NDVI, facility/accessibility feeds, dense-point clustering, drawing/buffering/measurement, intervention analyses, new region-wide LISA/Gi* analyses and prospective forecasting remain unimplemented. The existing Papua spatial/model workspaces retain their supported analyses and parameters; linking to them does not establish ASEAN-wide model validation. Country data-sharing, live surveillance, authorization for external providers, uncertainty intervals and reliable prospective outputs have not been supplied. No artificial data or confidence intervals stand in for them.
+National/subnational feeds outside the supplied study, ADM1 geometry, monthly/weekly or parasite/case-classification filters, deaths/testing, raster basemaps/environmental products, NDVI, facility/accessibility feeds, dense-point clustering, buffering, intervention analyses, new region-wide LISA/Gi* analyses and prospective forecasting remain unimplemented. The existing Papua spatial/model workspaces retain their supported analyses and parameters; linking to them does not establish ASEAN-wide model validation. Country data-sharing, live surveillance, authorization for external providers, uncertainty intervals and reliable prospective outputs have not been supplied. No artificial data or confidence intervals stand in for them.
 
 ## Performance and security
 
@@ -89,9 +101,10 @@ npm run build
 npm run preview -- --port 4173 --strictPort
 # In a second terminal:
 APP_URL=http://127.0.0.1:4173 CHROMIUM_PATH=/usr/bin/chromium node tests/asean-map.mjs
+APP_URL=http://127.0.0.1:4173 CHROMIUM_PATH=/usr/bin/chromium node tests/maps-redesign.mjs
 APP_URL=http://127.0.0.1:4173 CHROMIUM_PATH=/usr/bin/chromium node tests/browser.mjs
 ```
 
-The ASEAN suite covers real local boundaries, all eleven identities, keyboard country selection, Papua drill-down, exact study values, temporal playback, observed/model distinction, layer controls, saved/URL state, comparison, downloaded CSV/GeoJSON/PNG, mobile layout, explicit load failure/retry, and the existing GIS route. Unit tests verify membership/checksum, URL validation, missing versus zero, geographic/period filtering, export attribution and formula escaping. The existing full runner automatically discovers `tests/asean-map.mjs`.
+The ASEAN suite covers real local boundaries, all eleven identities, keyboard country selection, Papua drill-down, exact study values, temporal playback, observed/model distinction, layer controls, saved/URL state, comparison, downloaded CSV/GeoJSON/PNG, mobile layout, explicit load failure/retry, and the existing GIS route. The redesign suite checks the 70vh budget, projection-based containment of selected geometry, breadcrumbs, resize/fullscreen, layer/legend/provenance transitions, real map-click vertex placement, distance/area calculations, drawn-area exports and mobile sheet/control separation. Unit tests verify membership/checksum, URL validation, missing versus zero, geographic/period filtering, export attribution, formula escaping and measurement validity. The full browser runner discovers both suites.
 
 Vercel continues to use `npm run build` and `dist`; the existing SPA rewrites cover `/asean-map` while preserving `/data/` assets. No extra environment variables, backend or Vercel configuration changes are required. Remote Vercel deployment is a separate owner action and is not claimed as verified by local browser tests.

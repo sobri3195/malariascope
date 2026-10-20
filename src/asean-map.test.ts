@@ -31,7 +31,11 @@ const rows: Row[] = [
   },
   { district: 'B', year: 2025, cases: 10 },
 ];
-const papua = { ...readFilters(new URLSearchParams()), area: 'papua' as const };
+const papua = {
+  ...readFilters(new URLSearchParams()),
+  area: 'papua' as const,
+  indicator: 'cases' as const,
+};
 test('eleven ASEAN members, including Timor-Leste; PNG is never included', () => {
   assert.equal(countries.length, 11);
   assert.equal(new Set(countries.map((c) => c.code)).size, 11);
@@ -63,7 +67,7 @@ test('untrusted URL filters reject unknown identities, models, invalid periods a
   );
   assert.equal(f.area, 'asean');
   assert.deepEqual(f.countries, ['IDN', 'THA']);
-  assert.equal(f.indicator, 'cases');
+  assert.equal(f.indicator, 'boundaries');
   assert.equal(f.year, 2025);
   assert.equal(f.opacity, 0.8);
   assert.equal(f.model, 'Random Forest');
