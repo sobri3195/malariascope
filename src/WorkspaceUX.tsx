@@ -248,10 +248,12 @@ export default function WorkspaceUX({
   modules,
   models,
   provenance,
+  hideContext = false,
 }: {
   modules: [string, string, any][];
   models: any[];
   provenance: Record<string, any>;
+  hideContext?: boolean;
 }) {
   const {
     state,
@@ -422,136 +424,139 @@ export default function WorkspaceUX({
   const name = modules.find(([path]) => '/' + path === route.pathname)?.[1] ?? 'Workspace';
   return (
     <>
-      <section className="ux-context no-print" aria-label="Global analytical context">
-        <div className="ux-context-grid">
-          <label>
-            YEAR
-            <select
-              aria-label="Context year"
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-            >
-              {years.map((y) => (
-                <option key={y}>{y}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            DISTRICT
-            <select
-              aria-label="Context district"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-            >
-              <option>All districts</option>
-              {districts.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            RISK MODE
-            <select
-              aria-label="Context risk configuration"
-              value={riskMode}
-              onChange={(e) => setRiskMode(e.target.value as typeof riskMode)}
-            >
-              {riskModes.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            MODEL
-            <select
-              aria-label="Context model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-            >
-              {forecastModels.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            DATASET
-            <select
-              aria-label="Context dataset"
-              value={state.active}
-              onChange={(e) =>
-                update(
-                  { active: e.target.value },
-                  'Dataset selected',
-                  state.datasets.find((d) => d.id === e.target.value)?.name ?? 'No primary dataset',
-                )
-              }
-            >
-              <option value="">No primary dataset</option>
-              {state.datasets.map((d) => (
-                <option value={d.id} key={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="context-refresh"
-            onClick={() => {
-              window.dispatchEvent(new Event('resize'));
-              window.dispatchEvent(
-                new CustomEvent('malariascope-notice', {
-                  detail: `View synchronized · ${year} · ${district}. Filters apply immediately.`,
-                }),
-              );
-            }}
-          >
-            Update view →
-          </button>
-        </div>
-        <div className="ux-context-footer">
-          <nav aria-label="Contextual breadcrumbs">
-            <NavLink to="/dashboard">Workspace</NavLink>
-            <span>
-              {' '}
-              / {name} / {year} / {district}
-            </span>
-          </nav>
-          <div className="ux-actions">
+      {!hideContext && (
+        <section className="ux-context no-print" aria-label="Global analytical context">
+          <div className="ux-context-grid">
+            <label>
+              YEAR
+              <select
+                aria-label="Context year"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+              >
+                {years.map((y) => (
+                  <option key={y}>{y}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              DISTRICT
+              <select
+                aria-label="Context district"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+              >
+                <option>All districts</option>
+                {districts.map((d) => (
+                  <option key={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              RISK MODE
+              <select
+                aria-label="Context risk configuration"
+                value={riskMode}
+                onChange={(e) => setRiskMode(e.target.value as typeof riskMode)}
+              >
+                {riskModes.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              MODEL
+              <select
+                aria-label="Context model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                {forecastModels.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              DATASET
+              <select
+                aria-label="Context dataset"
+                value={state.active}
+                onChange={(e) =>
+                  update(
+                    { active: e.target.value },
+                    'Dataset selected',
+                    state.datasets.find((d) => d.id === e.target.value)?.name ??
+                      'No primary dataset',
+                  )
+                }
+              >
+                <option value="">No primary dataset</option>
+                {state.datasets.map((d) => (
+                  <option value={d.id} key={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
+              className="context-refresh"
               onClick={() => {
-                setPalette(false);
-                setPanel('Data Provenance');
+                window.dispatchEvent(new Event('resize'));
+                window.dispatchEvent(
+                  new CustomEvent('malariascope-notice', {
+                    detail: `View synchronized · ${year} · ${district}. Filters apply immediately.`,
+                  }),
+                );
               }}
             >
-              Inspector
-            </button>
-            <button
-              onClick={() => {
-                setPalette(false);
-                setPanel('Recent Activity');
-              }}
-            >
-              Recent Activity
-            </button>
-            <button
-              onClick={() => {
-                setPalette(false);
-                setPanel('Analytical Snapshots');
-              }}
-            >
-              Snapshots
-            </button>
-            <button onClick={() => window.dispatchEvent(new Event('malariascope-command'))}>
-              Commands <kbd>Ctrl/⌘ K</kbd>
+              Update view →
             </button>
           </div>
-        </div>
-        <p className="ux-scope-note">
-          Shared context. Dataset selects the primary source; compatible joins are labeled in each
-          module. Risk calculations use the selected risk mode; observed burden, model validation,
-          readiness and exploratory scenarios retain their explicitly stated scientific basis.
-        </p>
-      </section>
+          <div className="ux-context-footer">
+            <nav aria-label="Contextual breadcrumbs">
+              <NavLink to="/dashboard">Workspace</NavLink>
+              <span>
+                {' '}
+                / {name} / {year} / {district}
+              </span>
+            </nav>
+            <div className="ux-actions">
+              <button
+                onClick={() => {
+                  setPalette(false);
+                  setPanel('Data Provenance');
+                }}
+              >
+                Inspector
+              </button>
+              <button
+                onClick={() => {
+                  setPalette(false);
+                  setPanel('Recent Activity');
+                }}
+              >
+                Recent Activity
+              </button>
+              <button
+                onClick={() => {
+                  setPalette(false);
+                  setPanel('Analytical Snapshots');
+                }}
+              >
+                Snapshots
+              </button>
+              <button onClick={() => window.dispatchEvent(new Event('malariascope-command'))}>
+                Commands <kbd>Ctrl/⌘ K</kbd>
+              </button>
+            </div>
+          </div>
+          <p className="ux-scope-note">
+            Shared context. Dataset selects the primary source; compatible joins are labeled in each
+            module. Risk calculations use the selected risk mode; observed burden, model validation,
+            readiness and exploratory scenarios retain their explicitly stated scientific basis.
+          </p>
+        </section>
+      )}
       <div
         className="ux-notifications no-print"
         role="region"

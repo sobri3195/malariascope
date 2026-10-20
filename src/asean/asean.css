@@ -1,0 +1,469 @@
+.asean-workspace {
+  --regional-ink: #193c51;
+  --regional-teal: #087f87;
+  color: var(--regional-ink);
+  min-width: 0;
+  font-size: 13px;
+}
+.asean-workspace * {
+  box-sizing: border-box;
+}
+.asean-header,
+.asean-toolbar,
+.asean-section-heading,
+.asean-coordinate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.asean-header h1 {
+  margin: 5px 0;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -1px;
+}
+.asean-header p {
+  margin: 5px 0 16px;
+  color: #587080;
+}
+.asean-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: var(--regional-teal);
+}
+.asean-workspace a {
+  color: #076d7a;
+  text-underline-offset: 3px;
+}
+.asean-workspace button,
+.asean-workspace input,
+.asean-workspace select {
+  font: inherit;
+}
+.asean-workspace button {
+  border: 1px solid #bdcdd5;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--regional-ink);
+  padding: 8px 11px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.asean-workspace button:hover {
+  background: #e8f3f5;
+}
+.asean-workspace button[aria-pressed='true'] {
+  background: #15586b;
+  color: white;
+  border-color: #15586b;
+}
+.asean-workspace button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.asean-workspace :focus-visible {
+  outline: 3px solid #cb8b19;
+  outline-offset: 3px;
+}
+.asean-workspace label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #395466;
+  font-size: 12px;
+}
+.asean-workspace label:has(input[type='checkbox']) {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.asean-workspace input:not([type='checkbox']):not([type='range']),
+.asean-workspace select {
+  width: 100%;
+  padding: 8px;
+  min-height: 38px;
+  border: 1px solid #c1cfd7;
+  border-radius: 4px;
+  color: #193c51;
+  background: white;
+}
+.asean-workspace input[type='checkbox'] {
+  accent-color: #087f87;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.asean-workspace input[type='range'] {
+  width: 100%;
+  accent-color: #087f87;
+}
+.asean-notice {
+  background: #edf6f7;
+  border-left: 3px solid #298791;
+  padding: 10px 13px;
+  margin: 10px 0 16px;
+  line-height: 1.6;
+}
+.asean-toolbar {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #dae3e9;
+  border-radius: 7px;
+}
+.asean-toolbar form {
+  display: flex;
+  align-items: end;
+  gap: 7px;
+  flex: 1;
+  min-width: 220px;
+}
+.asean-toolbar form label {
+  flex: 1;
+}
+.asean-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.asean-filter-summary {
+  line-height: 1.8;
+  padding: 4px 0;
+  color: #476276;
+  overflow-wrap: anywhere;
+}
+.asean-layout {
+  display: grid;
+  grid-template-columns: 222px minmax(0, 1fr) 252px;
+  gap: 13px;
+  align-items: start;
+}
+.asean-controls,
+.asean-detail,
+.asean-comparison,
+.asean-exports,
+.asean-sources {
+  background: #fff;
+  border: 1px solid #d6e1e8;
+  border-radius: 7px;
+  padding: 15px;
+  min-width: 0;
+}
+.asean-controls summary,
+.asean-sources summary {
+  font-weight: 750;
+  cursor: pointer;
+  line-height: 1.6;
+}
+.asean-controls summary {
+  margin-bottom: 15px;
+}
+.asean-controls > label,
+.asean-controls fieldset {
+  margin: 14px 0;
+}
+.asean-controls fieldset {
+  border: 1px solid #d6e1e8;
+  border-radius: 5px;
+  padding: 8px;
+}
+.asean-controls legend {
+  font-size: 11px;
+  padding: 0 4px;
+}
+.asean-country-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.asean-map-section {
+  min-width: 0;
+}
+.asean-kpis {
+  display: flex;
+  background: #173e53;
+  color: white;
+  padding: 13px 15px;
+  gap: 20px;
+  border-radius: 7px 7px 0 0;
+}
+.asean-kpis > div {
+  flex: 1;
+  min-width: 0;
+}
+.asean-kpis strong {
+  display: block;
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+}
+.asean-kpis span {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  line-height: 1.6;
+  color: #d4e5ed;
+}
+.asean-map-frame {
+  position: relative;
+  height: 510px;
+  background: #edf3f6;
+  border: 1px solid #c7d7df;
+}
+.asean-leaflet {
+  height: 100%;
+  width: 100%;
+  background: #edf3f6;
+  z-index: 0;
+}
+.asean-map-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 30px;
+  text-align: center;
+}
+.asean-map-buttons {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+  flex-direction: column;
+  z-index: 450;
+}
+.asean-map-buttons button {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 4px #173e5320;
+}
+.asean-coordinate {
+  padding: 8px 0;
+  font-size: 11px;
+  color: #526b7b;
+}
+.asean-coordinate button {
+  min-height: 30px;
+  font-size: 11px;
+}
+.asean-legend {
+  background: #fff;
+  border: 1px solid #d6e1e8;
+  padding: 12px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.asean-legend-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.asean-legend-colors span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.asean-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #798e9a;
+}
+.asean-legend p {
+  margin: 9px 0 0;
+  color: #526b7b;
+  line-height: 1.6;
+}
+.asean-unavailable {
+  padding: 11px;
+  background: #fbf5e7;
+  border-left: 3px solid #bc8b30;
+  line-height: 1.6;
+}
+.asean-detail h2 {
+  font-size: 20px;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.asean-detail p,
+.asean-detail dd,
+.asean-muted {
+  line-height: 1.7;
+  color: #526b7b;
+  font-size: 12px;
+}
+.asean-detail-value {
+  font-size: 27px;
+  padding: 14px 0;
+  border-block: 1px solid #dce6eb;
+}
+.asean-detail-value small {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.asean-detail dt {
+  font-size: 11px;
+  font-weight: 750;
+  margin-top: 12px;
+}
+.asean-detail dd {
+  margin: 3px 0;
+}
+.asean-detail button {
+  width: 100%;
+}
+.asean-trend > div {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 10px;
+  align-items: center;
+}
+.asean-trend meter {
+  width: 100%;
+}
+.asean-timeline {
+  background: #f6f9fb;
+  border: 1px solid #d5e1e8;
+  border-radius: 6px;
+  padding: 13px;
+  margin-top: 14px;
+}
+.asean-timeline > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.asean-timeline > div:first-child span {
+  font-size: 10px;
+  color: #526b7b;
+}
+.asean-timeline > label {
+  margin: 12px 0;
+}
+.asean-timeline .asean-actions label {
+  flex: 1;
+  min-width: 100px;
+}
+.asean-exports,
+.asean-comparison,
+.asean-sources {
+  margin-top: 18px;
+}
+.asean-workspace h2 {
+  font-size: 18px;
+}
+.asean-workspace h3 {
+  font-size: 14px;
+}
+.asean-exports p,
+.asean-comparison p {
+  line-height: 1.6;
+  font-size: 12px;
+}
+.asean-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.asean-workspace table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.asean-workspace th,
+.asean-workspace td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #dce5ea;
+  white-space: normal;
+}
+.asean-workspace th {
+  background: #f3f7f9;
+}
+.asean-sources p {
+  line-height: 1.8;
+}
+.asean-workspace:fullscreen {
+  overflow: auto;
+  padding: 24px;
+  background: #f3f7f9;
+}
+@media (max-width: 1250px) {
+  .asean-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+  .asean-detail {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 850px) {
+  .asean-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .asean-controls {
+    grid-row: 2;
+  }
+  .asean-map-section {
+    grid-row: 1;
+  }
+  .asean-country-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .asean-map-frame {
+    height: 420px;
+  }
+  .asean-workspace button {
+    min-height: 44px;
+  }
+  .asean-toolbar form {
+    min-width: 0;
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .asean-map-buttons button {
+    min-height: 36px;
+    font-size: 11px;
+  }
+  .asean-detail {
+    grid-row: 3;
+  }
+  .asean-workspace th,
+  .asean-workspace td {
+    padding: 8px;
+  }
+}
+@media print {
+  .asean-workspace {
+    color: #000;
+  }
+  .asean-controls,
+  .asean-toolbar,
+  .asean-map-buttons,
+  .asean-exports .asean-actions,
+  .asean-workspace button,
+  .asean-timeline {
+    display: none !important;
+  }
+  .asean-layout {
+    display: block;
+  }
+  .asean-map-frame {
+    height: 430px;
+    break-inside: avoid;
+  }
+  .asean-detail,
+  .asean-comparison,
+  .asean-legend {
+    break-inside: avoid;
+  }
+  .asean-table-scroll {
+    overflow: visible;
+  }
+}

@@ -96,6 +96,7 @@ import { validateGeometry } from './geometry';
 import './scientific-design.css';
 const ProspectiveRegistry = lazy(() => import('./ProspectiveRegistry'));
 const MapView = lazy(() => import('./Map'));
+const AseanWorkspace = lazy(() => import('./asean/Workspace'));
 const ForceHealthReadinessMatrix = lazy(() => import('./ForceHealthReadinessMatrix'));
 const ScientificIntegrityCenter = lazy(() => import('./ScientificIntegrityCenter'));
 const ExplainableRiskEngine = lazy(() => import('./ExplainableRiskEngine'));
@@ -2029,6 +2030,7 @@ function GIS() {
         sub="Compare district evidence through time, inspect spatial context, and explore traceable map layers."
       >
         <Button onClick={() => window.print()}>Print map view</Button>
+        <NavLink to="/asean-map">Explore ASEAN regional map →</NavLink>
       </Heading>
       <Filters />
       <Suspense fallback={<WorkspaceSkeleton label="Loading geospatial workspace" />}>
@@ -2259,6 +2261,10 @@ function App() {
             </div>
             <nav aria-label="Primary navigation">
               <div className="nav-group">INTELLIGENCE WORKSPACE</div>
+              <NavLink to="/asean-map" onClick={() => setMobile(false)}>
+                <Globe size={17} />
+                <span>ASEAN Map Explorer</span>
+              </NavLink>
               {modules
                 .slice(0, 12)
                 .filter(
@@ -2351,7 +2357,11 @@ function App() {
               <Globe size={16} />
               <span>Intelligence workspace</span>
               <ChevronRight size={13} />
-              <strong>{modules.find((m) => m[0] === path)?.[1] || 'Dashboard'}</strong>
+              <strong>
+                {path === 'asean-map'
+                  ? 'ASEAN Map Explorer'
+                  : modules.find((m) => m[0] === path)?.[1] || 'Dashboard'}
+              </strong>
             </div>
             <div className="topbar-actions">
               <button
@@ -2387,8 +2397,9 @@ function App() {
         <NavLink className="mobile-workspace-link" to="/mobile">
           <Smartphone size={17} /> Open the dedicated mobile workspace <ChevronRight size={16} />
         </NavLink>
-        <AnalyticalDemoControls />
+        {path !== 'asean-map' && <AnalyticalDemoControls />}
         <WorkspaceUX
+          hideContext={path === 'asean-map'}
           modules={modules}
           models={
             state.researchMode === 'DEMO' ? [] : (research?.performance ?? data?.models ?? [])
@@ -2450,6 +2461,14 @@ function App() {
             <Route path="/model-monitoring" element={<ProspectiveRegistry monitoring />} />
             <Route path="/research-operations" element={<ResearchOperations />} />
             <Route path="/risk-map" element={<GIS />} />
+            <Route
+              path="/asean-map"
+              element={
+                <Suspense fallback={<WorkspaceSkeleton label="Loading ASEAN map" />}>
+                  <AseanWorkspace />
+                </Suspense>
+              }
+            />
             <Route path="/surveillance" element={<Surveillance />} />
             <Route
               path="/district-intelligence"
