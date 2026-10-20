@@ -49,6 +49,14 @@ export const presets = {
 export type Area = keyof typeof presets;
 export const indicators = [
   {
+    id: 'boundaries',
+    title: 'Administrative context',
+    unit: 'ADM0 / available ADM2',
+    group: 'Administrative',
+    kind: 'Geographic context',
+    field: null,
+  },
+  {
     id: 'cases',
     title: 'Reported malaria cases',
     unit: 'cases',
@@ -181,7 +189,7 @@ export function readFilters(p: URLSearchParams): Filters {
     district: (p.get('aDistrict') || '').slice(0, 120),
     indicator: indicators.some((i) => i.id === p.get('aIndicator'))
       ? (p.get('aIndicator') as Indicator)
-      : 'cases',
+      : 'boundaries',
     year: boundedYear(p.get('aYear'), 2025),
     compareYear: boundedYear(p.get('aCompare'), 2024),
     model: models.includes(p.get('aModel') || '') ? p.get('aModel')! : 'Random Forest',
@@ -254,6 +262,29 @@ export function availableYears(rows: Row[], f: Filters) {
 }
 export const formatValue = (value: number | null) =>
   value === null ? 'Unavailable' : value.toLocaleString('en-GB', { maximumFractionDigits: 2 });
+export function navigationFeatures(
+  f: Filters,
+  countriesGeometry: Geometry,
+  study: Geometry | null,
+) {
+  if (f.area === 'papua' && study) {
+    const selected = study.features.filter(
+      (feature) =>
+        !f.district || (feature.properties?.district || feature.properties?.name) === f.district,
+    );
+    return selected.length ? selected : study.features;
+  }
+  const codes = f.countries.length
+    ? f.countries
+    : f.area === 'indonesia' || f.area === 'papua'
+      ? ['IDN']
+      : f.area === 'mekong'
+        ? ['MMR', 'THA', 'LAO', 'KHM', 'VNM']
+        : countries.map((c) => c.code);
+  return countriesGeometry.features.filter((feature) =>
+    codes.includes(feature.properties?.['ISO3166-1-Alpha-3']),
+  );
+}
 export const colors = ['#d3eeef', '#8dcdd0', '#48a9b5', '#247891', '#164d70'];
 export const missingColor = '#c8cdd3';
 export function breaksFor(values: number[]) {

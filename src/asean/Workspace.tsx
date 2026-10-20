@@ -5,6 +5,10 @@ import { download } from '../analytics';
 import { validateGeometry } from '../geometry';
 import { researchRows, studyVersion } from '../research-data/research';
 import RegionalCanvas, { type RegionalMapHandle } from './RegionalCanvas';
+import { GeographicBreadcrumb, ContextLegend, MapProvenance } from './MapChrome';
+import MapTools from './MapTools';
+import { measure, type MapTool, type Measurement } from './measurement';
+import type { Position } from 'geojson';
 import { LayerControl, Timeline } from './Controls';
 import { Comparison, RegionDetails } from './Details';
 import {
@@ -15,11 +19,8 @@ import {
   scopedRows,
   availableYears,
   indicatorInfo,
-  formatValue,
   valueFor,
   breaksFor,
-  colors,
-  missingColor,
   exportRecords,
   recordsCSV,
   filteredGeometry,
@@ -38,6 +39,8 @@ async function loadCountries(signal: AbortSignal): Promise<Geometry> {
   if (!response.ok || !metadata.ok)
     throw Error('ASEAN boundary files could not be loaded. Reconnect and retry.');
   const [raw, source] = await Promise.all([response.text(), metadata.json()]);
+  if (source.crs !== 'EPSG:4326')
+    throw Error('Country boundaries require WGS84 longitude/latitude (EPSG:4326).');
   const hash = [
     ...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))),
   ]
@@ -63,9 +66,18 @@ export default function AseanWorkspace() {
   const patch = useCallback(
     (change: Partial<Filters>) => {
       // Update controlled inputs immediately; router navigation can commit in a transition.
-      const next = { ...current.current, camera: camera.current, ...change };
+      const geographicChange =
+        change.area !== undefined ||
+        change.countries !== undefined ||
+        change.district !== undefined;
+      const next = {
+        ...current.current,
+        camera: geographicChange ? null : current.current.camera,
+        ...change,
+      };
       current.current = next;
       setFilters(next);
+      if (geographicChange) setDetailOpen(!!next.district || next.countries.length === 1);
       setParams(writeFilters(next, new URLSearchParams(window.location.search)), { replace: true });
     },
     [setParams],
@@ -80,6 +92,12 @@ export default function AseanWorkspace() {
   const [playing, setPlaying] = useState(false),
     [speed, setSpeed] = useState(1000);
   const [bookmark, setBookmark] = useState<string | null>(null);
+  const [panel, setPanel] = useState<'layers' | 'tools' | null>(null),
+    [detailOpen, setDetailOpen] = useState(filters.countries.length > 0 || !!filters.district);
+  const [tool, setTool] = useState<MapTool>('inspect'),
+    [points, setPoints] = useState<Position[]>([]),
+    [measurement, setMeasurement] = useState<Measurement | null>(null),
+    [measureError, setMeasureError] = useState('');
   const map = useRef<RegionalMapHandle>(null),
     root = useRef<HTMLDivElement>(null),
     camera = useRef<[number, number, number] | null>(filters.camera);
@@ -104,6 +122,61 @@ export default function AseanWorkspace() {
     values = filtered
       .map((r) => valueFor(r, filters.indicator))
       .filter((v): v is number => v !== null);
+  const addPoint = (point: Position) => {
+    setPoints((previous) => (previous.length >= 256 ? previous : [...previous, point]));
+    setMeasurement(null);
+    setMeasureError(
+      points.length >= 256 ? 'Maximum 256 vertices. Undo or start a new measurement.' : '',
+    );
+  };
+  const startTool = (next: MapTool) => {
+    setTool(next);
+    setMeasureError('');
+    if (next !== 'inspect') {
+      setPoints([]);
+      setMeasurement(null);
+    }
+  };
+  const clearMeasurement = () => {
+    setPoints([]);
+    setMeasurement(null);
+    setMeasureError('');
+    setTool('inspect');
+  };
+  const finishMeasurement = () => {
+    if (tool === 'inspect') return;
+    try {
+      setMeasurement(measure(tool, points, filters.area === 'papua' ? study || null : null));
+      setMeasureError('');
+      setTool('inspect');
+    } catch (e) {
+      setMeasureError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const showMetadata = () => {
+    setPanel(null);
+    const details = document.getElementById('asean-map-provenance') as HTMLDetailsElement | null;
+    if (details) {
+      details.open = true;
+      details.querySelector('summary')?.focus();
+      details.scrollIntoView({ block: 'nearest' });
+    }
+  };
+  useEffect(() => {
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        document
+          .querySelector<HTMLButtonElement>(
+            '[aria-controls="asean-map-panel"][aria-expanded="true"]',
+          )
+          ?.focus();
+        setPanel(null);
+        setTool('inspect');
+      }
+    };
+    window.addEventListener('keydown', escape);
+    return () => window.removeEventListener('keydown', escape);
+  }, []);
   useEffect(() => {
     const abort = new AbortController();
     setError('');
@@ -134,13 +207,15 @@ export default function AseanWorkspace() {
     return () => window.clearInterval(interval);
   }, [playing, years.join(','), speed, patch]);
   const goPapua = () => {
+    setDetailOpen(true);
     setPlaying(false);
     patch({ area: 'papua', countries: ['IDN'], district: '', camera: null });
   };
   const chooseCountry = (code: CountryCode) => {
+    setDetailOpen(true);
     setPlaying(false);
     patch({
-      area: code === 'IDN' && filters.area === 'papua' ? 'papua' : 'asean',
+      area: code === 'IDN' ? 'indonesia' : 'asean',
       countries: [code],
       district: '',
       camera: null,
@@ -154,6 +229,9 @@ export default function AseanWorkspace() {
     setPlaying(false);
     patch(readFilters(new URLSearchParams()));
     setSearch('');
+    setDetailOpen(false);
+    setPanel(null);
+    clearMeasurement();
     setStatus('Regional view and all map filters reset.');
   };
   async function act(operation: () => void | Promise<void>, success: string) {
@@ -213,15 +291,25 @@ export default function AseanWorkspace() {
         ctx.drawImage(image, 0, 0);
         ctx.fillStyle = '#17384c';
         ctx.font = '14px sans-serif';
+        const context = filters.indicator === 'boundaries' || !filters.visible;
         const lines = [
           `MALARIASCOPE · ${presets[filters.area].label} · ${filters.year}`,
           `${info.title} (${info.unit}) · ${info.kind} · ${filters.visible ? 'visible' : 'hidden'}`,
           `District filter: ${filters.district || 'all'} · Countries: ${filters.countries.join(', ') || 'all'}`,
-          'Equal-width bins across the supplied study periods; gray = unavailable.',
-          `Breaks: ${breaks.map((v) => v.toFixed(2)).join(' / ') || 'no values'}`,
+          context
+            ? 'Administrative context only; no epidemiological legend or values.'
+            : 'Equal-width bins across the supplied study periods; gray = unavailable.',
+          context
+            ? 'Muted country/study outlines; teal = selected geography.'
+            : `Breaks: ${values.length ? breaks.map((v) => v.toFixed(2)).join(' / ') : 'no connected values for this scope'}`,
           'Natural Earth: public domain. Papua: geoBoundaries / BPS / WFP / OCHA; CC BY 3.0 IGO.',
           'Study: MALARIASCOPE-AMMM2026-v1; not independently audited; redistribution license unspecified.',
           'No national surveillance connected. No prospective forecast or operational validation.',
+          measurement
+            ? `User-drawn measurement: ${measurement.value.toFixed(2)} ${measurement.unit} (Turf spherical Earth); no observations apportioned.`
+            : points.length
+              ? `Unfinished user drawing: ${points.length} vertices; no calculated statistics.`
+              : 'No user-drawn study area or measurement.',
         ];
         lines.forEach((line, index) =>
           ctx.fillText(line, 12, image.height + 22 + index * 20, canvas.width - 24),
@@ -337,39 +425,9 @@ export default function AseanWorkspace() {
           a complete GMS dataset.
         </p>
       )}
-      <div className="asean-layout">
-        <LayerControl filters={filters} patch={patch} districts={districts} years={years} />
+      <div className={`asean-layout ${detailOpen ? 'has-detail' : ''}`}>
         <section className="asean-map-section" aria-label="Map workspace">
-          <div className="asean-kpis">
-            <div>
-              <strong>
-                {filters.area === 'papua'
-                  ? `${values.length}/${filtered.length}`
-                  : `0/${filters.countries.length || 11}`}
-              </strong>
-              <span>
-                {filters.area === 'papua'
-                  ? 'Study records with selected indicator'
-                  : 'Countries with national observations'}
-              </span>
-            </div>
-            <div>
-              <strong>
-                {filters.area === 'papua' &&
-                ['cases', 'population'].includes(filters.indicator) &&
-                values.length
-                  ? formatValue(values.reduce((a, b) => a + b, 0))
-                  : 'Unavailable'}
-              </strong>
-              <span>
-                {values.length < filtered.length
-                  ? 'Partial study sum · available records only'
-                  : 'Selected study sum'}{' '}
-                · never a national total
-              </span>
-            </div>
-          </div>
-          <div className="asean-map-frame">
+          <div className={`asean-map-frame ${panel ? 'has-panel' : ''}`}>
             {error ? (
               <div role="alert" className="asean-map-message">
                 <p>{error}</p>
@@ -384,8 +442,16 @@ export default function AseanWorkspace() {
                 filters={filters}
                 breaks={breaks}
                 selectedCountry={country}
+                tool={tool}
+                panelOpen={panel !== null}
+                points={points}
+                areaComplete={!!measurement?.geometry}
+                onPoint={addPoint}
                 onCountry={chooseCountry}
-                onDistrict={(district) => patch({ district, countries: ['IDN'] })}
+                onDistrict={(district) => {
+                  setDetailOpen(true);
+                  patch({ district, countries: ['IDN'] });
+                }}
                 onCamera={(next) => {
                   camera.current = next;
                 }}
@@ -395,6 +461,132 @@ export default function AseanWorkspace() {
               <div role="status" className="asean-map-message">
                 Loading verified country geometry…
               </div>
+            )}
+            {geometry && !error && (
+              <>
+                <div className="asean-map-top">
+                  <GeographicBreadcrumb filters={filters} patch={patch} />
+                  <div className="asean-map-panel-triggers">
+                    <button
+                      id="asean-layers-trigger"
+                      aria-expanded={panel === 'layers'}
+                      aria-controls="asean-map-panel"
+                      onClick={() => setPanel(panel === 'layers' ? null : 'layers')}
+                    >
+                      Layers
+                    </button>
+                    <button
+                      id="asean-tools-trigger"
+                      aria-expanded={panel === 'tools'}
+                      aria-controls="asean-map-panel"
+                      onClick={() => setPanel(panel === 'tools' ? null : 'tools')}
+                    >
+                      Tools
+                    </button>
+                    <button aria-expanded={detailOpen} onClick={() => setDetailOpen(!detailOpen)}>
+                      {detailOpen ? 'Hide details' : 'Region details'}
+                    </button>
+                  </div>
+                </div>
+                {panel && (
+                  <div
+                    id="asean-map-panel"
+                    className="asean-map-panel"
+                    role="region"
+                    aria-label={panel === 'layers' ? 'Layer Control Center' : 'Spatial map tools'}
+                  >
+                    <button
+                      className="asean-panel-close"
+                      aria-label="Close map panel"
+                      onClick={() => {
+                        document
+                          .getElementById(
+                            panel === 'tools' ? 'asean-tools-trigger' : 'asean-layers-trigger',
+                          )
+                          ?.focus();
+                        setPanel(null);
+                      }}
+                    >
+                      Close ×
+                    </button>
+                    {panel === 'layers' ? (
+                      <LayerControl
+                        filters={filters}
+                        patch={patch}
+                        districts={districts}
+                        years={years}
+                        onMetadata={showMetadata}
+                      />
+                    ) : (
+                      <MapTools
+                        tool={tool}
+                        setTool={startTool}
+                        points={points}
+                        addPoint={addPoint}
+                        undo={() => {
+                          setPoints(points.slice(0, -1));
+                          setMeasurement(null);
+                        }}
+                        finish={finishMeasurement}
+                        clear={clearMeasurement}
+                        measurement={measurement}
+                        error={measureError}
+                        onExportArea={() =>
+                          act(() => {
+                            if (!measurement?.geometry)
+                              throw Error('Finish a study polygon first.');
+                            download('malariascope-drawn-study-area.geojson', {
+                              ...measurement.geometry,
+                              properties: {
+                                classification: 'USER-DRAWN STUDY AREA',
+                                crs: 'EPSG:4326',
+                                area_km2: measurement.value,
+                                method: 'Turf spherical WGS84 area',
+                                intersectingStudyDistricts: measurement.districts,
+                                limitation:
+                                  'Exploratory selection only; no observations apportioned to drawn geometry',
+                              },
+                            });
+                          }, 'Drawn study geometry exported with method and limitations.')
+                        }
+                        onSearch={() => {
+                          setPanel(null);
+                          document
+                            .querySelector<HTMLInputElement>('[aria-label="Geographic search"]')
+                            ?.focus();
+                        }}
+                        onCompare={() => {
+                          setPanel(null);
+                          document
+                            .getElementById('asean-comparison-drawer')
+                            ?.setAttribute('open', '');
+                          document
+                            .getElementById('asean-comparison-drawer')
+                            ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                        }}
+                        onLayers={() => setPanel('layers')}
+                        onImage={() => {
+                          setPanel(null);
+                          void png();
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+                <ContextLegend
+                  filters={filters}
+                  breaks={breaks}
+                  hasValues={values.length > 0 && filters.area === 'papua'}
+                />
+                {tool !== 'inspect' && (
+                  <div className="asean-drawing-bar" role="status">
+                    {tool === 'area' ? 'Draw study area' : 'Measure distance'} · {points.length}{' '}
+                    vertices <button onClick={finishMeasurement}>Finish</button>
+                    <button onClick={clearMeasurement}>Cancel</button>
+                    {measureError && <span>{measureError}</span>}
+                  </div>
+                )}
+              </>
             )}
             {geometry && !error && (
               <div className="asean-map-buttons">
@@ -431,41 +623,14 @@ export default function AseanWorkspace() {
               Copy coordinates
             </button>
           </div>
-          <section className="asean-legend" aria-label="Regional map legend">
-            <strong>
-              {info.title} · {info.unit} · {info.kind}
-            </strong>
-            <div className="asean-legend-colors">
-              {breaks.length > 0 &&
-                colors.slice(0, breaks.length + 1).map((color, i) => (
-                  <span key={color}>
-                    <i style={{ background: color }} />
-                    {i === 0
-                      ? `≤ ${formatValue(breaks[0])}`
-                      : i === breaks.length
-                        ? `> ${formatValue(breaks.at(-1)!)}`
-                        : `${formatValue(breaks[i - 1])} – ${formatValue(breaks[i])}`}
-                  </span>
-                ))}
-              <span>
-                <i style={{ background: missingColor }} />
-                Unavailable
-              </span>
-            </div>
-            <p>
-              Equal-width classification across all available study years; no risk threshold
-              implied. Model output has dashed outlines. Country outlines carry no epidemiological
-              values.
-            </p>
-            {!filters.visible && <p>Thematic layer is hidden.</p>}
-          </section>
+          <MapProvenance filters={filters} available={values.length} count={filtered.length} />
           {filters.area === 'papua' && (!research || researchError) && (
             <div role={researchError ? 'alert' : 'status'} className="asean-notice">
               {researchError || 'Loading checksummed study observations…'}
               {researchError && <button onClick={retryResearch}>Retry study data</button>}
             </div>
           )}
-          {(filters.area !== 'papua' || !values.length) && (
+          {filters.indicator !== 'boundaries' && (filters.area !== 'papua' || !values.length) && (
             <p className="asean-unavailable" role="status">
               {filters.area !== 'papua'
                 ? 'National observations unavailable. Open Papua study to explore the connected district data.'
@@ -490,18 +655,23 @@ export default function AseanWorkspace() {
               </span>
             </label>
           )}
-          <Timeline
-            filters={filters}
-            patch={patch}
-            districts={districts}
-            years={years}
-            playing={playing}
-            setPlaying={setPlaying}
-            speed={speed}
-            setSpeed={setSpeed}
-          />
+          <details className="asean-timeline-drawer">
+            <summary>Time Machine · {filters.year} · annual study periods</summary>
+            <Timeline
+              filters={filters}
+              patch={patch}
+              districts={districts}
+              years={years}
+              playing={playing}
+              setPlaying={setPlaying}
+              speed={speed}
+              setSpeed={setSpeed}
+            />
+          </details>
         </section>
-        <RegionDetails country={country} rows={rows} filters={filters} onPapua={goPapua} />
+        {detailOpen && (
+          <RegionDetails country={country} rows={rows} filters={filters} onPapua={goPapua} />
+        )}
       </div>
       <section className="asean-exports" aria-label="Map exports and saved views">
         <h2>Research exports & saved views</h2>
@@ -573,13 +743,16 @@ export default function AseanWorkspace() {
             'Exports include selected period, unit, evidence type, source, version and limitations. PNG includes vector map and attribution; PDF uses the browser print dialog.'}
         </p>
       </section>
-      <Comparison
-        filters={filters}
-        rows={rows}
-        version={studyVersion}
-        years={years}
-        patch={patch}
-      />
+      <details id="asean-comparison-drawer" className="asean-comparison-drawer">
+        <summary>Compare countries & study districts</summary>
+        <Comparison
+          filters={filters}
+          rows={rows}
+          version={studyVersion}
+          years={years}
+          patch={patch}
+        />
+      </details>
       <details className="asean-sources">
         <summary>Data Sources & Metadata registry</summary>
         <div className="asean-table-scroll">

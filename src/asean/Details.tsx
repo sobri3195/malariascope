@@ -24,6 +24,7 @@ export function RegionDetails({
   const name = countries.find((c) => c.code === country)?.name;
   const row = scopedRows(rows, f).find((r) => r.district === f.district);
   const indicator = indicatorInfo(f.indicator);
+  const context = f.indicator === 'boundaries' || !f.visible;
   const trend =
     f.area === 'papua' && f.district && (!f.countries.length || f.countries.includes('IDN'))
       ? rows.filter((r) => r.district === f.district).sort((a, b) => a.year - b.year)
@@ -47,9 +48,15 @@ export function RegionDetails({
         <strong>{f.year}</strong> · {indicator.title}
       </p>
       <div className="asean-detail-value" data-testid="region-value">
-        {formatValue(row ? valueFor(row, f.indicator) : null)}
+        {context
+          ? f.area === 'papua'
+            ? 'ADM2 study'
+            : 'ADM0'
+          : formatValue(row ? valueFor(row, f.indicator) : null)}
         <small>
-          {indicator.unit} · {indicator.kind}
+          {context
+            ? 'Geographic context · no thematic values'
+            : `${indicator.unit} · ${indicator.kind}`}
         </small>
       </div>
       {!row && (
@@ -65,7 +72,9 @@ export function RegionDetails({
         <dt>Source & version</dt>
         <dd>
           {f.area === 'papua'
-            ? 'Supplied study extraction · MALARIASCOPE-AMMM2026-v1'
+            ? context
+              ? 'geoBoundaries · BPS / WFP / OCHA · CC BY 3.0 IGO'
+              : 'Supplied study extraction · MALARIASCOPE-AMMM2026-v1'
             : 'Natural Earth · ca3b7150 · public domain'}
         </dd>
         <dt>Freshness</dt>
@@ -92,7 +101,20 @@ export function RegionDetails({
           polygons, not all Indonesian districts.
         </p>
       )}
-      {trend.length > 0 && (
+      {row && !context && (
+        <dl aria-label="Available district observations">
+          <dt>Reported cases</dt>
+          <dd>{formatValue(row.cases)} cases · observed extraction</dd>
+          <dt>Incidence</dt>
+          <dd>{formatValue(valueFor(row, 'incidence'))} per 1,000 at risk</dd>
+          <dt>Rainfall / temperature / humidity</dt>
+          <dd>
+            {formatValue(row.rainfall ?? null)} mm/year · {formatValue(row.temperature ?? null)} °C
+            · {formatValue(row.humidity ?? null)} %
+          </dd>
+        </dl>
+      )}
+      {!context && trend.length > 0 && (
         <section aria-label="District historical trend">
           <h3>Annual district trend</h3>
           <div
