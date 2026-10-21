@@ -24,6 +24,8 @@ Development binds to all interfaces on port 5173; preview defaults to 4173. If t
 
 ## Architecture
 
+Research Intelligence (`/research-intelligence`) connects explicit eight-district and nine-unit cohorts, metric-selectable benchmark sources, prediction diagnostics, annual Spearman evidence, source reconciliation and interface status. New brief-reported manuscript references remain separate from original study artifacts. See [research inventory, contracts, methods and validation](docs/RESEARCH-INTELLIGENCE.md).
+
 The ASEAN Map Explorer (`/asean-map`) adds eleven-country navigation, available Papua study layers, annual exploration, comparisons, saved map configurations and source-aware CSV/GeoJSON/PNG exports. National surveillance remains explicitly unconnected. See [ASEAN workspace architecture, data contracts, licensing and remaining integrations](docs/ASEAN-WORKSPACE.md).
 
 `src/main.tsx` mounts the shared provider and lazy interface shells; `src/DesktopApp.tsx` contains the main workspace routes. `src/analytics.ts` provides pure validation, identity normalization, incidence, percentage change, correlation, model metrics, risk classification, alert evaluation, and export functions. `src/store.tsx` manages versioned localStorage state. `src/Map.tsx` is a lazy-loaded Leaflet GIS workspace. `src/geometry.ts` validates closed polygon rings and resolves district codes/names. `src/SpatialLab.tsx`, `src/spatial.ts`, `src/moran.ts`, and `src/spatial.worker.ts` provide queen-contiguity neighborhoods and reproducible permutation analysis in a worker. Heavy GIS code is loaded on demand. Recharts renders interactive charts. Application activity and local notes never leave the browser.
