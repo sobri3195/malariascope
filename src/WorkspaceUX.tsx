@@ -1,3 +1,4 @@
+import { masters } from './indonesia/engine';
 import { useSkdr } from './indonesia/SkdrContext';
 import {
   SkdrFilters,
@@ -332,7 +333,11 @@ export default function WorkspaceUX({
       const key = e.key.toLowerCase();
       if (pendingChord.current && Date.now() - pendingChord.current < 1200 && chordRoutes[key]) {
         e.preventDefault();
-        navigate('/' + chordRoutes[key]);
+        navigate(
+          '/' +
+            chordRoutes[key] +
+            (skdr.active && chordRoutes[key] === 'dashboard' ? route.search : ''),
+        );
         pendingChord.current = 0;
       } else pendingChord.current = key === 'g' ? Date.now() : 0;
     };
@@ -348,7 +353,7 @@ export default function WorkspaceUX({
       document.removeEventListener('keydown', listener);
       window.removeEventListener('malariascope-command', open);
     };
-  }, [navigate]);
+  }, [navigate, skdr.active, route.search]);
   useEffect(() => {
     const additions = state.audit.filter(
       (a) => !seen.current.has(a.time + ':' + a.event + ':' + a.details),
@@ -391,7 +396,7 @@ export default function WorkspaceUX({
       id: path,
       label,
       kind: 'Command',
-      run: () => navigate('/' + path),
+      run: () => navigate('/' + path + (skdr.active && path === 'dashboard' ? route.search : '')),
     })),
     ...modules
       .filter(([path]) => !routeCommands.some(([, p]) => p === path))
@@ -399,17 +404,24 @@ export default function WorkspaceUX({
         id: 'view-' + path,
         label,
         kind: 'Module',
-        run: () => navigate('/' + path),
+        run: () => navigate('/' + path + (skdr.active && path === 'dashboard' ? route.search : '')),
       })),
-    ...districts.map((d) => ({
-      id: 'district-' + encodeURIComponent(d),
-      label: d,
-      kind: 'District',
-      run: () => {
-        setDistrict(d);
-        navigate('/district-intelligence');
-      },
-    })),
+    ...(skdr.active
+      ? masters['2025'].regions.map((r) => ({
+          id: 'region-' + r.code,
+          label: r.name + ' · ' + r.code,
+          kind: 'Wilayah',
+          run: () => skdr.select({ region: r.code }),
+        }))
+      : districts.map((d) => ({
+          id: 'district-' + encodeURIComponent(d),
+          label: d,
+          kind: 'District',
+          run: () => {
+            setDistrict(d);
+            navigate('/district-intelligence');
+          },
+        }))),
     ...state.datasets.map((d) => ({
       id: 'dataset-' + d.id,
       label: d.name,

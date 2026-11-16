@@ -1,11 +1,27 @@
+import { useRef } from 'react';
+import { useLocalRepository } from './useLocalRepository';
+import LocalRecovery, { saveText } from './LocalRecovery';
+import {
+  emptyAggregates,
+  parseAggregates,
+  aggregateIdentity,
+  aggregateExport,
+  label,
+} from './aggregate-data';
+import {
+  AggregateHighlights,
+  ImportPreview,
+  ResponseSummary,
+  ReconciliationPanel,
+} from './AggregatePanels';
 import { useSkdr } from './SkdrContext';
 import { SkdrDashboard, SkdrInspector, SkdrFilters } from './SkdrDashboard';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import {
   columns,
-  compareSources,
+  common,
   csv,
   kinds,
   masters,
@@ -25,8 +41,6 @@ const labels = {
   respons: 'Respons kasus',
   rekonsiliasi: 'Rekonsiliasi dan ekspor',
 };
-type Data = Record<Kind, RecordRow[]>;
-const empty = (): Data => ({ situasi: [], asal: [], layanan: [], respons: [] });
 const storageKey = 'malariascope-indonesia-aggregate-v1';
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -40,7 +54,11 @@ export default function IndonesiaWorkspace() {
   const location = useLocation();
   const skdr = useSkdr();
   const [q, setQ] = useSearchParams();
-  const [data, setData] = useState<Data>(empty);
+  const repository = useLocalRepository(storageKey, parseAggregates, emptyAggregates);
+  const data = repository.data;
+  const request = useRef(0);
+  const [deleteTarget, setDeleteTarget] = useState('');
+  const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState('');
   const [search, setSearch] = useState('');
   const [preview, setPreview] = useState<{ kind: Kind; rows: RecordRow[] } | null>(null);
@@ -60,24 +78,18 @@ export default function IndonesiaWorkspace() {
     Object.entries(values).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
     setQ(next);
   };
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const d = JSON.parse(raw);
-        if (
-          !d ||
-          kinds.some((k) => !Array.isArray(d[k]) || (d[k].length && validateRows(k, d[k]).length))
-        )
-          throw Error('Rekap tersimpan tidak sah');
-        setData(d);
-      }
-    } catch {
-      setMessage(
-        'Rekap lokal tidak dapat dibaca. Data asli tetap tersimpan; ekspor/cadangkan penyimpanan sebelum menggantinya.',
-      );
-    }
-  }, []);
+  useLayoutEffect(() => {
+    request.current++;
+    setPreview(null);
+    setImporting(false);
+    setDeleteTarget('');
+  }, [panel]);
+  useEffect(
+    () => () => {
+      request.current++;
+    },
+    [],
+  );
   // Deliberately no research-data or synthetic-demo fallback.
   const activeKind: Kind = panel === 'rekonsiliasi' ? 'situasi' : (panel as Kind);
   const filtered = (kind: Kind) => selectRows(data[kind], version, code, period, source);
@@ -112,16 +124,32 @@ export default function IndonesiaWorkspace() {
     (r.code + ' ' + r.name).toLocaleLowerCase('id').includes(search.toLocaleLowerCase('id')),
   );
   async function importFile(file: File, kind: Kind) {
+    const token = ++request.current;
+    setImporting(false);
     setPreview(null);
     if (file.size > 5 * 1024 * 1024) {
       setMessage('Batas CSV agregat 5 MB.');
       return;
     }
-    const parsed = Papa.parse<RecordRow>(await file.text(), {
+    setImporting(true);
+    setMessage('Berkas CSV sedang diperiksa…');
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      if (token === request.current) {
+        setMessage('Berkas tidak dapat dibaca. Pilih ulang CSV.');
+        setImporting(false);
+      }
+      return;
+    }
+    if (token !== request.current) return;
+    const parsed = Papa.parse<RecordRow>(text, {
       header: true,
       skipEmptyLines: 'greedy',
       transformHeader: (h) => h.trim(),
     });
+    setImporting(false);
     const errors = parsed.errors
       .map((e) => e.message)
       .concat(validateRows(kind, parsed.data, parsed.meta.fields));
@@ -143,24 +171,32 @@ export default function IndonesiaWorkspace() {
       return;
     }
     const next = { ...data, [preview.kind]: combined };
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setData(next);
+    if (repository.write(next)) {
       setPreview(null);
       setMessage(
         'Rekap agregat disimpan di peramban ini. URL membagikan filter, bukan berkas impor.',
       );
-    } catch {
-      setMessage('Penyimpanan gagal; data belum disimpan. Ekspor berkas dan coba lagi.');
     }
   }
+  function remove(kind: Kind, identity: string) {
+    if (
+      repository.write({
+        ...data,
+        [kind]: data[kind].filter((r) => aggregateIdentity(kind, r) !== identity),
+      })
+    ) {
+      setDeleteTarget('');
+      setMessage('Rekap yang dipilih dihapus. Sumber lain tetap disimpan.');
+    }
+  }
+
   return (
     <main className="indonesia">
       <header>
         <Link to={'/dashboard' + (skdr.active ? location.search : '')}>← Command Dashboard</Link>
         <h1>Surveilans Malaria Indonesia</h1>
         <p>Rekap agregat resmi dan penilaian layanan. Tidak memakai model riset Papua.</p>
-        <Link to="/jakarta">Pintasan DKI Jakarta</Link>
+        <Link to={'/jakarta' + location.search}>Pintasan DKI Jakarta</Link>
       </header>
       {skdr.active ? (
         <section className="id-filters">
@@ -263,6 +299,23 @@ export default function IndonesiaWorkspace() {
           </label>
         </section>
       )}
+      <LocalRecovery {...repository} />
+      {skdr.active && panel !== 'situasi' && (
+        <label>
+          Sumber rekap dan versi
+          <select
+            aria-label="Sumber dan versi"
+            value={source}
+            onChange={(e) => patch({ sumber: e.target.value })}
+          >
+            <option value="">Semua sumber (tidak dijumlahkan)</option>
+            {[...new Set([...availableSources, ...(source ? [source] : [])])].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      {source && <button onClick={() => patch({ sumber: '' })}>Semua sumber rekap</button>}
       <p>
         <strong>
           {regionName(version, code)} · {code}
@@ -301,18 +354,7 @@ export default function IndonesiaWorkspace() {
             return (
               <section key={k}>
                 <h3>{labels[k]}</h3>
-                {rs.length < 2 ? (
-                  <p>Belum ada pasangan sumber untuk dibandingkan.</p>
-                ) : (
-                  rs.slice(1).map((r, i) => (
-                    <p key={i}>
-                      {rs[0].source_id}@{rs[0].publication_version} ↔ {r.source_id}@
-                      {r.publication_version}:{' '}
-                      {compareSources(rs[0], r).join(', ') ||
-                        'Metadata sebanding; kesamaan metadata tidak membuktikan angka sama.'}
-                    </p>
-                  ))
-                )}
+                <ReconciliationPanel kind={k} rows={rs} />
                 <button
                   disabled={!rs.length}
                   onClick={() => download(`${k}-${code}.csv`, csv(columns(k), rs))}
@@ -331,6 +373,7 @@ export default function IndonesiaWorkspace() {
               ini.
             </p>
           )}
+          {activeKind === 'respons' && !!rows.length && <ResponseSummary rows={rows} />}
           {rows.map((r, i) => (
             <article key={i}>
               <h3>
@@ -357,7 +400,7 @@ export default function IndonesiaWorkspace() {
                   .filter((k) => r[k])
                   .map((k) => (
                     <div key={k}>
-                      <dt>{k}</dt>
+                      <dt>{label(k)}</dt>
                       <dd>{r[k]}</dd>
                     </div>
                   ))}
@@ -368,25 +411,16 @@ export default function IndonesiaWorkspace() {
               {r.status !== 'unavailable' && (
                 <dl>
                   {columns(activeKind)
-                    .filter((k) => !columns('situasi').slice(0, 15).includes(k) && r[k] !== '')
+                    .filter((k) => !common.includes(k) && r[k] !== '')
                     .map((k) => (
                       <div key={k}>
-                        <dt>{k}</dt>
+                        <dt>{label(k)}</dt>
                         <dd>{r[k]}</dd>
                       </div>
                     ))}
                 </dl>
               )}
-              {activeKind === 'layanan' &&
-                r.status !== 'unavailable' &&
-                ['rdt', 'microscopy', 'referral'].map((p) => (
-                  <p key={p}>
-                    {p}: {r[p + '_ready']}/{r[p + '_assessed']} ·{' '}
-                    {+r[p + '_assessed']
-                      ? ((+r[p + '_ready'] / +r[p + '_assessed']) * 100).toFixed(1) + '%'
-                      : 'penyebut nol; persentase tidak tersedia'}
-                  </p>
-                ))}
+              <AggregateHighlights kind={activeKind} row={r} />
               {activeKind === 'respons' &&
                 (() => {
                   const m = responseMetric([r]);
@@ -402,6 +436,25 @@ export default function IndonesiaWorkspace() {
                     </p>
                   );
                 })()}
+              <button
+                disabled={!!repository.error}
+                aria-label={`Hapus rekap ${r.source_id} ${r.publication_version}`}
+                onClick={() => setDeleteTarget(aggregateIdentity(activeKind, r))}
+              >
+                Hapus rekap
+              </button>
+              {deleteTarget === aggregateIdentity(activeKind, r) && (
+                <div>
+                  <p>
+                    Hapus rekap {r.source_id}@{r.publication_version} untuk {r.region_code} periode{' '}
+                    {r.period_start}–{r.period_end}? Ekspor dahulu bila perlu disimpan.
+                  </p>
+                  <button onClick={() => remove(activeKind, deleteTarget)}>
+                    Konfirmasi hapus rekap
+                  </button>
+                  <button onClick={() => setDeleteTarget('')}>Batal hapus</button>
+                </div>
+              )}
             </article>
           ))}
           <button
@@ -412,32 +465,22 @@ export default function IndonesiaWorkspace() {
           </button>
           <button
             disabled={!rows.length}
-            onClick={() => {
-              const url = URL.createObjectURL(
-                new Blob(
-                  [
-                    JSON.stringify(
-                      {
-                        region: code,
-                        boundaryVersion: version,
-                        period,
-                        source,
-                        panel,
-                        records: rows,
-                      },
-                      null,
-                      2,
-                    ),
-                  ],
-                  { type: 'application/json' },
+            onClick={() =>
+              saveText(
+                `${panel}-${code}.json`,
+                JSON.stringify(
+                  aggregateExport(activeKind, rows, {
+                    region: code,
+                    boundaryVersion: version,
+                    period,
+                    source,
+                    panel,
+                  }),
+                  null,
+                  2,
                 ),
-              );
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${panel}-${code}.json`;
-              a.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }}
+              )
+            }
           >
             Ekspor JSON rekap
           </button>
@@ -457,6 +500,7 @@ export default function IndonesiaWorkspace() {
               CSV agregat
               <input
                 type="file"
+                disabled={!!repository.error}
                 accept=".csv,text/csv"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -467,19 +511,17 @@ export default function IndonesiaWorkspace() {
             </label>
             {preview && (
               <div>
-                <p>
-                  {preview.rows.length} baris untuk {labels[preview.kind]}. Sumber:{' '}
-                  {[...new Set(preview.rows.map((r) => r.source_id + ' · ' + r.source_url))].join(
-                    '; ',
-                  )}
-                </p>
-                <button onClick={commit}>Konfirmasi rekap tanpa identitas dan simpan</button>
+                <ImportPreview kind={preview.kind} rows={preview.rows} />
+                <button disabled={!!repository.error || importing} onClick={commit}>
+                  Konfirmasi rekap tanpa identitas dan simpan
+                </button>
                 <button onClick={() => setPreview(null)}>Batal</button>
               </div>
             )}
           </section>
         </>
       )}
+      {importing && <p role="status">Membaca dan memvalidasi CSV…</p>}
       {message && (
         <pre role="status" className="id-message">
           {message}
@@ -488,9 +530,9 @@ export default function IndonesiaWorkspace() {
       <footer>
         <p>
           URL menyimpan wilayah, versi batas, periode, sumber, dan panel. Salin alamat peramban
-          untuk berbagi tampilan; rekap lokal harus diserahkan terpisah. Belum ada angka Profil
-          Kesehatan Indonesia atau snapshot SKDR yang dibundel: akses publikasi untuk pemeriksaan
-          belum tersedia. Tidak ada angka buatan.
+          untuk berbagi tampilan; rekap lokal harus diserahkan terpisah. Snapshot bawaan memiliki
+          status bukti tersendiri. Nilai yang belum diperiksa tidak dianggap sudah diverifikasi;
+          data yang belum tersedia tidak diisi dengan perkiraan.
         </p>
         <a href="https://github.com/sobri3195/malariascope/blob/main/docs/SURVEILANS-INDONESIA.md">
           Kontrak data dan pembaruan

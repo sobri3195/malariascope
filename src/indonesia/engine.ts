@@ -1,3 +1,5 @@
+import { validDate, validTimestamp, validHttps } from '../data-time.ts';
+export { validDate, validTimestamp, validHttps } from '../data-time.ts';
 import regions from './regions.json' with { type: 'json' };
 export const masters = regions;
 export type Master = keyof typeof masters;
@@ -54,34 +56,24 @@ export function regionName(version: string, code: string) {
     : undefined;
 }
 const count = (v: string) => /^(0|[1-9]\d*)$/.test(v) && Number.isSafeInteger(Number(v));
-const date = (v: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(v) &&
-  Number.isFinite(Date.parse(v)) &&
-  new Date(v).toISOString().slice(0, 10) === v;
-const timestamp = (v: string) =>
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(v) &&
-  date(v.slice(0, 10)) &&
-  Number.isFinite(Date.parse(v));
-const url = (v: string) => {
-  try {
-    const u = new URL(v);
-    return u.protocol === 'https:' && !u.username && !u.password;
-  } catch {
-    return false;
-  }
-};
 export function validateRows(
   kind: Kind,
-  input: RecordRow[],
-  headers = input.length ? Object.keys(input[0]) : [],
+  input: unknown,
+  suppliedHeaders?: readonly string[],
 ): string[] {
+  if (!Array.isArray(input) || !input.length || input.length > 10000)
+    return ['Rekap harus berisi 1–10.000 baris agregat.'];
+  if (input.some((r) => !r || typeof r !== 'object' || Array.isArray(r)))
+    return ['Setiap baris rekap harus objek agregat.'];
+  const rows = input as RecordRow[];
+  const headers = suppliedHeaders || Object.keys(rows[0]);
   const errors: string[] = [];
   const allowed = columns(kind);
   if (headers.length !== allowed.length || allowed.some((k) => !headers.includes(k)))
     return ['Kolom harus persis sesuai templat agregat; kolom identitas atau kolom asing ditolak.'];
   if (!input.length || input.length > 10000) return ['Rekap harus berisi 1–10.000 baris agregat.'];
   const seen = new Set<string>();
-  input.forEach((r, i) => {
+  rows.forEach((r, i) => {
     const fail = (s: string) => errors.push(`Baris ${i + 2}: ${s}`);
     if (
       allowed.some((k) => typeof r[k] !== 'string') ||
@@ -95,11 +87,11 @@ export function validateRows(
     for (const k of common.filter((k) => !['coverage'].includes(k)))
       if (!r[k]?.trim()) fail(`${k} wajib diisi.`);
     for (const k of ['period_start', 'period_end', 'published_at', 'reviewed_at'])
-      if (!date(r[k])) fail(`${k} harus tanggal ISO yang sah.`);
+      if (!validDate(r[k])) fail(`${k} harus tanggal ISO yang sah.`);
     if (r.period_start > r.period_end || r.published_at > r.reviewed_at)
       fail('Urutan tanggal tidak sah.');
-    if (!url(r.source_url)) fail('URL sumber HTTPS wajib.');
-    if (['profil', 'skdr', 'rekap-resmi'].includes(r.source_type) && url(r.source_url)) {
+    if (!validHttps(r.source_url)) fail('URL sumber HTTPS wajib.');
+    if (['profil', 'skdr', 'rekap-resmi'].includes(r.source_type) && validHttps(r.source_url)) {
       const host = new URL(r.source_url).hostname;
       if (!(host.endsWith('.go.id') || host === 'skdr.surveilans.org'))
         fail('Angka situasi harus merujuk publikasi pemerintah atau SKDR resmi.');
@@ -165,7 +157,11 @@ export function validateRows(
     )
       fail('Jumlah kategori asal harus sama dengan total terkonfirmasi.');
     if (kind === 'layanan') {
-      if (!date(r.assessed_at) || r.assessed_at < r.period_start || r.assessed_at > r.period_end)
+      if (
+        !validDate(r.assessed_at) ||
+        r.assessed_at < r.period_start ||
+        r.assessed_at > r.period_end
+      )
         fail('Tanggal penilaian harus dalam periode.');
       for (const p of ['rdt', 'microscopy', 'referral'])
         if (r.status !== 'unavailable' && +r[p + '_ready'] > +r[p + '_assessed'])
@@ -175,23 +171,27 @@ export function validateRows(
       if (!['notifikasi', 'penyelidikan', 'penanggulangan'].includes(r.stage))
         fail('Tahap respons tidak sah.');
       if (
-        !timestamp(r.trigger_at) ||
-        !timestamp(r.as_of) ||
+        !validTimestamp(r.trigger_at) ||
+        !validTimestamp(r.as_of) ||
         Date.parse(r.as_of) < Date.parse(r.trigger_at)
       )
         fail('Waktu pemicu/as_of ISO dengan zona waktu wajib.');
       if (
-        !date(r.sop_effective_from) ||
-        !date(r.sop_effective_to) ||
+        !validDate(r.sop_effective_from) ||
+        !validDate(r.sop_effective_to) ||
         r.trigger_at.slice(0, 10) < r.sop_effective_from ||
         r.trigger_at.slice(0, 10) > r.sop_effective_to ||
-        !url(r.sop_url) ||
+        !validHttps(r.sop_url) ||
         !r.sop_version.trim()
       )
         fail('SOP dan masa berlaku yang mencakup pemicu wajib.');
       if (
         r.status !== 'unavailable' &&
         (+r.deadline_hours < 1 ||
+          !Number.isSafeInteger(+r.deadline_hours * 3600000) ||
+          !Number.isFinite(
+            new Date(Date.parse(r.trigger_at) + +r.deadline_hours * 3600000).getTime(),
+          ) ||
           +r.timely_count > +r.completed_count ||
           +r.completed_count > +r.required_count)
       )
@@ -207,23 +207,58 @@ export function validateRows(
       r.source_id,
       r.publication_version,
       kind === 'respons' ? r.stage : '',
-      kind === 'respons' ? r.trigger_at : '',
-    ].join('|');
-    if (seen.has(key)) fail('Duplikat unit agregat/versi sumber.');
-    seen.add(key);
+      kind === 'respons' && validTimestamp(r.trigger_at)
+        ? new Date(r.trigger_at).toISOString()
+        : r.trigger_at || '',
+    ];
+    const identity = JSON.stringify(key);
+    if (seen.has(identity)) fail('Duplikat unit agregat/versi sumber.');
+    seen.add(identity);
   });
   return errors;
 }
 export function responseMetric(rows: RecordRow[]) {
-  // Never mix stage denominators, incomplete inputs, SOP versions or publication revisions.
+  // A cohort denominator is valid only within one geography, period, source, stage and SOP.
   if (
     !rows.length ||
-    rows.some((r) => r.status === 'unavailable') ||
-    new Set(
-      rows.map((r) =>
-        [r.stage, r.source_id, r.publication_version, r.sop_url, r.sop_version, r.as_of].join('|'),
-      ),
-    ).size !== 1
+    rows.some(
+      (r) =>
+        !['reported', 'partial'].includes(r.status) ||
+        !count(r.required_count) ||
+        !count(r.timely_count) ||
+        +r.timely_count > +r.required_count ||
+        !count(r.deadline_hours) ||
+        +r.deadline_hours < 1 ||
+        !validTimestamp(r.trigger_at) ||
+        !validTimestamp(r.as_of) ||
+        Date.parse(r.as_of) < Date.parse(r.trigger_at),
+    )
+  )
+    return null;
+  const identity = (r: RecordRow) =>
+    JSON.stringify(
+      [
+        'region_version',
+        'region_code',
+        'period_start',
+        'period_end',
+        'source_id',
+        'publication_version',
+        'geo_basis',
+        'definition',
+        'coverage',
+        'stage',
+        'sop_url',
+        'sop_version',
+        'sop_effective_from',
+        'sop_effective_to',
+      ]
+        .map((k) => r[k])
+        .concat(new Date(r.as_of).toISOString()),
+    );
+  if (
+    new Set(rows.map(identity)).size !== 1 ||
+    new Set(rows.map((r) => new Date(r.trigger_at).toISOString())).size !== rows.length
   )
     return null;
   const due = rows.filter(
@@ -231,6 +266,7 @@ export function responseMetric(rows: RecordRow[]) {
   );
   const denominator = due.reduce((n, r) => n + Number(r.required_count), 0);
   const numerator = due.reduce((n, r) => n + Number(r.timely_count), 0);
+  if (!Number.isSafeInteger(numerator) || !Number.isSafeInteger(denominator)) return null;
   return {
     numerator,
     denominator,

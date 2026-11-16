@@ -27,6 +27,14 @@ const routes = [
   'prospective-registry',
   'model-monitoring',
   'research-operations',
+  'asean-map',
+  'research-intelligence',
+  'surveilans-indonesia?panel=asal',
+  'surveilans-indonesia?panel=layanan',
+  'surveilans-indonesia?panel=respons',
+  'surveilans-indonesia?panel=rekonsiliasi',
+  'dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m44&region=11.03',
+  'dashboard?dataset=skdr-indonesia&source=sismal&year=2025&snapshot=sismal-2025&region=11.03',
 ];
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium',
@@ -46,7 +54,8 @@ try {
       .filter({ hasNotText: /Loading/ })
       .first()
       .waitFor();
-    await page.locator('footer').filter({ hasText: 'Application functioning' }).first().waitFor();
+    if (!route.startsWith('surveilans-indonesia'))
+      await page.locator('footer').filter({ hasText: 'Application functioning' }).first().waitFor();
     const a = await new AxeBuilder({ page })
       .include('main')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])

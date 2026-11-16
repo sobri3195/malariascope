@@ -134,7 +134,16 @@ try {
   for (const path of ['/dashboard', '/mobile', '/aplikasi-desktop', '/iot', '/smartwatch']) {
     await blockedPage.goto(base + path);
     await blockedPage.getByLabel('Workspace storage status', { exact: true }).waitFor();
-    await blockedPage.getByLabel('Analytical data source', { exact: true }).waitFor();
+    // Each shell exposes its own source controls; mobile intentionally hides the desktop source section after hydration.
+    if (path === '/mobile')
+      await blockedPage
+        .getByRole('heading', { name: 'Current Intelligence', exact: true })
+        .waitFor();
+    else if (path === '/aplikasi-desktop')
+      await blockedPage.getByLabel('Desktop dataset', { exact: true }).waitFor();
+    else if (path === '/smartwatch')
+      await blockedPage.getByLabel('Watch year', { exact: true }).waitFor();
+    else await blockedPage.getByLabel('Analytical data source', { exact: true }).waitFor();
     assert.equal(
       await blockedPage
         .getByRole('heading', { name: 'Research workspace unavailable', exact: true })

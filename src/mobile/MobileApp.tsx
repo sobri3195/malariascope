@@ -289,6 +289,7 @@ export default function MobileApp() {
     const update = () => setOnline(navigator.onLine),
       message = (e: MessageEvent) => {
         if (e.data?.type === 'MALARIASCOPE_CACHE_READY') setCacheStatus(true);
+        if (e.data?.type === 'MALARIASCOPE_CACHE_STATUS') setCacheStatus(e.data.ready === true);
       };
     window.addEventListener('online', update);
     window.addEventListener('offline', update);
@@ -297,8 +298,8 @@ export default function MobileApp() {
       void navigator.serviceWorker
         .register('/mobile-sw.js', { scope: '/mobile' })
         .then(async (registration) => {
-          await navigator.serviceWorker.ready;
-          const worker = registration.active;
+          const ready = await navigator.serviceWorker.ready;
+          const worker = ready.active || registration.active;
           worker?.postMessage({
             type: 'CACHE_VISITED',
             urls: performance.getEntriesByType('resource').map((e) => e.name),

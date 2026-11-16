@@ -1,3 +1,6 @@
+import { validDate, validTimestamp, validLocalDateTime } from './data-time.ts';
+const validForecastDate = (s: unknown) =>
+  validDate(s) || validTimestamp(s) || validLocalDateTime(s);
 export type ProspectiveRecord = {
   forecast_id: string;
   issue_date: string;
@@ -70,6 +73,12 @@ export function createProspective(
       input.predictionInterval[1] < input.predictionInterval[0])
   )
     throw Error('Prediction interval must contain ordered finite nonnegative bounds.');
+  if (
+    !validForecastDate(input.issue_date) ||
+    !validForecastDate(input.data_cutoff) ||
+    !validForecastDate(now)
+  )
+    throw Error('Invalid forecast dates. Calendar rollovers and missing dates are not accepted.');
   const issue = Date.parse(input.issue_date),
     cutoff = Date.parse(input.data_cutoff),
     target = targetWindow(input.target_period).start;
@@ -117,6 +126,8 @@ export function createProspective(
   };
 }
 export function lockProspective(record: ProspectiveRecord, now = new Date().toISOString()) {
+  if (!validForecastDate(now) || Date.parse(now) < Date.parse(record.created_at))
+    throw Error('Invalid lock timestamp.');
   if (record.locked) return record;
   if (Date.parse(now) >= targetWindow(record.target_period).start)
     throw Error('Cannot lock as prospective after the target period begins.');
@@ -127,6 +138,7 @@ export function attachOutcome(
   outcome: number,
   now = new Date().toISOString(),
 ) {
+  if (!validForecastDate(now)) throw Error('Invalid outcome timestamp.');
   if (!record.locked) throw Error('Lock the forecast before adding an outcome.');
   if (record.outcome !== null)
     throw Error('An outcome is already registered; no silent overwrite.');

@@ -1,3 +1,7 @@
+import { useRef, useEffect } from 'react';
+import { useLocalRepository } from './indonesia/useLocalRepository';
+import LocalRecovery from './indonesia/LocalRecovery';
+import { parseProspective, emptyProspective, previewOutcomes } from './prospective-storage';
 import { useState } from 'react';
 import { useStore } from './store';
 import { download } from './analytics';
@@ -38,39 +42,31 @@ const empty = {
 };
 export default function ProspectiveRegistry({ monitoring = false }: { monitoring?: boolean }) {
   const { research } = useStore();
-  const [records, setRecords] = useState<ProspectiveRecord[]>(() => {
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem('malariascope-prospective') || '[]');
-      if (
-        !Array.isArray(saved) ||
-        saved.some(
-          (r) =>
-            !r ||
-            typeof r.forecast_id !== 'string' ||
-            typeof r.model !== 'string' ||
-            typeof r.model_version !== 'string' ||
-            !Number.isFinite(r.prediction),
-        )
-      )
-        throw Error('Invalid registry');
-      return saved;
-    } catch {
-      return [];
-    }
-  });
+  const repository = useLocalRepository(
+    'malariascope-prospective',
+    parseProspective,
+    emptyProspective,
+  );
+  const records = repository.data;
+  const [preview, setPreview] = useState<ReturnType<typeof previewOutcomes> | null>(null);
+  const request = useRef(0);
+  useEffect(
+    () => () => {
+      request.current++;
+    },
+    [],
+  );
   const [reviewThreshold, setReviewThreshold] = useState(20);
   const [form, setForm] = useState(empty),
     [message, setMessage] = useState(''),
     [outcomes, setOutcomes] = useState<Record<string, string>>({});
   const save = (next: ProspectiveRecord[]) => {
-    try {
-      localStorage.setItem('malariascope-prospective', JSON.stringify(next));
-      setRecords(next);
-    } catch {
-      setMessage('Local storage unavailable; export your registry before leaving.');
-      setRecords(next);
-    }
+    if (!repository.write(next))
+      throw Error(
+        'Registry could not be saved. Original records and your inputs are preserved. Review the storage warning and retry.',
+      );
   };
+
   const action = (fn: () => void) => {
     try {
       fn();
@@ -88,6 +84,7 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
         automatically. Locked forecast fields cannot be edited; original issue/cutoff/version remain
         preserved. Local browser records are not an independently timestamped tamper-proof registry.
       </p>
+      <LocalRecovery {...repository} />
       {message && <p role="status">{message}</p>}
       {monitoring ? (
         <>
@@ -229,6 +226,8 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
                 ...records,
                 createProspective({
                   ...form,
+                  issue_date: new Date(form.issue_date).toISOString(),
+                  data_cutoff: new Date(form.data_cutoff).toISOString(),
                   features: form.input_features_json.trim()
                     ? JSON.parse(form.input_features_json)
                     : undefined,
@@ -265,7 +264,9 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
               </label>
             ))}
           </div>
-          <button className="button primary">Create forecast record</button>
+          <button disabled={!!repository.error} className="button primary">
+            Create forecast record
+          </button>
         </form>
       )}
       {!records.length && <p>No prospective forecasts registered.</p>}
@@ -287,31 +288,85 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
           aria-label="Import prospective outcomes"
           type="file"
           accept=".json"
+          disabled={!!repository.error}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file)
-              void file
-                .text()
-                .then((text) => {
-                  const data = JSON.parse(text);
-                  if (!Array.isArray(data))
-                    throw Error('JSON array of forecast_id/outcome required.');
-                  const next = [...records];
-                  const seen = new Set();
-                  for (const row of data) {
-                    if (seen.has(row.forecast_id)) throw Error('Duplicate outcome identifier');
-                    seen.add(row.forecast_id);
-                    const index = next.findIndex((r) => r.forecast_id === row.forecast_id);
-                    if (index < 0) throw Error('Unknown forecast identifier');
-                    next[index] = attachOutcome(next[index], row.outcome);
-                  }
-                  save(next);
-                  setMessage('Outcomes imported.');
-                })
-                .catch((e) => setMessage(String(e)));
+            e.target.value = '';
+            const token = ++request.current;
+            setPreview(null);
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+              setMessage('Outcome JSON exceeds the 5 MB limit.');
+              return;
+            }
+            void file
+              .text()
+              .then((text) => {
+                if (token !== request.current) return;
+                setPreview(previewOutcomes(JSON.parse(text), records));
+                setMessage('Outcomes validated. Review and confirm before applying.');
+              })
+              .catch((e) => {
+                if (token === request.current) setMessage(String(e));
+              });
           }}
         />
       </label>
+      {preview && (
+        <section aria-label="Outcome import preview">
+          <h2>Outcome import preview</h2>
+          <p>
+            {preview.changed} aggregate outcomes. Existing forecast predictions and source versions
+            stay preserved.
+          </p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Forecast ID</th>
+                  <th>District</th>
+                  <th>Target</th>
+                  <th>Observed outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.records
+                  .filter((r, i) => r !== records[i])
+                  .map((r) => (
+                    <tr key={r.forecast_id}>
+                      <td>{r.forecast_id}</td>
+                      <td>{r.district}</td>
+                      <td>{r.target_period}</td>
+                      <td>{r.outcome}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            disabled={!!repository.error}
+            onClick={() =>
+              action(() => {
+                if (JSON.stringify(records) !== preview.base)
+                  throw Error('Registry changed after preview. Inspect the outcome file again.');
+                save(preview.records);
+                setPreview(null);
+              })
+            }
+          >
+            Apply outcomes
+          </button>
+          <button
+            onClick={() => {
+              request.current++;
+              setPreview(null);
+              setMessage('Outcome import cancelled.');
+            }}
+          >
+            Cancel outcomes
+          </button>
+        </section>
+      )}
       {records.map((r) => (
         <article className="panel research-evidence" key={r.forecast_id}>
           <strong>
@@ -328,6 +383,7 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
           {!r.locked && (
             <button
               className="button"
+              disabled={!!repository.error}
               onClick={() =>
                 action(() =>
                   save(
@@ -352,6 +408,7 @@ export default function ProspectiveRegistry({ monitoring = false }: { monitoring
               />
               <button
                 className="button"
+                disabled={!!repository.error}
                 onClick={() =>
                   action(() => {
                     if (!outcomes[r.forecast_id]) throw Error('Enter an outcome');

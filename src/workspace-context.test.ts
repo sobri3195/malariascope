@@ -107,7 +107,7 @@ test('shortcut helper protects editable targets and command routes are complete'
   assert.equal(textEntry({ closest: () => ({}) } as unknown as EventTarget), true);
   assert.equal(textEntry({ closest: () => null } as unknown as EventTarget), false);
   assert.equal(textEntry(null), false);
-  assert.equal(routeCommands.length, 8);
+  assert.equal(routeCommands.length, 9);
   assert.deepEqual(Object.keys(chordRoutes), ['d', 'm', 'a', 'f', 'r']);
 });
 test('notifications reflect concrete analytical lifecycle events', () => {

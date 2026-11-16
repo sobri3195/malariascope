@@ -1,4 +1,4 @@
-import { masters, regionName } from './engine.ts';
+import { masters, regionName, validDate, validTimestamp } from './engine.ts';
 import { mapSkdrLabel, type SkdrSelection, type SkdrSnapshot, skdrExport } from './skdr.ts';
 export type SismalRow = {
   level: 'district';
@@ -43,6 +43,7 @@ export const sourceMappings = [
   },
 ];
 export function mapSismalRegion(sourceId: string, name: string, province: string, year: number) {
+  if (![2025, 2026].includes(year)) throw Error('Versi batas untuk tahun ini belum didukung.');
   const provinceCode = mapSkdrLabel(province);
   const override = sourceMappings.find(
     (r) => r.sourceId === sourceId && year >= r.from && year <= r.to,
@@ -89,6 +90,7 @@ export function normalizeSismal(
   retrievedAt: string,
   sourceUrl: string,
 ): SismalSnapshot {
+  if (![2025, 2026].includes(year)) throw Error('Tahun SISMAL belum didukung oleh master wilayah.');
   // Only explicit known array envelopes; unfamiliar schemas fail closed, without inferred counts.
   const raw = Array.isArray(payload)
     ? payload
@@ -123,7 +125,7 @@ export function normalizeSismal(
       throw Error('Nilai positif SISMAL bukan integer cacah.');
     const updated = field(r, aliases.updated),
       status = field(r, aliases.status);
-    if (updated !== null && (typeof updated !== 'string' || !Number.isFinite(Date.parse(updated))))
+    if (updated !== null && !validDate(updated) && !validTimestamp(updated))
       throw Error('Tanggal pembaruan SISMAL tidak sah.');
     if (status !== null && typeof status !== 'string')
       throw Error('Status validasi harus teks sumber, tidak boleh diasumsikan tervalidasi.');
@@ -173,6 +175,7 @@ export function normalizeSismal(
 export function validateSismal(s: SismalSnapshot, year: number): string[] {
   if (
     !s ||
+    ![2025, 2026].includes(year) ||
     s.id !== `sismal-${year}` ||
     s.source !== 'sismal' ||
     s.reportingYear !== year ||
@@ -197,6 +200,10 @@ export function validateSismal(s: SismalSnapshot, year: number): string[] {
       r.reportingYear !== year ||
       r.metric !== 'positive_cases' ||
       typeof r.validationStatus !== 'string' ||
+      !r.validationStatus.trim() ||
+      typeof r.originalDistrict !== 'string' ||
+      typeof r.originalProvince !== 'string' ||
+      (r.updatedAt !== null && !validDate(r.updatedAt) && !validTimestamp(r.updatedAt)) ||
       !['reported', 'partial', 'unavailable'].includes(r.availability) ||
       (r.availability === 'unavailable'
         ? r.value !== null
@@ -205,17 +212,27 @@ export function validateSismal(s: SismalSnapshot, year: number): string[] {
       errors.push('Kode/induk/tahun/nilai/status baris SISMAL salah.');
       continue;
     }
+    try {
+      const mapped = mapSismalRegion(r.sourceId, r.originalDistrict, r.originalProvince, year);
+      if (mapped.regionCode !== r.regionCode || mapped.provinceCode !== r.provinceCode)
+        errors.push('Pemetaan ID/nama/induk tidak cocok.');
+    } catch {
+      errors.push('Pemetaan ID/nama/induk tidak sah atau ambigu.');
+    }
     const key = r.regionCode;
     if (keys.has(key)) errors.push('Duplikat unit pada snapshot SISMAL.');
     keys.add(key);
   }
-  if (
-    s.evidence === 'portal-response' &&
-    (!s.retrievedAt || !Number.isFinite(Date.parse(s.retrievedAt)))
-  )
+  if (s.evidence === 'portal-response' && !validTimestamp(s.retrievedAt))
     errors.push('Penarikan portal wajib bertanggal.');
   if (!/^https:\/\/malaria\.kemkes\.go\.id\//.test(s.sourceUrl))
     errors.push('URL sumber SISMAL tidak sah.');
+  if (s.responseState === 'empty' && (s.rows.length || s.unmapped.length))
+    errors.push('Respons kosong tidak boleh memuat observasi.');
+  if (s.evidence === 'portal-response' && s.responseState === 'not-fetched')
+    errors.push('Status respons bertentangan dengan bukti penarikan.');
+  if (s.unmapped.some((r) => !r || typeof r.sourceId !== 'string' || typeof r.reason !== 'string'))
+    errors.push('Daftar pemetaan ditolak tidak sah.');
   return errors;
 }
 export function selectedSismal(s: SismalSnapshot, selection: SkdrSelection) {

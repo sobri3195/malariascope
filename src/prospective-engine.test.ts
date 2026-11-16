@@ -49,5 +49,7 @@ test('prospective outcomes require completed target periods and reject calendar 
   assert.throws(() => targetWindow('2027Q1'), /Target/);
   const locked = lockProspective(createProspective(input, '2026-10-07'), '2026-10-07');
   assert.throws(() => attachOutcome(locked, 110, '2027-06-01'), /not complete/);
+  assert.throws(() => attachOutcome(locked, 110, 'bad-time'), /timestamp/);
+  assert.throws(() => attachOutcome(locked, 110, '2030-02-30'), /timestamp/);
   assert.throws(() => createProspective(input, '2027-01-01'), /after registration/);
 });
