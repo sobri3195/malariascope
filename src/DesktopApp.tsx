@@ -2287,6 +2287,10 @@ function App() {
             </div>
             <nav aria-label="Primary navigation">
               <div className="nav-group">INTELLIGENCE WORKSPACE</div>
+              <NavLink to="/surveilans-indonesia">
+                <Globe size={17} />
+                <span>Surveilans Indonesia</span>
+              </NavLink>
               <NavLink to="/asean-map" onClick={() => setMobile(false)}>
                 <Globe size={17} />
                 <span>ASEAN Map Explorer</span>

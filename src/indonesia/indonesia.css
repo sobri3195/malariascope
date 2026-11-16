@@ -1,0 +1,97 @@
+.indonesia {
+  max-width: 1200px;
+  margin: auto;
+  padding: 24px;
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+  color: #183247;
+  background: #f7fafc;
+  min-height: 100vh;
+}
+.indonesia h1 {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+.indonesia a {
+  color: #075d78;
+  text-decoration: underline;
+}
+.indonesia label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.indonesia input,
+.indonesia select,
+.indonesia button {
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #8da7b5;
+  border-radius: 6px;
+  min-height: 44px;
+  max-width: 100%;
+  background: white;
+  color: #183247;
+}
+.indonesia button {
+  cursor: pointer;
+  margin: 4px;
+}
+.indonesia button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.indonesia button[aria-current] {
+  background: #124c60;
+  color: white;
+}
+.indonesia :focus-visible {
+  outline: 3px solid #c37600;
+  outline-offset: 2px;
+}
+.id-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.indonesia article,
+.indonesia section {
+  padding: 16px;
+  border: 1px solid #c5d5dd;
+  border-radius: 8px;
+  margin: 16px 0;
+  background: white;
+  overflow-wrap: anywhere;
+}
+.indonesia dl div {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e2e8ee;
+  padding: 6px 0;
+}
+.indonesia dt {
+  font-weight: bold;
+  min-width: 160px;
+}
+.indonesia dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.id-message {
+  white-space: pre-wrap;
+  border: 2px solid #8c6300;
+  padding: 16px;
+}
+@media (max-width: 600px) {
+  .indonesia {
+    padding: 12px;
+  }
+  .indonesia dl div {
+    display: block;
+  }
+  .indonesia nav button {
+    width: 100%;
+    margin: 4px 0;
+  }
+}

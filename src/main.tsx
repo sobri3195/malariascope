@@ -4,6 +4,7 @@ import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { Provider } from './store';
+const Indonesia = lazy(() => import('./indonesia/Workspace'));
 const Desktop = lazy(() => import('./DesktopApp'));
 const Mobile = lazy(() => import('./mobile/MobileApp'));
 const Workstation = lazy(() => import('./desktop/DesktopWorkstation'));
@@ -45,7 +46,9 @@ function ApplicationRouter() {
         </main>
       }
     >
-      {pathname === '/iot' || pathname.startsWith('/iot/') ? (
+      {pathname === '/surveilans-indonesia' || pathname === '/jakarta' ? (
+        <Indonesia />
+      ) : pathname === '/iot' || pathname.startsWith('/iot/') ? (
         <IoT />
       ) : pathname === '/aplikasi-desktop' || pathname.startsWith('/aplikasi-desktop/') ? (
         <Workstation />
