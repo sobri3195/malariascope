@@ -1,0 +1,66 @@
+name: Sync official malaria aggregates
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Publication year (blank discovers newest)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Validate without writing data'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '20 23 * * *'
+concurrency:
+  group: malaria-data-publication
+  cancel-in-progress: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: npm ci
+      - name: Discover, validate and stage immutable versions
+        id: sync
+        env:
+          SYNC_YEAR: ${{ inputs.year }}
+          SYNC_DRY_RUN: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          args=()
+          if [[ -n "$SYNC_YEAR" ]]; then args+=(--year "$SYNC_YEAR"); fi
+          if [[ "$SYNC_DRY_RUN" == true ]]; then args+=(--dry-run); fi
+          npm run data:sync:malaria -- "${args[@]}" | tee /tmp/malaria-sync.log
+          result=${PIPESTATUS[0]}
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          { echo '### Malaria sync'; echo '```'; cat /tmp/malaria-sync.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - run: npm run typecheck && npm run lint && npm test && npm run data:validate:malaria && npm run build
+      - name: Prepare reviewable data publication
+        if: ${{ inputs.dry_run != true }}
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/malaria-data
+          commit-message: 'data: refresh official malaria publication manifest'
+          title: 'data: review malaria source checks and validated snapshots'
+          draft: true
+          add-paths: public/data/indonesia
+          body: |
+            Scheduled discovery checked official sources and staged validated immutable versions before updating the active manifest. Failures retain the previous active version independently for each source. Review the manifest status, coverage, mapping and source evidence before merging.
+
+            Publication requires approval and merge of this PR, followed by a successful build on the project's connected Vercel deployment. This job does not merge or deploy. See the Actions summary for all source failures and review-required candidates.
+      - name: Surface incomplete source checks
+        if: steps.sync.outputs.exit_code != '0'
+        run: exit 1

@@ -169,8 +169,13 @@ export function restoreSurveillanceSnapshot(value: ReturnType<typeof captureSurv
     (value.selection.source === 'sismal'
       ? ![2025, 2026].includes(value.selection.year) ||
         value.selection.snapshot !== `sismal-${value.selection.year}`
-      : value.selection.year !== 2026 ||
-        !/^2026-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(value.selection.snapshot)) ||
+      : ![2025, 2026].includes(value.selection.year) ||
+        !/^20\d{2}-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(value.selection.snapshot)) ||
+    (value.selection.versionId !== undefined &&
+      (typeof value.selection.versionId !== 'string' ||
+        !new RegExp(
+          '^' + value.selection.snapshot + '-(?:bootstrap|[a-f0-9]{16})-[a-f0-9]{16}$',
+        ).test(value.selection.versionId))) ||
     typeof value.selection.region !== 'string' ||
     !regionName('2025', value.selection.region)
   )

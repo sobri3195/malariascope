@@ -24,7 +24,7 @@ Development binds to all interfaces on port 5173; preview defaults to 4173. If t
 
 ## Surveilans Malaria Indonesia
 
-Penarikan sumber dan pemilihan Aceh Timur 2025/2026: [cara sinkronisasi SKDR/SISMAL, cakupan aktual, dan sumber yang belum dapat diperiksa](docs/MALARIA-SYNC.md). Jalankan `npm run data:sync:malaria -- --year 2026`; kegagalan sumber tidak menghapus snapshot lokal.
+Sinkronisasi otomatis: [penemuan publikasi SKDR/SISMAL, manifest immutable, workflow harian, cakupan aktual, dan cara memperbarui data](docs/AUTOMATIC-MALARIA-SYNC.md). Jalankan `npm run data:sync:malaria -- --year 2026 --dry-run`, lalu tanpa `--dry-run` untuk menyiapkan pembaruan. Tanpa tahun, indeks menentukan publikasi terbaru. Kegagalan sumber mempertahankan versi sebelumnya. Publikasi aset statis tetap melalui persetujuan PR dan build Vercel.
 
 Command Dashboard kini menyediakan opsi **SKDR Kemenkes — Indonesia 2026**, konteks wilayah, Inspector, snapshot dan ekspor terpisah dari riset Papua. [Alur, kontrak, konverter lampiran dan status data parsial](docs/SKDR-DASHBOARD.md). Lampiran CSV lengkap belum tersedia; hanya angka eksplisit dalam permintaan yang dimuat, bukan hasil ekstraksi lengkap buletin.
 

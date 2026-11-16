@@ -1,0 +1,99 @@
+{
+  "schema": "malariascope-publications-v1",
+  "checkedAt": "2026-11-16T10:55:58.973Z",
+  "sources": {
+    "skdr:2026": {
+      "kind": "skdr",
+      "year": 2026,
+      "active": "2026-m44-bootstrap-04a01c757dc10e32",
+      "status": "failed",
+      "lastCheckedAt": "2026-11-16T10:55:58.973Z",
+      "lastSuccessAt": null,
+      "message": "Akses sumber ditolak kebijakan jaringan (HTTP 403).",
+      "versions": [
+        {
+          "id": "2026-m44-bootstrap-04a01c757dc10e32",
+          "publicationId": "2026-m44",
+          "year": 2026,
+          "path": "/data/indonesia/versions/skdr/2026-m44-bootstrap-04a01c757dc10e32.json",
+          "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf",
+          "sourceSha256": null,
+          "dataSha256": "c8ae847c013a14a6a58506ebe3496a832b865166b2787177fe17e2796dae898c",
+          "semanticSha256": "04a01c757dc10e32c730750a3577dd4e951b4e740f9ff8014d9f868334f2b5d4",
+          "createdAt": "2026-11-16T10:50:08.121Z",
+          "publishedAt": "2026-11-10",
+          "weekThrough": 43,
+          "coverage": {
+            "national": 1,
+            "province": 38,
+            "district": 0,
+            "available": 5
+          },
+          "bootstrap": true
+        }
+      ]
+    },
+    "sismal:2025": {
+      "kind": "sismal",
+      "year": 2025,
+      "active": "sismal-2025-bootstrap-3bc9ffd33d789663",
+      "status": "failed",
+      "lastCheckedAt": "2026-11-16T10:55:58.973Z",
+      "lastSuccessAt": null,
+      "message": "Akses sumber ditolak kebijakan jaringan (HTTP 403).",
+      "versions": [
+        {
+          "id": "sismal-2025-bootstrap-3bc9ffd33d789663",
+          "publicationId": "sismal-2025",
+          "year": 2025,
+          "path": "/data/indonesia/versions/sismal/sismal-2025-bootstrap-3bc9ffd33d789663.json",
+          "sourceUrl": "https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH",
+          "sourceSha256": null,
+          "dataSha256": "8cf17414e472ed5b14d6e2c91c4fc43033859f4b4ad5a57b23f3a0aee25330f0",
+          "semanticSha256": "3bc9ffd33d789663e4208b6db365d3f7b14e121d9ebf608a7385edba83216f17",
+          "createdAt": "2026-11-16T10:50:08.121Z",
+          "publishedAt": null,
+          "weekThrough": null,
+          "coverage": {
+            "national": 0,
+            "province": 0,
+            "district": 1,
+            "available": 1
+          },
+          "bootstrap": true
+        }
+      ]
+    },
+    "sismal:2026": {
+      "kind": "sismal",
+      "year": 2026,
+      "active": "sismal-2026-bootstrap-e24bed2364c5f3c8",
+      "status": "failed",
+      "lastCheckedAt": "2026-11-16T10:55:58.973Z",
+      "lastSuccessAt": null,
+      "message": "Akses sumber ditolak kebijakan jaringan (HTTP 403).",
+      "versions": [
+        {
+          "id": "sismal-2026-bootstrap-e24bed2364c5f3c8",
+          "publicationId": "sismal-2026",
+          "year": 2026,
+          "path": "/data/indonesia/versions/sismal/sismal-2026-bootstrap-e24bed2364c5f3c8.json",
+          "sourceUrl": "https://malaria.kemkes.go.id/api/sismal/chartMap/2026/?province=ACEH",
+          "sourceSha256": null,
+          "dataSha256": "216ffa286510b8c976a83ad49ca01d28c1e0a9d05f0ad97212f22ceddfad1738",
+          "semanticSha256": "e24bed2364c5f3c8a88a125d18055b35d819195bc44c4ed5fcaa51a826a64373",
+          "createdAt": "2026-11-16T10:50:08.121Z",
+          "publishedAt": null,
+          "weekThrough": null,
+          "coverage": {
+            "national": 0,
+            "province": 0,
+            "district": 0,
+            "available": 0
+          },
+          "bootstrap": true
+        }
+      ]
+    }
+  }
+}

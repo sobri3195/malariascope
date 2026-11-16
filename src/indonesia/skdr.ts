@@ -24,6 +24,8 @@ export type SkdrSnapshot = {
   sourceUrl: string | null;
   evidence: 'user-supplied-incomplete' | 'attachment-extraction';
   retrievalNote?: string;
+  publicationYear?: number;
+  bulletinNumber?: number;
   rows: SkdrRow[];
 };
 export type SkdrSelection = {
@@ -31,6 +33,7 @@ export type SkdrSelection = {
   snapshot: string;
   region: string;
   source?: 'skdr' | 'sismal';
+  versionId?: string;
 };
 export const initialSkdr: SkdrSelection = { year: 2026, snapshot: '2026-m44', region: 'ID' };
 export function parseSkdrSelection(q: URLSearchParams): SkdrSelection {
@@ -49,7 +52,7 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     !s ||
     s.dataset !== skdrDataset ||
     typeof s.id !== 'string' ||
-    !/^2026-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(s.id) ||
+    !/^20\d{2}-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(s.id) ||
     s.boundaryVersion !== '2025' ||
     !validDate(s.publishedAt) ||
     !Array.isArray(s.rows)
@@ -60,6 +63,11 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
   if (s.retrievedAt !== null && !validTimestamp(s.retrievedAt))
     errors.push('Waktu penarikan tidak sah.');
   const bulletin = 'M' + Number(s.id.split('-m')[1]);
+  if (
+    (s.publicationYear !== undefined && s.publicationYear !== +s.id.slice(0, 4)) ||
+    (s.bulletinNumber !== undefined && s.bulletinNumber !== +s.id.split('-m')[1])
+  )
+    errors.push('Tahun terbit/nomor buletin tidak sesuai identitas publikasi.');
   if (
     s.id === '2026-m44' &&
     (s.publishedAt !== '2026-11-10' || s.rows.some((r) => r.weekThrough !== 43))
@@ -91,7 +99,8 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     if (!regionName(s.boundaryVersion, r.regionCode) || r.level !== level)
       errors.push(`Kode/jenjang wilayah salah: ${r.regionCode}`);
     if (
-      r.year !== 2026 ||
+      ![2025, 2026].includes(r.year) ||
+      r.year !== s.rows[0]?.year ||
       !Number.isInteger(r.weekThrough) ||
       r.weekThrough < 1 ||
       r.weekThrough > 53 ||
@@ -109,8 +118,8 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
       errors.push(`Nilai/status tidak sah: ${r.regionCode}`);
     if (
       (s.evidence === 'attachment-extraction' && !r.originalLabel) ||
-      ![36, 45].includes(r.page) ||
-      r.page !== (r.level === 'national' ? 36 : 45)
+      !Number.isSafeInteger(r.page) ||
+      r.page < 1
     )
       errors.push('Label asli/halaman sumber tidak sah.');
     const key = [r.level, r.regionCode, r.metric].join('|');
@@ -176,7 +185,7 @@ export function skdrReconciliation(s: SkdrSnapshot) {
 export function selectedSkdr(s: SkdrSnapshot, selection: SkdrSelection) {
   if (
     selection.source === 'sismal' ||
-    selection.year !== 2026 ||
+    selection.year !== s.rows[0]?.year ||
     selection.snapshot !== s.id ||
     !regionName('2025', selection.region)
   )
@@ -198,7 +207,7 @@ export function skdrExport(s: SkdrSnapshot, selection: SkdrSelection) {
     },
     records: selectedSkdr(s, selection),
     reconciliation:
-      selection.region === 'ID' && selection.year === 2026 && selection.snapshot === s.id
+      selection.region === 'ID' && selection.year === s.rows[0]?.year && selection.snapshot === s.id
         ? skdrReconciliation(s)
         : undefined,
   };

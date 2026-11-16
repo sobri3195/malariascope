@@ -106,6 +106,9 @@ export function normalizeSismal(
     if (!entry || typeof entry !== 'object' || Array.isArray(entry))
       throw Error('Baris SISMAL bukan objek agregat.');
     const r = entry as Record<string, unknown>;
+    const aggregateColumns: readonly string[] = Object.values(aliases).flat();
+    if (Object.keys(r).some((k) => !aggregateColumns.includes(k)))
+      throw Error('Kolom respons di luar kontrak agregat; periksa skema sebelum menerima data.');
     const sourceId = String(field(r, aliases.sourceId, true));
     const district = field(r, aliases.district, true),
       province = field(r, aliases.province, true);

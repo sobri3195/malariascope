@@ -1,5 +1,7 @@
 # Penarikan dan pemuatan SKDR/SISMAL
 
+> Catatan historis implementasi sebelumnya. Pipeline aktif, perintah, manifest, dan workflow terbaru dijelaskan dalam [AUTOMATIC-MALARIA-SYNC.md](AUTOMATIC-MALARIA-SYNC.md). Opsi `--skdr-markdown` dan path loader tetap di bawah sudah digantikan oleh penemuan publikasi dan manifest immutable.
+
 Perbaikan ini berangkat dari implementasi Surveilans Indonesia pada commit `4e8d0ae`. Masalah direproduksi pada `/dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m44&region=11.03`: awalnya tidak ada pilihan tahun 2025, status kabupaten masih generik dan label workspace masih Papua.
 
 ## Perilaku dashboard

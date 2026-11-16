@@ -9,11 +9,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:coverage
-      - run: npm run test:performance
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -22,11 +17,17 @@ jobs:
             research/requirements.txt
             services/requirements.txt
             services/requirements-dev.txt
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:coverage
+      - run: npm run test:performance
       - run: pip install -r research/requirements.txt -r services/requirements.txt -r services/requirements-dev.txt
       - run: npm run test:research
+      - run: npm run data:validate:malaria
       - run: npm run build
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Complete workspace browser acceptance
         shell: bash
         run: |

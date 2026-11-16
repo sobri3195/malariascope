@@ -242,7 +242,7 @@ try {
   const requested = new Promise((resolve) => {
     started = resolve;
   });
-  await edge.route('**/data/indonesia/sismal/2025.json', async (route) => {
+  await edge.route('**/data/indonesia/versions/sismal/sismal-2025-*.json', async (route) => {
     started();
     await held;
     await route.fulfill({ json: payload }).catch(() => {});
@@ -256,14 +256,14 @@ try {
   release();
   await expect(edge.getByLabel('Context year')).toHaveValue('2026');
   await expect(edge.locator('.metric strong')).toHaveText('Belum tersedia');
-  await edge.unroute('**/data/indonesia/sismal/2025.json');
+  await edge.unroute('**/data/indonesia/versions/sismal/sismal-2025-*.json');
   const wrong = await (await edge.request.get(base + '/data/indonesia/skdr/2026-m44.json')).json();
   await edge.route('**/data/indonesia/skdr/2026-m45.json', (route) =>
     route.fulfill({ json: wrong }),
   );
   await edge.goto(base + '/dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m45&region=ID');
   await expect(edge.getByRole('heading', { name: 'Data SKDR gagal dimuat' })).toBeVisible();
-  await expect(edge.getByRole('alert').last()).toContainText('Versi respons berbeda');
+  await expect(edge.getByRole('alert').last()).toContainText('tidak tersedia dalam manifest');
   await expect(
     edge.getByRole('button', { name: 'Export overview', exact: true }).first(),
   ).toBeDisabled();

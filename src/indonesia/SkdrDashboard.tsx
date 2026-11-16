@@ -8,6 +8,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useSkdr } from './SkdrContext';
 import { masters, regionName, csv, type RecordRow } from './engine';
 import { selectedSkdr, skdrReconciliation } from './skdr';
+import { catalogYears } from './publication-catalog';
 import { captureSurveillanceSnapshot, restoreSurveillanceSnapshot } from '../workspace-context';
 import './indonesia.css';
 const fmt = (n: number | null) => (n === null ? 'Belum tersedia' : n.toLocaleString('id-ID'));
@@ -20,7 +21,7 @@ function save(name: string, text: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(u), 1000);
 }
 export function SkdrExports() {
-  const { data, sismal, selection, error } = useSkdr();
+  const { data, sismal, selection, error, publication, sourceCheck } = useSkdr();
   const valid =
     selection.source === 'sismal'
       ? !!sismal &&
@@ -28,10 +29,25 @@ export function SkdrExports() {
         selection.year === sismal.reportingYear &&
         !!regionName('2025', selection.region)
       : data &&
-        selection.year === 2026 &&
+        selection.year === data.rows[0]?.year &&
         selection.snapshot === data.id &&
         !!regionName('2025', selection.region);
-  const payload = valid ? surveillanceExport(data, sismal, selection) : null;
+  const exported = valid ? surveillanceExport(data, sismal, selection) : null;
+  const payload = exported
+    ? {
+        ...exported,
+        source: {
+          ...exported.source,
+          versionId: publication?.id,
+          dataSha256: publication?.dataSha256,
+          sourceSha256: publication?.sourceSha256,
+          versionPath: publication?.path,
+          lastCheckedAt: sourceCheck?.lastCheckedAt,
+          checkStatus: sourceCheck?.status,
+          retryAt: sourceCheck?.retryAt,
+        },
+      }
+    : null;
   return (
     <>
       <button
@@ -100,7 +116,7 @@ export function SkdrExports() {
   );
 }
 export function SkdrFilters() {
-  const { selection, select } = useSkdr();
+  const { selection, select, catalog, requestedSnapshot } = useSkdr();
   const [search, setSearch] = useState('');
   const matches = masters['2025'].regions.filter((r) =>
     (r.name + ' ' + r.code).toLocaleLowerCase('id').includes(search.toLocaleLowerCase('id')),
@@ -115,14 +131,14 @@ export function SkdrFilters() {
           value={selection.year}
           onChange={(e) =>
             select({
-              source: +e.target.value === 2025 ? 'sismal' : selection.source,
+              source: catalog?.sources[`skdr:${e.target.value}`] ? selection.source : 'sismal',
               year: +e.target.value,
             })
           }
         >
-          <option>2025</option>
-          <option>2026</option>
-          {![2025, 2026].includes(selection.year) && <option>{selection.year}</option>}
+          {[...new Set([...catalogYears(catalog), selection.year])].map((year) => (
+            <option key={year}>{year}</option>
+          ))}
         </select>
       </label>
       <label>
@@ -196,7 +212,7 @@ export function SkdrFilters() {
           value={selection.source || 'skdr'}
           onChange={(e) => select({ source: e.target.value as 'skdr' | 'sismal' })}
         >
-          <option value="skdr">SKDR kumulatif M43 2026</option>
+          <option value="skdr">SKDR kumulatif mingguan</option>
           <option value="sismal">SISMAL tahunan</option>
         </select>
       </label>
@@ -204,18 +220,22 @@ export function SkdrFilters() {
         BULETIN
         <select
           aria-label="Context bulletin"
-          value={selection.snapshot}
+          value={requestedSnapshot}
           onChange={(e) => select({ snapshot: e.target.value })}
         >
-          {selection.source === 'sismal' ? (
-            <option value={`sismal-${selection.year}`}>SISMAL {selection.year}</option>
-          ) : (
-            <option value="2026-m44">2026-m44</option>
-          )}
-          {selection.snapshot !==
-            (selection.source === 'sismal' ? `sismal-${selection.year}` : '2026-m44') && (
-            <option>{selection.snapshot}</option>
-          )}
+          <option value="latest">Versi terbaru</option>
+          {Object.values(catalog?.sources || {})
+            .filter((s) => s.kind === (selection.source || 'skdr') && s.year === selection.year)
+            .flatMap((s) => s.versions)
+            .map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.publicationId} · {v.id === selection.versionId ? 'ditampilkan' : v.createdAt}
+              </option>
+            ))}
+          {requestedSnapshot !== 'latest' &&
+            !Object.values(catalog?.sources || {}).some((s) =>
+              s.versions.some((v) => v.id === requestedSnapshot),
+            ) && <option value={requestedSnapshot}>{requestedSnapshot}</option>}
         </select>
       </label>
     </>
@@ -239,6 +259,7 @@ export function SkdrInspector() {
     return (
       <section aria-label="SISMAL Inspector">
         <h2>Jejak sumber SISMAL</h2>
+        <PublicationStatus />
         <SkdrBreadcrumb />
         <p>
           Tahun pelaporan {sismal?.reportingYear} · sumber {sismal?.sourceUrl}
@@ -265,10 +286,11 @@ export function SkdrInspector() {
   return (
     <section aria-label="SKDR Inspector">
       <h2>Jejak sumber SKDR</h2>
+      <PublicationStatus />
       <SkdrBreadcrumb />
       <p>
-        Terbit {data.publishedAt} · data sampai M{data.rows[0]?.weekThrough} 2026 · Buletin{' '}
-        {data.rows[0]?.bulletin}
+        Terbit {data.publishedAt} · data sampai M{data.rows[0]?.weekThrough} {data.rows[0]?.year} ·
+        Buletin {data.rows[0]?.bulletin}
       </p>
       <p>
         URL sumber: {data.sourceUrl || 'Belum diterima dari lampiran'} · waktu penarikan:{' '}
@@ -280,9 +302,16 @@ export function SkdrInspector() {
       </p>
       {selection.region === 'ID' && (
         <dl>
-          <dt>Angka publikasi nasional · halaman 36</dt>
+          <dt>
+            Angka publikasi nasional · halaman {data.rows.find((r) => r.level === 'national')?.page}
+          </dt>
           <dd>{fmt(r.national)}</dd>
-          <dt>Jumlah turunan 38 provinsi · halaman 45</dt>
+          <dt>
+            Jumlah turunan 38 provinsi · halaman{' '}
+            {[...new Set(data.rows.filter((r) => r.level === 'province').map((r) => r.page))].join(
+              ', ',
+            )}
+          </dt>
           <dd>{fmt(r.provinceSum)}</dd>
           <dt>Provinsi dengan angka tersedia</dt>
           <dd>
@@ -321,7 +350,7 @@ export function SkdrDashboard() {
   if (
     !regionName('2025', selection.region) ||
     selection.snapshot !== data.id ||
-    selection.year !== 2026
+    selection.year !== data.rows[0]?.year
   )
     return (
       <section role="alert">
@@ -337,9 +366,11 @@ export function SkdrDashboard() {
   const table = selection.region === 'ID' ? data.rows.filter((r) => r.level === 'province') : rows;
   return (
     <section className="indonesia" aria-label="SKDR Regional Surveillance Workspace">
-      <h2>SKDR Kemenkes — Indonesia 2026</h2>
+      <h2>SKDR Kemenkes — Indonesia {selection.year}</h2>
+      <PublicationStatus />
       <p>
-        Data sampai M{data.rows[0]?.weekThrough} 2026 · Buletin {data.rows[0]?.bulletin}
+        Data sampai M{data.rows[0]?.weekThrough} {data.rows[0]?.year} · Buletin{' '}
+        {data.rows[0]?.bulletin}
       </p>
       <SkdrBreadcrumb />
       {data.evidence === 'user-supplied-incomplete' && (
@@ -373,7 +404,7 @@ export function SkdrDashboard() {
             {data.rows
               .find((r) => r.regionCode === selection.region.slice(0, 2))
               ?.value?.toLocaleString('id-ID') ?? 'Belum tersedia'}{' '}
-            kasus sampai M{data.rows[0]?.weekThrough} 2026
+            kasus sampai M{data.rows[0]?.weekThrough} {data.rows[0]?.year}
           </p>
           <button onClick={() => select({ source: 'sismal', year: 2025 })}>Lihat data 2025</button>
         </aside>
@@ -425,7 +456,7 @@ export function SkdrDashboard() {
   );
 }
 export function SkdrSnapshots() {
-  const { selection, select } = useSkdr();
+  const { selection, select, publication, error } = useSkdr();
   const [name, setName] = useState('SKDR snapshot');
   const [message, setMessage] = useState('');
   const repository = useLocalRepository('malariascope-skdr-views-v1', parseViews, emptyViews);
@@ -445,7 +476,7 @@ export function SkdrSnapshots() {
         />
       </label>
       <button
-        disabled={!!repository.error || saved.length >= 1000}
+        disabled={!!repository.error || saved.length >= 1000 || !publication || !!error}
         onClick={() => {
           const next = [
             ...saved,
@@ -503,5 +534,40 @@ export function SkdrSnapshots() {
         </article>
       ))}
     </section>
+  );
+}
+
+export function PublicationStatus() {
+  const { publication, sourceCheck, manifestWarning, retry } = useSkdr();
+  const labels = {
+    bootstrap: 'Belum diverifikasi',
+    updated: 'Diperbarui',
+    unchanged: 'Tidak ada pembaruan',
+    failed: 'Sumber gagal',
+    'review-required': 'Perlu ditinjau',
+    empty: 'Respons kosong; angka belum tersedia',
+  };
+  return (
+    <aside aria-label="Status sinkronisasi sumber">
+      <p>
+        Versi tampil: {publication?.id || 'Belum dimuat'} · pengecekan terakhir:{' '}
+        {sourceCheck?.lastCheckedAt || 'Belum diperiksa'} · sumber:{' '}
+        {sourceCheck?.kind.toUpperCase()}{' '}
+        {publication?.weekThrough ? `· sampai M${publication.weekThrough} ${publication.year}` : ''}
+      </p>
+      <p>
+        Status: {sourceCheck ? labels[sourceCheck.status] : 'Memuat manifest'}.{' '}
+        {sourceCheck?.message}
+        {sourceCheck?.retryAt && ` Pengecekan berikutnya paling awal ${sourceCheck.retryAt}.`}
+      </p>
+      {(sourceCheck?.status === 'failed' || sourceCheck?.status === 'review-required') && (
+        <p role="alert">
+          Snapshot terakhir dipertahankan karena sumber gagal atau perlu ditinjau. Angka bukan
+          pembaruan terbaru dari sumber.
+        </p>
+      )}
+      {manifestWarning && <p role="alert">{manifestWarning}</p>}
+      <button onClick={retry}>Periksa ulang manifest</button>
+    </aside>
   );
 }

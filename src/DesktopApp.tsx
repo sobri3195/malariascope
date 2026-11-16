@@ -495,7 +495,7 @@ function DashboardHeading({ summary }: { summary: any }) {
           <p>
             {skdr.selection.source === 'sismal'
               ? `Rekap SISMAL · tahun pelaporan ${skdr.selection.year}`
-              : `Data sampai M${skdr.data?.rows[0]?.weekThrough ?? '—'} 2026 · Buletin ${skdr.data?.rows[0]?.bulletin ?? skdr.selection.snapshot}`}
+              : `Data sampai M${skdr.data?.rows[0]?.weekThrough ?? '—'} ${skdr.selection.year} · Buletin ${skdr.data?.rows[0]?.bulletin ?? skdr.selection.snapshot}`}
           </p>
         </div>
         <SkdrExports />

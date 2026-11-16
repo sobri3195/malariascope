@@ -1,5 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { servePublication } from './helpers/publications.mjs';
 const base = process.env.APP_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium',
@@ -92,12 +93,12 @@ try {
   );
   await expect(page.getByRole('heading', { name: 'Konteks SKDR tidak sah' })).toBeVisible();
   // Data-failure state must not reuse a stale snapshot.
-  await page.route('**/data/indonesia/skdr/2026-m44.json', (r) =>
+  await page.route('**/data/indonesia/versions/skdr/*.json', (r) =>
     r.fulfill({ status: 503, body: 'unavailable' }),
   );
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Data SKDR gagal dimuat' })).toBeVisible();
-  await page.unroute('**/data/indonesia/skdr/2026-m44.json');
+  await page.unroute('**/data/indonesia/versions/skdr/*.json');
   await page.getByRole('button', { name: 'Coba lagi SKDR' }).click();
   await expect(page.getByRole('heading', { name: 'Konteks SKDR tidak sah' })).toBeVisible();
   await page.goto(base + '/dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m44');
@@ -111,7 +112,7 @@ try {
     }
   }
   full.rows.find((r) => r.regionCode === '11').value = 228134;
-  await page.route('**/data/indonesia/skdr/2026-m44.json', (r) => r.fulfill({ json: full }));
+  await servePublication(page, 'skdr', full);
   await page.reload();
   await page.getByRole('button', { name: 'Inspector', exact: true }).click();
   const inspector = page.getByRole('region', { name: 'SKDR Inspector' });

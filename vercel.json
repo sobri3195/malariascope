@@ -1,11 +1,40 @@
 {
-  "rewrites": [{ "source": "/((?!data/|assets/|mobile-sw\\.js).*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/((?!data/|assets/|mobile-sw\\.js).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/mobile-sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache" },
-        { "key": "Service-Worker-Allowed", "value": "/mobile" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/mobile"
+        }
+      ]
+    },
+    {
+      "source": "/data/indonesia/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/data/indonesia/versions/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     }
   ]

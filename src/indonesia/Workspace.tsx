@@ -15,7 +15,7 @@ import {
   ReconciliationPanel,
 } from './AggregatePanels';
 import { useSkdr } from './SkdrContext';
-import { SkdrDashboard, SkdrInspector, SkdrFilters } from './SkdrDashboard';
+import { SkdrDashboard, SkdrInspector, SkdrFilters, PublicationStatus } from './SkdrDashboard';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
@@ -196,6 +196,15 @@ export default function IndonesiaWorkspace() {
         <Link to={'/dashboard' + (skdr.active ? location.search : '')}>← Command Dashboard</Link>
         <h1>Surveilans Malaria Indonesia</h1>
         <p>Rekap agregat resmi dan penilaian layanan. Tidak memakai model riset Papua.</p>
+        {!skdr.active && (
+          <p>
+            <Link
+              to={`/surveilans-indonesia?dataset=skdr-indonesia&snapshot=latest&region=${code}`}
+            >
+              Buka publikasi SKDR/SISMAL terbaru
+            </Link>
+          </p>
+        )}
         <Link to={'/jakarta' + location.search}>Pintasan DKI Jakarta</Link>
       </header>
       {skdr.active ? (
@@ -300,6 +309,7 @@ export default function IndonesiaWorkspace() {
         </section>
       )}
       <LocalRecovery {...repository} />
+      {skdr.active && panel !== 'situasi' && <PublicationStatus />}
       {skdr.active && panel !== 'situasi' && (
         <label>
           Sumber rekap dan versi

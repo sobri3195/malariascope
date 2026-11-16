@@ -1,4 +1,5 @@
 import { chromium, expect } from '@playwright/test';
+import { servePublication } from './helpers/publications.mjs';
 import { normalizeSismal } from '../src/indonesia/sismal.ts';
 const base = process.env.APP_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch({
@@ -66,12 +67,12 @@ try {
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBeTruthy();
-  await page.route('**/data/indonesia/sismal/2025.json', (r) =>
+  await page.route('**/data/indonesia/versions/sismal/sismal-2025-*.json', (r) =>
     r.fulfill({ status: 503, body: 'failed' }),
   );
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Data SISMAL gagal dimuat' })).toBeVisible();
-  await page.unroute('**/data/indonesia/sismal/2025.json');
+  await page.unroute('**/data/indonesia/versions/sismal/sismal-2025-*.json');
   await page.getByRole('button', { name: 'Coba lagi SISMAL' }).click();
   await expect(page.locator('.metric strong')).toHaveText('4');
   // Synthetic normalized portal fixture exercises labels without claiming a real fetch succeeded.
@@ -90,7 +91,7 @@ try {
     '2026-11-16T00:00:00Z',
     'https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH',
   );
-  await page.route('**/data/indonesia/sismal/2025.json', (r) => r.fulfill({ json: fixture }));
+  await servePublication(page, 'sismal', fixture);
   await page.reload();
   await expect(page.getByRole('table', { name: 'Tabel SISMAL' })).toContainText(
     'belum tervalidasi',

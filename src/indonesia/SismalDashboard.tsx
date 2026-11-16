@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useSkdr } from './SkdrContext';
 import { regionName } from './engine';
 import { selectedSismal, scopedSismal } from './sismal';
-import { SkdrExports, SkdrBreadcrumb } from './SkdrDashboard';
+import { SkdrExports, SkdrBreadcrumb, PublicationStatus } from './SkdrDashboard';
 export default function SismalDashboard() {
   const { sismal, selection, error, retry } = useSkdr();
   const location = useLocation();
@@ -27,6 +27,7 @@ export default function SismalDashboard() {
   return (
     <section className="indonesia" aria-label="SISMAL Regional Surveillance Workspace">
       <h2>SISMAL Kemenkes — {selection.year}</h2>
+      <PublicationStatus />
       <SkdrBreadcrumb />
       <p>
         Rekap tahunan SISMAL · tahun pelaporan {sismal.reportingYear}. Tidak digabung dengan SKDR
