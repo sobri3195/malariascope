@@ -45,5 +45,24 @@
   "limitations": [
     "Tidak ada angka resmi malaria dibundel; tidak ada fabrikasi atau fallback model Papua.",
     "Pemeriksaan Jakarta/Papua/Jawa Tengah di browser memeriksa alur dan status unavailable; belum memverifikasi angka publik wilayah tersebut."
-  ]
+  ],
+  "supplied_snapshot": {
+    "path": "/data/indonesia/skdr/2026-m44.json",
+    "evidence": "user-supplied-incomplete",
+    "published_at_as_stated": "2026-11-10",
+    "bulletin_as_stated": "M44 2026; data through M43",
+    "pages_as_stated": {
+      "national": 36,
+      "provinces": 45
+    },
+    "source_url": null,
+    "retrieved_at": null,
+    "available_provinces": 3,
+    "unavailable_provinces": 35,
+    "claimed_targets_not_computed": {
+      "province_sum": 394361,
+      "difference": 5866
+    },
+    "review": "Four figures explicitly supplied in user request; original attachment, original SKDR labels, URL and retrieval timestamp not received. Not independently checked against bulletin."
+  }
 }

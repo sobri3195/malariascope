@@ -1,3 +1,4 @@
+import { SkdrProvider } from './indonesia/SkdrContext';
 import WorkspaceNavigation from './WorkspaceNavigation';
 import WorkspaceStorageStatus from './WorkspaceStorageStatus';
 import React, { lazy, Suspense } from 'react';
@@ -66,11 +67,13 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ApplicationBoundary>
       <BrowserRouter>
-        <Provider>
-          <WorkspaceNavigation />
-          <WorkspaceStorageStatus />
-          <ApplicationRouter />
-        </Provider>
+        <SkdrProvider>
+          <Provider>
+            <WorkspaceNavigation />
+            <WorkspaceStorageStatus />
+            <ApplicationRouter />
+          </Provider>
+        </SkdrProvider>
       </BrowserRouter>
     </ApplicationBoundary>
   </React.StrictMode>,
