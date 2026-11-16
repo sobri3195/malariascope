@@ -1,0 +1,49 @@
+{
+  "checked_at": "2026-11-16",
+  "geography": {
+    "authority": "Kemendagri",
+    "delivery": "Transkripsi SQL cahyadsn/wilayah, bukan API resmi Kemendagri",
+    "commit": "c2eff0881e3c75b8822f8c84ea9d23affc11aadb",
+    "license": "MIT; lihat WILAYAH-LICENSE",
+    "versions": {
+      "2025": {
+        "source_sha256": "c4c3396d9380d4edee072af1d9dff83573b574d7cd00a6562cf82e200e954031",
+        "region_count": 552
+      },
+      "2022": {
+        "source_sha256": "dc105d79c39430da9eb3666e62f18818df3ed4a308121d1c219b2e697bfc2978",
+        "region_count": 551
+      },
+      "2020": {
+        "source_sha256": "1ca9557e3cede8f9b6702c3a125865bc64985c876bbbf5521e1fae32ac3ed05e",
+        "region_count": 548
+      }
+    },
+    "legal_references": [
+      "Kepmendagri 300.2.2-2430 Tahun 2025 / 300.2.2-2138 Tahun 2025",
+      "Arsip wilayah_2023.sql: Kepmendagri 100.1.1-6117 Tahun 2022; snapshot 37 provinsi, bukan seluruh perubahan sesudahnya",
+      "Arsip wilayah_2020.sql: Permendagri 72 Tahun 2019 / Kepmendagri 146.1-4717 Tahun 2020"
+    ],
+    "official_url": "https://ditjenbinaadwil.kemendagri.go.id/download/file/Kepmen_Perubahan_300.2.2-2430.pdf",
+    "mirror_pdf": "https://github.com/cahyadsn/wilayah_ref/blob/c81f022c6cdfa2315125788b59237613e62a211a/docs/kepmendagri_300.2.2-2430_2025.pdf",
+    "mirror_pdf_sha256": "4b5fd2023b8fc0efd4910c5490997c93107d227937536e6cfef414d05f315886",
+    "review": "Nomor keputusan pada salinan PDF diperiksa melalui OCR halaman 1. Daftar nama/kode hasil transkripsi belum diaudit baris demi baris terhadap lampiran resmi; header SQL menyebut 2138, README menyebut perubahan 2430. Tidak ada geometri batas yang dibundel."
+  },
+  "observations": [],
+  "pending_sources": [
+    {
+      "source": "Profil Kesehatan Indonesia",
+      "status": "not-retrieved-network-denied",
+      "required": "PDF resmi, tanggal terbit, halaman/tabel, periode dan batas wilayah sumber; periksa ulang angka minimal dua kali sebelum memasukkan rekap."
+    },
+    {
+      "source": "Snapshot SKDR",
+      "status": "not-retrieved-network-denied",
+      "required": "Publikasi snapshot resmi bertanggal, minggu awal/akhir, definisi kasus, cakupan pelaporan, versi revisi dan rekap tingkat wilayah yang sama."
+    }
+  ],
+  "limitations": [
+    "Tidak ada angka resmi malaria dibundel; tidak ada fabrikasi atau fallback model Papua.",
+    "Pemeriksaan Jakarta/Papua/Jawa Tengah di browser memeriksa alur dan status unavailable; belum memverifikasi angka publik wilayah tersebut."
+  ]
+}

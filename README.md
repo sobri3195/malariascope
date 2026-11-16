@@ -22,6 +22,10 @@ npm run preview
 
 Development binds to all interfaces on port 5173; preview defaults to 4173. If the default npm cache is not writable, use `npm ci --cache /workspace/.npm-cache`.
 
+## Surveilans Malaria Indonesia
+
+`/surveilans-indonesia` menyediakan pemilihan Indonesia → provinsi → kabupaten/kota, lima panel rekap agregat, filter URL, templat CSV, dan ekspor berjejak sumber. `/jakarta` merupakan pintasan DKI Jakarta. [Kontrak data, sumber master Kemendagri, pembaruan, dan keterbatasan pemeriksaan publikasi](docs/SURVEILANS-INDONESIA.md). Angka resmi Profil Kesehatan Indonesia/SKDR belum dibundel karena akses publikasi terblokir; data yang belum tersedia tidak dianggap nol.
+
 ## Architecture
 
 Research Intelligence (`/research-intelligence`) connects explicit eight-district and nine-unit cohorts, metric-selectable benchmark sources, prediction diagnostics, annual Spearman evidence, source reconciliation and interface status. New brief-reported manuscript references remain separate from original study artifacts. See [research inventory, contracts, methods and validation](docs/RESEARCH-INTELLIGENCE.md).
