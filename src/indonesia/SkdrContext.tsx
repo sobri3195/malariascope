@@ -25,13 +25,17 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
   const q = new URLSearchParams(route.search);
   const active = q.get('dataset') === skdrDataset;
   const selection = parseSkdrSelection(q);
+  const sourceError =
+    q.has('source') && !['skdr', 'sismal'].includes(q.get('source')!)
+      ? 'Seri sumber pada URL tidak dikenal. Pilih SKDR atau SISMAL.'
+      : '';
   const [data, setData] = useState<SkdrSnapshot | null>(null),
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0);
   const [sismal, setSismal] = useState<SismalSnapshot | null>(null);
   const [sismalError, setSismalError] = useState('');
   useEffect(() => {
-    if (!active || selection.source !== 'sismal') return;
+    if (!active || sourceError || selection.source !== 'sismal') return;
     const controller = new AbortController();
     setSismal(null);
     setSismalError('');
@@ -51,10 +55,10 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
         if (!controller.signal.aborted) setSismalError(String(e));
       });
     return () => controller.abort();
-  }, [active, selection.source, selection.year, revision]);
+  }, [active, sourceError, selection.source, selection.year, revision]);
   const skdrId = selection.source === 'sismal' ? '2026-m44' : selection.snapshot;
   useEffect(() => {
-    if (!active) return;
+    if (!active || sourceError) return;
     const controller = new AbortController();
     setData(null);
     setError('');
@@ -66,7 +70,8 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
       .then(async (r) => {
         if (!r.ok) throw Error(`HTTP ${r.status}`);
         const s = await r.json();
-        const errors = validateSkdr(s, s.evidence === 'attachment-extraction');
+        const errors = validateSkdr(s, s?.evidence === 'attachment-extraction');
+        if (s?.id !== skdrId) errors.push('Versi respons berbeda dari buletin yang diminta.');
         if (errors.length) throw Error(errors.join(' '));
         if (!controller.signal.aborted) setData(s);
       })
@@ -74,10 +79,10 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
         if (!controller.signal.aborted) setError(String(e));
       });
     return () => controller.abort();
-  }, [active, revision, skdrId]);
+  }, [active, sourceError, revision, skdrId]);
   function select(s: Partial<SkdrSelection>) {
     const next = { ...selection, ...s };
-    if (s.source === 'skdr') {
+    if (s.source === 'skdr' && selection.source !== 'skdr') {
       next.year = 2026;
       next.snapshot = '2026-m44';
     }
@@ -98,7 +103,7 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
         selection,
         data,
         sismal,
-        error: selection.source === 'sismal' ? sismalError : error,
+        error: sourceError || (selection.source === 'sismal' ? sismalError : error),
         retry: () => setRevision((n) => n + 1),
         select,
         activate: () =>

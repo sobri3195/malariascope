@@ -271,3 +271,35 @@ test('prospective interval coverage excludes missing bounds and keeps signed res
   assert.deepEqual(metrics.intervalReview, { n: 2, coverage: 0.5, meanWidth: 35 });
   assert.deepEqual(metrics.residualDistribution, { minimum: -20, median: 0, maximum: 10 });
 });
+
+test('complete backup includes regional aggregates, surveillance views and opaque recovery originals; legacy backups preserve newer stores', () => {
+  const store = new MemoryStorage();
+  const aggregate = JSON.stringify({ situasi: [], asal: [], layanan: [], respons: [] });
+  store.setItem('malariascope-indonesia-aggregate-v1', aggregate);
+  store.setItem('malariascope-skdr-views-v1', '[]');
+  store.setItem('malariascope-indonesia-aggregate-v1.recovery.test', '{invalid original');
+  const b = captureBackup({ datasets: [], active: '' }, store);
+  validateBackup(b);
+  assert.equal(b.companions['malariascope-indonesia-aggregate-v1'], aggregate);
+  assert.equal(
+    b.recoveries?.['malariascope-indonesia-aggregate-v1.recovery.test'],
+    '{invalid original',
+  );
+  store.clear();
+  restoreBackup(b, store);
+  assert.equal(store.getItem('malariascope-indonesia-aggregate-v1'), aggregate);
+  assert.equal(
+    store.getItem('malariascope-indonesia-aggregate-v1.recovery.test'),
+    '{invalid original',
+  );
+  const legacy = { ...b, includedKeys: undefined, recoveries: undefined, companions: {} };
+  restoreBackup(legacy, store);
+  assert.equal(store.getItem('malariascope-indonesia-aggregate-v1'), aggregate);
+  assert.throws(() =>
+    validateBackup({
+      ...b,
+      companions: { 'malariascope-indonesia-aggregate-v1': '{"asal":null}' },
+    }),
+  );
+  assert.throws(() => validateBackup({ ...b, recoveries: { unrelated: 'must not restore' } }));
+});

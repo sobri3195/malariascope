@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 const base = process.env.APP_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch({
@@ -96,7 +96,7 @@ try {
     base + '/district-intelligence?district=Test%20District%205&year=2024&model=Random%20Forest',
   );
   await page.getByRole('heading', { name: 'District Intelligence 360°', exact: true }).waitFor();
-  assert.match(await page.locator('.d360-primary-metrics').innerText(), /500/);
+  await expect(page.locator('.d360-primary-metrics')).toContainText('500');
   assert.match(await page.locator('.d360-explanation').innerText(), /90\.0th percentile/);
   assert.match(await page.locator('.d360-explanation').innerText(), /3 consecutive periods/);
   await page.getByLabel('Neighbor comparison').selectOption('Test District 4');
@@ -141,7 +141,7 @@ try {
       assert.match(await page.getByRole('tabpanel').innerText(), /USER IMPORT/);
   }
   await page.getByLabel('Global year').selectOption('2023');
-  assert.match(await page.locator('.d360-primary-metrics').innerText(), /300/);
+  await expect(page.locator('.d360-primary-metrics')).toContainText('300');
   await page.getByLabel('Global year').selectOption('2024');
   await page.getByRole('tab', { name: 'Readiness', exact: true }).click();
   assert.equal(

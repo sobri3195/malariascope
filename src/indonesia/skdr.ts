@@ -1,4 +1,4 @@
-import { masters, regionName } from './engine.ts';
+import { masters, regionName, validDate, validTimestamp, validHttps } from './engine.ts';
 export const skdrDataset = 'skdr-indonesia';
 export type SkdrLevel = 'national' | 'province' | 'district';
 export type Availability = 'reported' | 'partial' | 'unavailable';
@@ -51,13 +51,14 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     typeof s.id !== 'string' ||
     !/^2026-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(s.id) ||
     s.boundaryVersion !== '2025' ||
-    typeof s.publishedAt !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(s.publishedAt) ||
-    !Number.isFinite(Date.parse(s.publishedAt)) ||
+    !validDate(s.publishedAt) ||
     !Array.isArray(s.rows)
   )
     return ['Kontrak snapshot SKDR tidak sah.'];
   if (s.rows.some((r) => !r || typeof r !== 'object')) return ['Baris snapshot SKDR harus objek.'];
+  if (s.sourceUrl !== null && !validHttps(s.sourceUrl)) errors.push('URL sumber tidak sah.');
+  if (s.retrievedAt !== null && !validTimestamp(s.retrievedAt))
+    errors.push('Waktu penarikan tidak sah.');
   const bulletin = 'M' + Number(s.id.split('-m')[1]);
   if (
     s.id === '2026-m44' &&
@@ -68,6 +69,23 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     errors.push('Asal bukti tidak sah.');
   const seen = new Set<string>();
   for (const r of s.rows) {
+    if (
+      typeof r.regionCode !== 'string' ||
+      (r.originalLabel !== null && typeof r.originalLabel !== 'string') ||
+      r.sourceUrl !== s.sourceUrl
+    )
+      errors.push('Kode, label, atau URL baris tidak sesuai kontrak.');
+    if (r.originalLabel) {
+      try {
+        const mapped =
+          r.level === 'national' && r.originalLabel.toLocaleLowerCase('id') === 'indonesia'
+            ? 'ID'
+            : mapSkdrLabel(r.originalLabel);
+        if (mapped !== r.regionCode) errors.push('Label asli tidak cocok dengan kode wilayah.');
+      } catch {
+        errors.push('Label asli tidak terpetakan secara unik.');
+      }
+    }
     const level =
       r.regionCode === 'ID' ? 'national' : /^\d{2}$/.test(r.regionCode) ? 'province' : 'district';
     if (!regionName(s.boundaryVersion, r.regionCode) || r.level !== level)
@@ -105,6 +123,10 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     s.rows.length !== 39
   )
     errors.push('Snapshot harus tepat 1 nasional dan 38 provinsi.');
+  const sum = s.rows
+    .filter((r) => r.level === 'province' && typeof r.value === 'number')
+    .reduce((total, r) => total + r.value!, 0);
+  if (!Number.isSafeInteger(sum)) errors.push('Jumlah provinsi melebihi rentang integer aman.');
   if (complete) {
     try {
       const u = new URL(s.sourceUrl || '');
@@ -118,12 +140,7 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
     } catch {
       errors.push('URL publikasi resmi wajib.');
     }
-    if (
-      !s.retrievedAt ||
-      !/^\d{4}-\d{2}-\d{2}T/.test(s.retrievedAt) ||
-      !Number.isFinite(Date.parse(s.retrievedAt))
-    )
-      errors.push('Waktu penarikan ISO wajib.');
+    if (!validTimestamp(s.retrievedAt)) errors.push('Waktu penarikan ISO wajib.');
     if (s.rows.some((r) => r.sourceUrl !== s.sourceUrl || !r.originalLabel))
       errors.push('URL/label asli baris belum lengkap.');
   }

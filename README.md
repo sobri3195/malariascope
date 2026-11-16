@@ -395,6 +395,8 @@ These documents describe contributor roles and project practices; they do not ad
 
 ## Workspace reliability and feature audit
 
+[Audit maintainer November 2026](docs/MAINTAINER-AUDIT-2026-11.md) mencatat seluruh rute, input, hasil pengujian dan ketergantungan eksternal. Rekap regional, snapshot tampilan, serta registry prospektif kini melindungi data rusak/konflik tab, menyediakan cadangan pemulihan, dan memakai pratinjau sebelum impor diterapkan.
+
 Saved workspace structure is checked before use. If local state cannot be read safely, the original is preserved until explicitly replaced; a cross-interface recovery panel offers original/session backups. Storage-full or blocked-write failures remain visible, with retry and complete session export. Shared study-source controls also offer integrity-preserving retries after connection failures. Resetting application data clears only this application's state and stale context query parameters. See [Workspace feature audit](docs/WORKSPACE-FEATURE-AUDIT.md) for all module suites and remaining evidence limitations.
 
 ## Workspace interaction improvements

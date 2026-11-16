@@ -6,22 +6,22 @@ const PUBLIC = [
   '/favicon.svg',
   '/favicon.ico',
   '/apple-touch-icon.png',
-  "/data/verified/climate-annual-2020-2025.csv",
-  "/data/verified/district-registry.json",
-  "/data/verified/evidence-coverage.json",
-  "/data/verified/forecast-risk-2025.csv",
-  "/data/verified/geometry-metadata.json",
-  "/data/verified/model-errors-2025.csv",
-  "/data/verified/model-performance.json",
-  "/data/verified/model-predictions-2025.csv",
-  "/data/verified/papua-study-adm2.geojson",
-  "/data/verified/source-quality-ledger.json",
-  "/data/verified/spatial-analysis-2025.json",
-  "/data/verified/surveillance-2025-all-nine.csv",
-  "/data/verified/surveillance-balanced-2020-2025.csv",
-  "/data/verified/system-evidence-status.json",
-  "/data/verified/uncertainty.json",
-  "/data/verified/manifest.json",
+  '/data/verified/climate-annual-2020-2025.csv',
+  '/data/verified/district-registry.json',
+  '/data/verified/evidence-coverage.json',
+  '/data/verified/forecast-risk-2025.csv',
+  '/data/verified/geometry-metadata.json',
+  '/data/verified/model-errors-2025.csv',
+  '/data/verified/model-performance.json',
+  '/data/verified/model-predictions-2025.csv',
+  '/data/verified/papua-study-adm2.geojson',
+  '/data/verified/source-quality-ledger.json',
+  '/data/verified/spatial-analysis-2025.json',
+  '/data/verified/surveillance-2025-all-nine.csv',
+  '/data/verified/surveillance-balanced-2020-2025.csv',
+  '/data/verified/system-evidence-status.json',
+  '/data/verified/uncertainty.json',
+  '/data/verified/manifest.json',
   '/data/research-summary.json',
   '/data/model-performance.json',
   '/data/spatial-analysis.json',
@@ -43,7 +43,12 @@ async function save(cache, key, response) {
   );
 }
 async function warm(urls = []) {
-  const cache = await caches.open(CACHE);
+  let cache;
+  try {
+    cache = await caches.open(CACHE);
+  } catch {
+    return { ready: false, missing: ['cache-storage-unavailable'] };
+  }
   await Promise.all(
     [
       '/mobile',
@@ -72,12 +77,14 @@ async function warm(urls = []) {
     }
   });
   const complete = await Promise.all(
-    ['/mobile', ...PUBLIC, ...visited].map((url) => cache.match(url)),
+    ['/mobile', ...PUBLIC, ...visited].map((url) => cache.match(url, { ignoreVary: true })),
   );
-  if (visited.length && complete.every(Boolean)) {
+  const ready = visited.length > 0 && complete.every(Boolean);
+  if (ready) {
     for (const client of await self.clients.matchAll())
       client.postMessage({ type: 'MALARIASCOPE_CACHE_READY' });
   }
+  return { ready, missing: complete.filter((value) => !value).length };
 }
 self.addEventListener('install', (event) => {
   event.waitUntil(warm().then(() => self.skipWaiting()));
@@ -87,7 +94,11 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'CACHE_VISITED')
-    event.waitUntil(warm(Array.isArray(event.data.urls) ? event.data.urls : []));
+    event.waitUntil(
+      warm(Array.isArray(event.data.urls) ? event.data.urls : []).then((status) =>
+        event.source?.postMessage({ type: 'MALARIASCOPE_CACHE_STATUS', ...status }),
+      ),
+    );
 });
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url),
@@ -102,19 +113,29 @@ self.addEventListener('fetch', (event) => {
     return;
   event.respondWith(
     (async () => {
-      const cache = await caches.open(CACHE),
-        key = nav ? '/mobile' : event.request;
+      let cache;
+      try {
+        cache = await caches.open(CACHE);
+      } catch {
+        /* Online requests remain usable without cache storage. */
+      }
+      const key = nav ? '/mobile' : event.request;
       try {
         const response = await fetch(event.request);
         if (response.ok) {
-          await save(cache, key, response);
+          if (cache)
+            try {
+              await save(cache, key, response);
+            } catch {
+              /* Cache quota must not turn a successful network response into a failure. */
+            }
           return response;
         }
         throw Error('Public asset unavailable');
       } catch {
         // Public same-origin files do not vary by Origin; module requests carry
         // Origin while the warm-up fetches do not. Preserve the exact URL key.
-        const cached = await cache.match(key, { ignoreVary: true });
+        const cached = cache ? await cache.match(key, { ignoreVary: true }) : null;
         if (!cached)
           return new Response('This mobile module has not been cached. Reconnect to load it.', {
             status: 503,

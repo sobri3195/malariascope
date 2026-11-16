@@ -104,3 +104,30 @@
 .indonesia > * {
   min-width: 0;
 }
+.id-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.indonesia table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.indonesia th,
+.indonesia td {
+  padding: 10px;
+  border-bottom: 1px solid #c5d5dd;
+  vertical-align: top;
+}
+.indonesia thead {
+  background: #edf5f8;
+}
+.indonesia h3,
+.indonesia h4 {
+  margin: 8px 0;
+}
+.indonesia caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px;
+}

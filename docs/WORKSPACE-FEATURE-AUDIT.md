@@ -1,5 +1,7 @@
 # Workspace feature audit
 
+Latest maintainer audit, complete route/input matrix, baseline defects and current limitations: [16 November 2026](MAINTAINER-AUDIT-2026-11.md).
+
 This audit reviews the existing research application across its analytical modules and interface shells. Passing software checks do not establish epidemiological validation, live forecasting, authenticated access or operational readiness.
 
 ## Coverage
@@ -24,7 +26,7 @@ This audit reviews the existing research application across its analytical modul
 | Watch companion demonstration                                             | `watch.mjs`                                        |
 | Cross-shell storage recovery, quota handling and study-source retry       | `workspace-recovery.mjs`                           |
 
-The runner now discovers 22 browser scripts (including research completion). The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
+The runner now discovers 32 browser scripts (including surveillance and prospective reliability). The full local audit runs them against a completed production build with independent browser contexts. The new `npm run test:browser` runner discovers every browser script, runs two at a time and fails if any script fails or times out. CI installs the PDF text extractor and runs the full matrix so all modules remain covered.
 
 ## Reliability improvements
 

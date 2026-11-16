@@ -28,6 +28,7 @@ export const workspaceViews = [
   'presentation',
 ];
 export const routeCommands = [
+  ['Go to Dashboard', 'dashboard'],
   ['Go to District', 'district-intelligence'],
   ['Open Risk Map', 'risk-map'],
   ['Open Alert Center', 'alerts'],
@@ -158,8 +159,13 @@ export function restoreSurveillanceSnapshot(value: ReturnType<typeof captureSurv
     !value ||
     value.dataset !== 'skdr-indonesia' ||
     typeof value.id !== 'string' ||
+    !value.id.trim() ||
     typeof value.name !== 'string' ||
+    !value.name.trim() ||
+    value.name.length > 100 ||
     !value.selection ||
+    (value.selection.source !== undefined &&
+      !['skdr', 'sismal'].includes(value.selection.source)) ||
     (value.selection.source === 'sismal'
       ? ![2025, 2026].includes(value.selection.year) ||
         value.selection.snapshot !== `sismal-${value.selection.year}`

@@ -150,3 +150,45 @@ test('SISMAL view snapshot restores source/year/version without turning into SKD
     selection,
   );
 });
+
+test('sync preserves corrupt prior artifacts and keeps retrieval archives across identical response bytes', async () => {
+  const { writeFile, readdir, mkdir } = await import('node:fs/promises');
+  const root = await mkdtemp(join(tmpdir(), 'sismal-archive-'));
+  try {
+    await mkdir(join(root, 'sismal'), { recursive: true });
+    const file = join(root, 'sismal', '2025.json');
+    await writeFile(file, '{corrupt-original');
+    let fetched = 0;
+    const denied = await syncSismalYear({
+      year: 2025,
+      root,
+      now,
+      download: async () => {
+        fetched++;
+        return Buffer.from('[]');
+      },
+    });
+    assert.equal(denied.status, 'failed');
+    assert.equal(fetched, 0);
+    assert.equal(await readFile(file, 'utf8'), '{corrupt-original');
+    await rm(file);
+    const download = async () => Buffer.from(JSON.stringify([aceh]));
+    await syncSismalYear({ year: 2025, root, now, download });
+    const first = await readdir(join(root, 'sismal', 'archive'));
+    const originals = await Promise.all(
+      first.map((f) => readFile(join(root, 'sismal', 'archive', f), 'utf8')),
+    );
+    const second = await syncSismalYear({
+      year: 2025,
+      root,
+      now: '2026-11-17T06:00:00Z',
+      download,
+    });
+    assert.equal(second.status, 'saved');
+    for (let i = 0; i < first.length; i++)
+      assert.equal(await readFile(join(root, 'sismal', 'archive', first[i]), 'utf8'), originals[i]);
+    assert.ok((await readdir(join(root, 'sismal', 'archive'))).length > first.length);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

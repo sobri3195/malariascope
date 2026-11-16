@@ -1,3 +1,6 @@
+import { useLocalRepository } from './useLocalRepository';
+import LocalRecovery from './LocalRecovery';
+import { parseViews, emptyViews } from './snapshot-data';
 import SismalDashboard from './SismalDashboard';
 import { surveillanceExport } from './sismal';
 import { useState } from 'react';
@@ -35,7 +38,7 @@ export function SkdrExports() {
         disabled={!payload || !!error}
         onClick={() =>
           save(
-            `skdr-${selection.region}.json`,
+            `${selection.source || 'skdr'}-${selection.year}-${selection.region}.json`,
             JSON.stringify(payload, null, 2),
             'application/json',
           )
@@ -61,13 +64,37 @@ export function SkdrExports() {
               }).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)]),
             ),
           );
-          const headers = rows.length
-            ? Object.keys(rows[0])
-            : ['regionCode', 'level', 'value', 'availability'];
-          save(`skdr-${selection.region}.csv`, csv(headers, rows), 'text/csv');
+          if (!rows.length)
+            rows.push(
+              Object.fromEntries(
+                Object.entries({
+                  ...payload.source,
+                  selectedRegion: selection.region,
+                  selectedYear: selection.year,
+                  selectedSnapshot: selection.snapshot,
+                  selectedSource: selection.source || 'skdr',
+                  regionCode: selection.region,
+                  level:
+                    selection.region === 'ID'
+                      ? 'national'
+                      : selection.region.includes('.')
+                        ? 'district'
+                        : 'province',
+                  value: '',
+                  availability: 'unavailable',
+                  recordType: 'selection-without-observation',
+                }).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)]),
+              ),
+            );
+          const headers = Object.keys(rows[0]);
+          save(
+            `${selection.source || 'skdr'}-${selection.year}-${selection.region}.csv`,
+            csv(headers, rows),
+            'text/csv',
+          );
         }}
       >
-        Ekspor CSV SKDR
+        {selection.source === 'sismal' ? 'Ekspor CSV SISMAL' : 'Ekspor CSV SKDR'}
       </button>
     </>
   );
@@ -206,7 +233,8 @@ export function SkdrBreadcrumb() {
   );
 }
 export function SkdrInspector() {
-  const { data, sismal, selection } = useSkdr();
+  const { data, sismal, selection, error } = useSkdr();
+  if (error) return <p role="alert">Jejak sumber belum tersedia: {error}</p>;
   if (selection.source === 'sismal')
     return (
       <section aria-label="SISMAL Inspector">
@@ -217,7 +245,7 @@ export function SkdrInspector() {
         </p>
         <p>
           Waktu penarikan: {sismal?.retrievedAt || 'Belum ditarik'}. Status respons:{' '}
-          {sismal?.responseState}. Wilayah dengan angka:{' '}
+          {sismal?.responseState}. Wilayah dengan angka dalam berkas sumber:{' '}
           {sismal?.rows.filter((r) => r.value !== null).length ?? 0}; belum terpetakan:{' '}
           {sismal?.unmapped.length ?? 0}.
         </p>
@@ -400,35 +428,31 @@ export function SkdrSnapshots() {
   const { selection, select } = useSkdr();
   const [name, setName] = useState('SKDR snapshot');
   const [message, setMessage] = useState('');
-  const [saved, setSaved] = useState<ReturnType<typeof captureSurveillanceSnapshot>[]>(() => {
-    try {
-      const value = JSON.parse(localStorage.getItem('malariascope-skdr-views-v1') || '[]');
-      if (!Array.isArray(value)) return [];
-      return value.filter((s) => !restoreSurveillanceSnapshot(s).error);
-    } catch {
-      return [];
-    }
-  });
+  const repository = useLocalRepository('malariascope-skdr-views-v1', parseViews, emptyViews);
+  const saved = repository.data;
+  const [removeId, setRemoveId] = useState('');
   return (
     <section>
-      <h2>SKDR snapshots</h2>
+      <h2>Snapshot surveilans</h2>
+      <LocalRecovery {...repository} />
       <label>
         Snapshot name
-        <input aria-label="Snapshot name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          aria-label="Snapshot name"
+          maxLength={100}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
       </label>
       <button
+        disabled={!!repository.error || saved.length >= 1000}
         onClick={() => {
           const next = [
             ...saved,
             captureSurveillanceSnapshot(selection, name, crypto.randomUUID()),
           ];
-          try {
-            localStorage.setItem('malariascope-skdr-views-v1', JSON.stringify(next));
-            setSaved(next);
-            setMessage('Snapshot SKDR tersimpan terpisah dari riset.');
-          } catch {
-            setMessage('Penyimpanan snapshot gagal.');
-          }
+          if (repository.write(next))
+            setMessage('Snapshot surveilans tersimpan terpisah dari riset.');
         }}
       >
         Save snapshot
@@ -449,6 +473,33 @@ export function SkdrSnapshots() {
           >
             Load Snapshot
           </button>
+          <button
+            disabled={!!repository.error || saved.length >= 1000}
+            onClick={() =>
+              repository.write([
+                ...saved,
+                { ...s, id: crypto.randomUUID(), name: s.name.slice(0, 88) + ' (salinan)' },
+              ])
+            }
+          >
+            Duplikasikan snapshot
+          </button>
+          <button disabled={!!repository.error} onClick={() => setRemoveId(s.id)}>
+            Hapus snapshot
+          </button>
+          {removeId === s.id && (
+            <div>
+              <p>Hapus snapshot tampilan {s.name}? Data sumber tetap tersimpan.</p>
+              <button
+                onClick={() => {
+                  if (repository.write(saved.filter((v) => v.id !== s.id))) setRemoveId('');
+                }}
+              >
+                Konfirmasi hapus snapshot
+              </button>
+              <button onClick={() => setRemoveId('')}>Batal hapus</button>
+            </div>
+          )}
         </article>
       ))}
     </section>

@@ -4,6 +4,8 @@ import { useStore } from './store';
 import { download } from './analytics';
 import {
   captureBackup,
+  companionKeys,
+  recoveryKey,
   validateBackup,
   restoreBackup,
   resetWorkspace,
@@ -18,7 +20,13 @@ export default function WorkspaceManagement() {
   const [conflict, setConflict] = useState(false);
   useEffect(() => {
     const changed = (e: StorageEvent) => {
-      if (e.key === 'malariascope-v1') setConflict(true);
+      if (
+        e.key === null ||
+        e.key === 'malariascope-v1' ||
+        companionKeys.includes(e.key as (typeof companionKeys)[number]) ||
+        recoveryKey(e.key)
+      )
+        setConflict(true);
     };
     window.addEventListener('storage', changed);
     return () => window.removeEventListener('storage', changed);
@@ -46,8 +54,8 @@ export default function WorkspaceManagement() {
         )}
         <p>
           One versioned backup includes shared evidence, registry, IoT, workstation settings, report
-          archive, reviews, model artifacts and rule drafts. Browser-local records are not
-          independently verified.
+          archive, regional aggregates, surveillance views, recovery archives, reviews, model
+          artifacts and rule drafts. Browser-local records are not independently verified.
         </p>
         <div className="toolbar">
           <button
@@ -110,7 +118,7 @@ export default function WorkspaceManagement() {
             </label>
             <button
               className="button"
-              disabled={!confirmed}
+              disabled={!confirmed || conflict}
               onClick={() =>
                 run(() => {
                   restoreBackup(pending, localStorage);
