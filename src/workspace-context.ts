@@ -160,8 +160,11 @@ export function restoreSurveillanceSnapshot(value: ReturnType<typeof captureSurv
     typeof value.id !== 'string' ||
     typeof value.name !== 'string' ||
     !value.selection ||
-    value.selection.year !== 2026 ||
-    value.selection.snapshot !== '2026-m44' ||
+    (value.selection.source === 'sismal'
+      ? ![2025, 2026].includes(value.selection.year) ||
+        value.selection.snapshot !== `sismal-${value.selection.year}`
+      : value.selection.year !== 2026 ||
+        !/^2026-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(value.selection.snapshot)) ||
     typeof value.selection.region !== 'string' ||
     !regionName('2025', value.selection.region)
   )

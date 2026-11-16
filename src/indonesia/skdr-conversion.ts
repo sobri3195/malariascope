@@ -66,7 +66,7 @@ export function convertSkdrMarkdown(markdown: string): SkdrSnapshot {
     } as SkdrRow;
   });
   const snapshot: SkdrSnapshot = {
-    id: '2026-m44',
+    id: `${meta.year}-m${meta.bulletin.replace(/^M/, '')}`,
     dataset: 'skdr-indonesia',
     boundaryVersion: '2025',
     publishedAt: meta.published_at,

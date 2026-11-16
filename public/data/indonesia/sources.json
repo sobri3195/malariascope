@@ -55,14 +55,30 @@
       "national": 36,
       "provinces": 45
     },
-    "source_url": null,
-    "retrieved_at": null,
-    "available_provinces": 3,
-    "unavailable_provinces": 35,
+    "source_url": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf",
+    "retrieved_at": "2026-11-07T10:00:00+07:00",
+    "available_provinces": 4,
+    "unavailable_provinces": 34,
     "claimed_targets_not_computed": {
       "province_sum": 394361,
       "difference": 5866
     },
-    "review": "Four figures explicitly supplied in user request; original attachment, original SKDR labels, URL and retrieval timestamp not received. Not independently checked against bulletin."
-  }
+    "review": "Five SKDR figures now supplied by user; original provincial CSV still missing. PDF/portal fetches blocked by CONNECT 403. Declared retrieval timestamp precedes publication; not independently verified."
+  },
+  "sismal_sources": [
+    {
+      "year": 2025,
+      "available_districts": 1,
+      "fetched_districts": 0,
+      "source_ids": ["1105"],
+      "region_codes": ["11.03"],
+      "evidence": "user-supplied-incomplete"
+    },
+    {
+      "year": 2026,
+      "available_districts": 0,
+      "fetched_districts": 0,
+      "evidence": "user-supplied-incomplete"
+    }
+  ]
 }

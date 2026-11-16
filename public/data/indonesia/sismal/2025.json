@@ -1,0 +1,27 @@
+{
+  "id": "sismal-2025",
+  "source": "sismal",
+  "reportingYear": 2025,
+  "retrievedAt": null,
+  "sourceUrl": "https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH",
+  "evidence": "user-supplied-incomplete",
+  "responseState": "not-fetched",
+  "boundaryVersion": "2025",
+  "rows": [
+    {
+      "sourceId": "1105",
+      "regionCode": "11.03",
+      "provinceCode": "11",
+      "originalDistrict": "ACEH TIMUR",
+      "originalProvince": "ACEH",
+      "reportingYear": 2025,
+      "updatedAt": null,
+      "validationStatus": "Angka dinyatakan pengguna; respons portal belum dapat diperiksa",
+      "value": 4,
+      "availability": "reported",
+      "metric": "positive_cases",
+      "level": "district"
+    }
+  ],
+  "unmapped": []
+}

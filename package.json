@@ -15,7 +15,8 @@
     "test:performance": "node --experimental-strip-types scripts/performance-benchmark.mjs",
     "test:research": "python -m unittest research.test_pipeline services.test_service services.test_dispatch -v",
     "test:coverage": "node --experimental-strip-types --experimental-test-coverage --test-coverage-exclude=\"**/*.test.ts\" --test-coverage-exclude=\"**/node_modules/**\" --test-coverage-lines=70 --test-coverage-branches=55 --test-coverage-functions=70 --test src/*.test.ts",
-    "test:accessibility": "node scripts/accessibility-audit.mjs"
+    "test:accessibility": "node scripts/accessibility-audit.mjs",
+    "data:sync:malaria": "node --experimental-strip-types scripts/sync-malaria.mjs"
   },
   "dependencies": {
     "@turf/turf": "^7.3.0",

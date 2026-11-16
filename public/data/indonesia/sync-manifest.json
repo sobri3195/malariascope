@@ -1,0 +1,30 @@
+{
+  "attemptedAt": "2026-11-16T06:41:49.852Z",
+  "attempts": [
+    {
+      "source": "sismal",
+      "reportingYear": 2026,
+      "url": "https://malaria.kemkes.go.id/api/sismal/chartMap/2026/?province=ACEH",
+      "attemptedAt": "2026-11-16T06:41:49.852Z",
+      "status": "failed",
+      "error": "Error: Command failed: curl --fail --silent --show-error --location --max-time 40 --proto =https --proto-redir =https https://malaria.kemkes.go.id/api/sismal/chartMap/2026/?province=ACEH\ncurl: (22) The requested URL returned error: 403\n",
+      "retainedRows": 0
+    },
+    {
+      "source": "sismal",
+      "reportingYear": 2025,
+      "url": "https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH",
+      "attemptedAt": "2026-11-16T06:41:49.852Z",
+      "status": "failed",
+      "error": "Error: Command failed: curl --fail --silent --show-error --location --max-time 40 --proto =https --proto-redir =https https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH\ncurl: (22) The requested URL returned error: 403\n",
+      "retainedRows": 1
+    },
+    {
+      "source": "skdr",
+      "url": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf",
+      "status": "failed",
+      "error": "Error: Command failed: curl --fail --silent --show-error --location --max-time 40 --proto =https --proto-redir =https https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf\ncurl: (22) The requested URL returned error: 403\n",
+      "attemptedAt": "2026-11-16T06:41:49.852Z"
+    }
+  ]
+}

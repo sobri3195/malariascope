@@ -69,7 +69,7 @@ try {
   expect(csvText).not.toContain('"8252"');
   expect(csvText).toContain('"province"');
   await page.getByLabel('Context regency').selectOption('91.03');
-  await expect(page.getByText('Data kabupaten/kota belum tersedia', { exact: true })).toBeVisible();
+  await expect(page.getByText('Data Jayapura 2026 belum tersedia', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Buka lima panel surveilans' }).click();
   await expect(page.getByLabel('Context regency')).toHaveValue('91.03');
   await page.getByRole('button', { name: 'Asal penularan', exact: true }).click();

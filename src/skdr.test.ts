@@ -32,7 +32,7 @@ function complete(): SkdrSnapshot {
   s.rows.find((r) => r.regionCode === '11')!.value = 228134;
   return s;
 }
-test('supplied snapshot: exact 39 rows, known values; missing 35 provinces are null, never fabricated', () => {
+test('supplied snapshot: exact 39 rows, known values; missing 34 provinces are null, never fabricated', () => {
   assert.deepEqual(validateSkdr(supplied), []);
   assert.ok(validateSkdr(supplied, true).length);
   for (const [code, value] of [
@@ -43,7 +43,7 @@ test('supplied snapshot: exact 39 rows, known values; missing 35 provinces are n
   ] as const)
     assert.equal(supplied.rows.find((r) => r.regionCode === code)?.value, value);
   const r = skdrReconciliation(supplied);
-  assert.equal(r.availableProvinceCount, 3);
+  assert.equal(r.availableProvinceCount, 4);
   assert.equal(r.provinceSum, null);
   assert.equal(r.difference, null);
 });
@@ -141,4 +141,28 @@ test('Markdown CSV extraction validates full snapshot and metadata before output
   assert.equal(skdrReconciliation(converted).difference, 5866);
   assert.throws(() => convertSkdrMarkdown(markdown + '\n' + markdown));
   assert.throws(() => convertSkdrMarkdown(markdown.replace('Gorontalo', 'Unknown province')));
+});
+
+test('new 2026 bulletin is a separate snapshot; old M44 URL still selects only M44', () => {
+  const old = complete(),
+    next = complete();
+  next.id = '2026-m45';
+  next.publishedAt = '2026-11-17';
+  for (const r of next.rows) {
+    r.weekThrough = 44;
+    r.bulletin = 'M45';
+  }
+  assert.deepEqual(validateSkdr(next, true), []);
+  assert.equal(
+    skdrExport(next, { year: 2026, snapshot: '2026-m44', region: 'ID' }).records.length,
+    0,
+  );
+  assert.equal(
+    skdrExport(old, { year: 2026, snapshot: '2026-m44', region: 'ID' }).records.length,
+    1,
+  );
+  assert.equal(
+    skdrExport(next, { year: 2026, snapshot: '2026-m45', region: 'ID' }).records.length,
+    1,
+  );
 });
