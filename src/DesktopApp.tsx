@@ -492,7 +492,11 @@ function DashboardHeading({ summary }: { summary: any }) {
         <div>
           <div className="eyebrow">REGIONAL SURVEILLANCE WORKSPACE</div>
           <h1>Command Dashboard</h1>
-          <p>Data sampai M43 2026 · Buletin M44</p>
+          <p>
+            {skdr.selection.source === 'sismal'
+              ? `Rekap SISMAL · tahun pelaporan ${skdr.selection.year}`
+              : `Data sampai M${skdr.data?.rows[0]?.weekThrough ?? '—'} 2026 · Buletin ${skdr.data?.rows[0]?.bulletin ?? skdr.selection.snapshot}`}
+          </p>
         </div>
         <SkdrExports />
       </div>
@@ -2299,7 +2303,8 @@ function App() {
               </div>
             </NavLink>
             <div className="workspace-label">
-              <span className="dot" /> Papua research workspace
+              <span className="dot" />{' '}
+              {skdr.active ? 'Surveilans Indonesia' : 'Papua research workspace'}
               <ChevronDown size={13} />
             </div>
             <nav aria-label="Primary navigation">

@@ -23,14 +23,23 @@ export type SkdrSnapshot = {
   retrievedAt: string | null;
   sourceUrl: string | null;
   evidence: 'user-supplied-incomplete' | 'attachment-extraction';
+  retrievalNote?: string;
   rows: SkdrRow[];
 };
-export type SkdrSelection = { year: number; snapshot: string; region: string };
+export type SkdrSelection = {
+  year: number;
+  snapshot: string;
+  region: string;
+  source?: 'skdr' | 'sismal';
+};
 export const initialSkdr: SkdrSelection = { year: 2026, snapshot: '2026-m44', region: 'ID' };
 export function parseSkdrSelection(q: URLSearchParams): SkdrSelection {
   return {
+    source: q.get('source') === 'sismal' ? 'sismal' : 'skdr',
     year: Number(q.get('year') || 2026),
-    snapshot: q.get('snapshot') || '2026-m44',
+    snapshot:
+      q.get('snapshot') ||
+      (q.get('source') === 'sismal' ? `sismal-${q.get('year') || 2026}` : '2026-m44'),
     region: q.get('region') || 'ID',
   };
 }
@@ -39,12 +48,22 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
   if (
     !s ||
     s.dataset !== skdrDataset ||
-    s.id !== '2026-m44' ||
+    typeof s.id !== 'string' ||
+    !/^2026-m(?:[1-9]|[1-4]\d|5[0-3])$/.test(s.id) ||
     s.boundaryVersion !== '2025' ||
-    s.publishedAt !== '2026-11-10' ||
+    typeof s.publishedAt !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(s.publishedAt) ||
+    !Number.isFinite(Date.parse(s.publishedAt)) ||
     !Array.isArray(s.rows)
   )
     return ['Kontrak snapshot SKDR tidak sah.'];
+  if (s.rows.some((r) => !r || typeof r !== 'object')) return ['Baris snapshot SKDR harus objek.'];
+  const bulletin = 'M' + Number(s.id.split('-m')[1]);
+  if (
+    s.id === '2026-m44' &&
+    (s.publishedAt !== '2026-11-10' || s.rows.some((r) => r.weekThrough !== 43))
+  )
+    errors.push('Metadata edisi M44 2026 tidak sesuai.');
   if (!['user-supplied-incomplete', 'attachment-extraction'].includes(s.evidence))
     errors.push('Asal bukti tidak sah.');
   const seen = new Set<string>();
@@ -55,8 +74,11 @@ export function validateSkdr(s: SkdrSnapshot, complete = false): string[] {
       errors.push(`Kode/jenjang wilayah salah: ${r.regionCode}`);
     if (
       r.year !== 2026 ||
-      r.weekThrough !== 43 ||
-      r.bulletin !== 'M44' ||
+      !Number.isInteger(r.weekThrough) ||
+      r.weekThrough < 1 ||
+      r.weekThrough > 53 ||
+      r.weekThrough !== s.rows[0]?.weekThrough ||
+      r.bulletin !== bulletin ||
       r.metric !== 'confirmed_cases'
     )
       errors.push('Periode/metrik snapshot tidak cocok.');
@@ -136,6 +158,7 @@ export function skdrReconciliation(s: SkdrSnapshot) {
 }
 export function selectedSkdr(s: SkdrSnapshot, selection: SkdrSelection) {
   if (
+    selection.source === 'sismal' ||
     selection.year !== 2026 ||
     selection.snapshot !== s.id ||
     !regionName('2025', selection.region)
@@ -154,6 +177,7 @@ export function skdrExport(s: SkdrSnapshot, selection: SkdrSelection) {
       url: s.sourceUrl,
       evidence: s.evidence,
       boundaryVersion: s.boundaryVersion,
+      retrievalNote: s.retrievalNote,
     },
     records: selectedSkdr(s, selection),
     reconciliation:

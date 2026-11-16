@@ -1,8 +1,10 @@
+import SismalDashboard from './SismalDashboard';
+import { surveillanceExport } from './sismal';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSkdr } from './SkdrContext';
 import { masters, regionName, csv, type RecordRow } from './engine';
-import { selectedSkdr, skdrExport, skdrReconciliation } from './skdr';
+import { selectedSkdr, skdrReconciliation } from './skdr';
 import { captureSurveillanceSnapshot, restoreSurveillanceSnapshot } from '../workspace-context';
 import './indonesia.css';
 const fmt = (n: number | null) => (n === null ? 'Belum tersedia' : n.toLocaleString('id-ID'));
@@ -15,13 +17,18 @@ function save(name: string, text: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(u), 1000);
 }
 export function SkdrExports() {
-  const { data, selection, error } = useSkdr();
+  const { data, sismal, selection, error } = useSkdr();
   const valid =
-    data &&
-    selection.year === 2026 &&
-    selection.snapshot === data.id &&
-    !!regionName('2025', selection.region);
-  const payload = valid ? skdrExport(data!, selection) : null;
+    selection.source === 'sismal'
+      ? !!sismal &&
+        selection.snapshot === sismal.id &&
+        selection.year === sismal.reportingYear &&
+        !!regionName('2025', selection.region)
+      : data &&
+        selection.year === 2026 &&
+        selection.snapshot === data.id &&
+        !!regionName('2025', selection.region);
+  const payload = valid ? surveillanceExport(data, sismal, selection) : null;
   return (
     <>
       <button
@@ -79,10 +86,16 @@ export function SkdrFilters() {
         <select
           aria-label="Context year"
           value={selection.year}
-          onChange={(e) => select({ year: +e.target.value })}
+          onChange={(e) =>
+            select({
+              source: +e.target.value === 2025 ? 'sismal' : selection.source,
+              year: +e.target.value,
+            })
+          }
         >
+          <option>2025</option>
           <option>2026</option>
-          {selection.year !== 2026 && <option>{selection.year}</option>}
+          {![2025, 2026].includes(selection.year) && <option>{selection.year}</option>}
         </select>
       </label>
       <label>
@@ -150,14 +163,32 @@ export function SkdrFilters() {
         </label>
       )}
       <label>
+        SERI SUMBER
+        <select
+          aria-label="Context surveillance source"
+          value={selection.source || 'skdr'}
+          onChange={(e) => select({ source: e.target.value as 'skdr' | 'sismal' })}
+        >
+          <option value="skdr">SKDR kumulatif M43 2026</option>
+          <option value="sismal">SISMAL tahunan</option>
+        </select>
+      </label>
+      <label>
         BULETIN
         <select
           aria-label="Context bulletin"
           value={selection.snapshot}
           onChange={(e) => select({ snapshot: e.target.value })}
         >
-          <option value="2026-m44">2026-m44</option>
-          {selection.snapshot !== '2026-m44' && <option>{selection.snapshot}</option>}
+          {selection.source === 'sismal' ? (
+            <option value={`sismal-${selection.year}`}>SISMAL {selection.year}</option>
+          ) : (
+            <option value="2026-m44">2026-m44</option>
+          )}
+          {selection.snapshot !==
+            (selection.source === 'sismal' ? `sismal-${selection.year}` : '2026-m44') && (
+            <option>{selection.snapshot}</option>
+          )}
         </select>
       </label>
     </>
@@ -175,21 +206,49 @@ export function SkdrBreadcrumb() {
   );
 }
 export function SkdrInspector() {
-  const { data, selection } = useSkdr();
+  const { data, sismal, selection } = useSkdr();
+  if (selection.source === 'sismal')
+    return (
+      <section aria-label="SISMAL Inspector">
+        <h2>Jejak sumber SISMAL</h2>
+        <SkdrBreadcrumb />
+        <p>
+          Tahun pelaporan {sismal?.reportingYear} · sumber {sismal?.sourceUrl}
+        </p>
+        <p>
+          Waktu penarikan: {sismal?.retrievedAt || 'Belum ditarik'}. Status respons:{' '}
+          {sismal?.responseState}. Wilayah dengan angka:{' '}
+          {sismal?.rows.filter((r) => r.value !== null).length ?? 0}; belum terpetakan:{' '}
+          {sismal?.unmapped.length ?? 0}.
+        </p>
+        {sismal?.rows
+          .filter((r) => r.regionCode === selection.region)
+          .map((r) => (
+            <p key={r.regionCode}>
+              ID sumber {r.sourceId} → kode Kemendagri {r.regionCode}; induk {r.provinceCode}.
+              Status: {r.validationStatus}; pembaruan {r.updatedAt || 'Tidak dinyatakan'}.
+            </p>
+          ))}
+        <SkdrExports />
+      </section>
+    );
   if (!data) return <p>Snapshot belum dimuat.</p>;
   const r = skdrReconciliation(data);
   return (
     <section aria-label="SKDR Inspector">
       <h2>Jejak sumber SKDR</h2>
       <SkdrBreadcrumb />
-      <p>Terbit {data.publishedAt} · data sampai M43 2026 · Buletin M44</p>
+      <p>
+        Terbit {data.publishedAt} · data sampai M{data.rows[0]?.weekThrough} 2026 · Buletin{' '}
+        {data.rows[0]?.bulletin}
+      </p>
       <p>
         URL sumber: {data.sourceUrl || 'Belum diterima dari lampiran'} · waktu penarikan:{' '}
         {data.retrievedAt || 'Belum diterima'}
       </p>
       <p>
-        Asal bukti: {data.evidence}. Master batas 2025: transkripsi kode Kemendagri; belum
-        seluruhnya diaudit terhadap lampiran resmi.
+        Asal bukti: {data.evidence}. {data.retrievalNote} Master batas 2025: transkripsi kode
+        Kemendagri; belum seluruhnya diaudit terhadap lampiran resmi.
       </p>
       {selection.region === 'ID' && (
         <dl>
@@ -221,6 +280,7 @@ export function SkdrInspector() {
 export function SkdrDashboard() {
   const { data, error, retry, selection, select } = useSkdr();
   const location = useLocation();
+  if (selection.source === 'sismal') return <SismalDashboard />;
   if (error)
     return (
       <section role="alert">
@@ -250,12 +310,14 @@ export function SkdrDashboard() {
   return (
     <section className="indonesia" aria-label="SKDR Regional Surveillance Workspace">
       <h2>SKDR Kemenkes — Indonesia 2026</h2>
-      <p>Data sampai M43 2026 · Buletin M44</p>
+      <p>
+        Data sampai M{data.rows[0]?.weekThrough} 2026 · Buletin {data.rows[0]?.bulletin}
+      </p>
       <SkdrBreadcrumb />
       {data.evidence === 'user-supplied-incomplete' && (
         <p role="alert">
-          Snapshot parsial dari angka dalam permintaan. Lampiran CSV 38 provinsi, URL sumber, dan
-          waktu penarikan belum diterima; angka ini belum diperiksa terhadap buletin asli.
+          Publikasi belum diperiksa terhadap PDF resmi. Rincian lengkap 38 provinsi belum diterima;
+          nilai yang tersedia berasal dari permintaan dan tidak diklaim telah diverifikasi.
         </p>
       )}
       <div className="metrics">
@@ -270,11 +332,24 @@ export function SkdrDashboard() {
           <strong>{fmt(row?.value ?? null)}</strong>
           <p>
             {district
-              ? 'Data kabupaten/kota belum tersedia'
+              ? `Data ${regionName('2025', selection.region)?.replace(/^Kabupaten /, '')} ${selection.year} belum tersedia`
               : `${row?.availability ?? 'unavailable'} · halaman ${row?.page ?? '—'}`}
           </p>
         </article>
       </div>
+      {district && (
+        <aside aria-label="Konteks provinsi">
+          <h3>Konteks tingkat provinsi, bukan angka kabupaten</h3>
+          <p>
+            Provinsi {regionName('2025', selection.region.slice(0, 2))} ·{' '}
+            {data.rows
+              .find((r) => r.regionCode === selection.region.slice(0, 2))
+              ?.value?.toLocaleString('id-ID') ?? 'Belum tersedia'}{' '}
+            kasus sampai M{data.rows[0]?.weekThrough} 2026
+          </p>
+          <button onClick={() => select({ source: 'sismal', year: 2025 })}>Lihat data 2025</button>
+        </aside>
+      )}
       <p>
         Insidens, klasifikasi risiko, prediksi, dan peringatan riset tidak tersedia untuk snapshot
         ini: denominator dan kelayakan analisis belum tersedia.

@@ -1,5 +1,7 @@
 # SKDR Indonesia di Command Dashboard
 
+Catatan sesi terbaru: [penarikan SKDR/SISMAL dan cakupan sekarang](MALARIA-SYNC.md). Status data dan jumlah wilayah pada catatan tersebut menggantikan hitungan parsial sesi awal di bawah.
+
 ## Status data: lampiran lengkap masih diperlukan
 
 Implementasi ini memperluas kode di branch `feat/surveilans-indonesia` setelah commit `068b5ed`. Perubahan baru disiapkan sebagai diff lokal; tidak diterbitkan ke GitHub/Vercel. `src/jakarta/` dan lampiran `Prompt_Codex_MalariaScope_Indonesia.md` tidak ditemukan. Panel dan validasi agregat yang telah tersedia di `src/indonesia/` digunakan kembali.

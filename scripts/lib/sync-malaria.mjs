@@ -1,0 +1,70 @@
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { normalizeSismal, validateSismal } from '../../src/indonesia/sismal.ts';
+export const pdfUrl =
+  'https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf';
+const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+export async function atomicJson(file, value) {
+  await mkdir(join(file, '..'), { recursive: true });
+  const tmp = file + '.tmp-' + process.pid;
+  await writeFile(tmp, JSON.stringify(value, null, 2) + '\n');
+  await rename(tmp, file);
+}
+export async function syncSismalYear({ year, root, download, now }) {
+  const url = `https://malaria.kemkes.go.id/api/sismal/chartMap/${year}/?province=ACEH`;
+  const file = join(root, 'sismal', `${year}.json`);
+  let prior = null;
+  try {
+    prior = JSON.parse(await readFile(file, 'utf8'));
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+  }
+  const base = { source: 'sismal', reportingYear: year, url, attemptedAt: now };
+  try {
+    const bytes = await download(url);
+    const s = normalizeSismal(JSON.parse(bytes.toString('utf8')), year, now, url);
+    const errors = validateSismal(s, year);
+    if (errors.length) throw Error(errors.join(' '));
+    const sha256 = hash(bytes);
+    if (!s.rows.length)
+      return {
+        ...base,
+        status: s.responseState === 'empty' ? 'empty' : 'unmapped',
+        rawSha256: sha256,
+        receivedMappedRows: 0,
+        unmapped: s.unmapped.length,
+        retainedRows: prior?.rows.length ?? 0,
+      };
+    // Never replace valid observations with an all-unavailable payload or a regressing coverage set.
+    const available = new Set(s.rows.filter((r) => r.value !== null).map((r) => r.regionCode));
+    const priorAvailable =
+      prior?.evidence === 'portal-response'
+        ? prior.rows.filter((r) => r.value !== null).map((r) => r.regionCode)
+        : [];
+    if (!available.size || priorAvailable.some((code) => !available.has(code)))
+      return {
+        ...base,
+        status: 'coverage-regression',
+        rawSha256: sha256,
+        receivedMappedRows: s.rows.length,
+        retainedRows: prior?.rows.length ?? 0,
+      };
+    // Unmapped rows remain in the manifest for review, without raw fields or patient identifiers.
+    const archive = join(root, 'sismal', 'archive', `${year}-${sha256}.json`);
+    await atomicJson(archive, s);
+    await atomicJson(file, s);
+    return {
+      ...base,
+      status: 'saved',
+      rawSha256: sha256,
+      archive: `sismal/archive/${year}-${sha256}.json`,
+      mappedRows: s.rows.length,
+      availableRegions: available.size,
+      provinceLabels: new Set(s.rows.map((r) => r.originalProvince)).size,
+      unmapped: s.unmapped,
+    };
+  } catch (e) {
+    return { ...base, status: 'failed', error: String(e), retainedRows: prior?.rows.length ?? 0 };
+  }
+}

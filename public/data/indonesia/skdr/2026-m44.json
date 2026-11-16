@@ -3,8 +3,8 @@
   "dataset": "skdr-indonesia",
   "boundaryVersion": "2025",
   "publishedAt": "2026-11-10",
-  "retrievedAt": null,
-  "sourceUrl": null,
+  "retrievedAt": "2026-11-07T10:00:00+07:00",
+  "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf",
   "evidence": "user-supplied-incomplete",
   "rows": [
     {
@@ -18,7 +18,7 @@
       "value": 388495,
       "availability": "reported",
       "page": 36,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -28,10 +28,10 @@
       "weekThrough": 43,
       "bulletin": "M44",
       "metric": "confirmed_cases",
-      "value": null,
-      "availability": "unavailable",
+      "value": 391,
+      "availability": "reported",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -44,7 +44,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -57,7 +57,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -70,7 +70,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -83,7 +83,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -96,7 +96,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -109,7 +109,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -122,7 +122,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -135,7 +135,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -148,7 +148,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -161,7 +161,7 @@
       "value": 367,
       "availability": "reported",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -174,7 +174,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -187,7 +187,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -200,7 +200,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -213,7 +213,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -226,7 +226,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -239,7 +239,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -252,7 +252,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -265,7 +265,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -278,7 +278,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -291,7 +291,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -304,7 +304,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -317,7 +317,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -330,7 +330,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -343,7 +343,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -356,7 +356,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -369,7 +369,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -382,7 +382,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -395,7 +395,7 @@
       "value": 8252,
       "availability": "reported",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -408,7 +408,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -421,7 +421,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -434,7 +434,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -447,7 +447,7 @@
       "value": 157608,
       "availability": "reported",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -460,7 +460,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -473,7 +473,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -486,7 +486,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -499,7 +499,7 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     },
     {
       "level": "province",
@@ -512,7 +512,8 @@
       "value": null,
       "availability": "unavailable",
       "page": 45,
-      "sourceUrl": null
+      "sourceUrl": "https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf"
     }
-  ]
+  ],
+  "retrievalNote": "Waktu penarikan dinyatakan pengguna; mendahului tanggal terbit 2026-11-10 dan belum dapat diverifikasi."
 }

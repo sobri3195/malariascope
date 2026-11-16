@@ -1,0 +1,12 @@
+{
+  "id": "sismal-2026",
+  "source": "sismal",
+  "reportingYear": 2026,
+  "retrievedAt": null,
+  "sourceUrl": "https://malaria.kemkes.go.id/api/sismal/chartMap/2026/?province=ACEH",
+  "evidence": "user-supplied-incomplete",
+  "responseState": "not-fetched",
+  "boundaryVersion": "2025",
+  "rows": [],
+  "unmapped": []
+}
