@@ -1,3 +1,4 @@
+import { useSkdr } from './indonesia/SkdrContext';
 import { readWorkspace, saveWorkspace, type StorageIssue } from './workspace-storage';
 import { isAnalyticalDemo, loadAnalyticalDemo, analyticalDemoId } from './analytical-demo';
 import {
@@ -134,6 +135,7 @@ const Context = createContext<{
 }>(null!);
 const EMPTY_ROWS: Row[] = [];
 export function Provider({ children }: { children: ReactNode }) {
+  const { active: skdrActive } = useSkdr();
   const [research, setResearch] = useState<ResearchPackage | null>(null);
   const [researchError, setResearchError] = useState('');
   const [researchRevision, setResearchRevision] = useState(0);
@@ -201,7 +203,7 @@ export function Provider({ children }: { children: ReactNode }) {
   navRef.current = navigate;
   const params = new URLSearchParams(route.search);
   const [year, setYear] = useState(
-      validYear(Number(params.get('year')))
+      !skdrActive && validYear(Number(params.get('year')))
         ? Number(params.get('year'))
         : validYear(state.selection?.year)
           ? state.selection!.year
@@ -341,6 +343,7 @@ export function Provider({ children }: { children: ReactNode }) {
     if (riskModes.includes(mode)) update({ riskMode: mode }, 'Risk mode changed', mode);
   }
   useEffect(() => {
+    if (skdrActive) return;
     // Never replay a delayed URL write over a newer local filter selection.
     // Browser back/forward and externally supplied links remain authoritative.
     if (route.state?.workspaceContextSync && navigationType !== 'POP') return;
@@ -378,8 +381,9 @@ export function Provider({ children }: { children: ReactNode }) {
               : {}),
           };
     });
-  }, [route.search, route.key, navigationType, route.state]);
+  }, [route.search, route.key, navigationType, route.state, skdrActive]);
   useEffect(() => {
+    if (skdrActive) return;
     const p = new URLSearchParams(window.location.search);
     p.set('year', String(year));
     p.set('district', district);
@@ -394,7 +398,7 @@ export function Provider({ children }: { children: ReactNode }) {
       const next = { ...prev, selection: { year, district, model } };
       return next;
     });
-  }, [year, district, model, riskMode, state.active]);
+  }, [year, district, model, riskMode, state.active, skdrActive]);
   function update(s: Partial<State>, event?: string, details = '') {
     setState((prev) => {
       const next = {
@@ -437,6 +441,7 @@ export function Provider({ children }: { children: ReactNode }) {
   const rows = projectedDatasets.find((d) => d.id === state.active)?.rows || EMPTY_ROWS;
   const signals = useMemo(() => {
     const dataset = projectedDatasets.find((d) => d.id === state.active);
+    if (skdrActive) return [];
     return evaluate(dataset?.rows || [], state.rules, state.active, {
       datasetCreated: dataset?.created,
       datasetName: dataset?.name,
@@ -446,9 +451,9 @@ export function Provider({ children }: { children: ReactNode }) {
       model,
       thresholds: state.thresholds,
     });
-  }, [projectedDatasets, state.active, state.rules, state.thresholds, model]);
+  }, [projectedDatasets, state.active, state.rules, state.thresholds, model, skdrActive]);
   useEffect(() => {
-    if (isAnalyticalDemo(state.active)) return;
+    if (skdrActive || isAnalyticalDemo(state.active)) return;
     setState((prev) => {
       const additions = signals.filter(
         (a) => !(prev.alertLog || []).some((old) => old.id === a.id),

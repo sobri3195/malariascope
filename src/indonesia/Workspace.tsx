@@ -1,3 +1,5 @@
+import { useSkdr } from './SkdrContext';
+import { SkdrDashboard, SkdrInspector, SkdrFilters } from './SkdrDashboard';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
@@ -36,15 +38,16 @@ function download(name: string, text: string) {
 }
 export default function IndonesiaWorkspace() {
   const location = useLocation();
+  const skdr = useSkdr();
   const [q, setQ] = useSearchParams();
   const [data, setData] = useState<Data>(empty);
   const [message, setMessage] = useState('');
   const [search, setSearch] = useState('');
   const [preview, setPreview] = useState<{ kind: Kind; rows: RecordRow[] } | null>(null);
-  const version = (q.get('wilayah') || '2025') as Master;
+  const version = (skdr.active ? '2025' : q.get('wilayah') || '2025') as Master;
   const master = Object.hasOwn(masters, version) ? masters[version] : undefined;
-  const code = q.get('region') || 'ID';
-  const period = q.get('periode') || '';
+  const code = skdr.active ? skdr.selection.region : q.get('region') || 'ID';
+  const period = skdr.active ? String(skdr.selection.year) : q.get('periode') || '';
   const source = q.get('sumber') || '';
   const panel = (q.get('panel') || 'situasi') as keyof typeof labels;
   const valid =
@@ -154,106 +157,112 @@ export default function IndonesiaWorkspace() {
   return (
     <main className="indonesia">
       <header>
-        <Link to="/dashboard">← MalariaScope</Link>
+        <Link to={'/dashboard' + (skdr.active ? location.search : '')}>← Command Dashboard</Link>
         <h1>Surveilans Malaria Indonesia</h1>
         <p>Rekap agregat resmi dan penilaian layanan. Tidak memakai model riset Papua.</p>
         <Link to="/jakarta">Pintasan DKI Jakarta</Link>
       </header>
-      <section aria-label="Filter surveilans" className="id-filters">
-        <label>
-          Versi batas wilayah
-          <select
-            aria-label="Versi batas wilayah"
-            value={version}
-            onChange={(e) => patch({ wilayah: e.target.value, region: 'ID', sumber: '' })}
-          >
-            {Object.keys(masters).map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Provinsi
-          <select
-            aria-label="Provinsi"
-            value={province}
-            onChange={(e) => patch({ region: e.target.value || 'ID', sumber: '' })}
-          >
-            <option value="">Indonesia</option>
-            {provinces.map((r) => (
-              <option key={r.code} value={r.code}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Kabupaten/kota
-          <select
-            aria-label="Kabupaten/kota"
-            disabled={!province}
-            value={code.includes('.') ? code : ''}
-            onChange={(e) => patch({ region: e.target.value || province, sumber: '' })}
-          >
-            <option value="">Seluruh provinsi (rekap provinsi)</option>
-            {districts.map((r) => (
-              <option key={r.code} value={r.code}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Cari nama atau kode wilayah
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
-        {search && (
+      {skdr.active ? (
+        <section className="id-filters">
+          <SkdrFilters />
+        </section>
+      ) : (
+        <section aria-label="Filter surveilans" className="id-filters">
           <label>
-            Hasil pencarian
+            Versi batas wilayah
             <select
-              aria-label="Hasil pencarian"
-              value=""
-              onChange={(e) => {
-                patch({ region: e.target.value, sumber: '' });
-                setSearch('');
-              }}
+              aria-label="Versi batas wilayah"
+              value={version}
+              onChange={(e) => patch({ wilayah: e.target.value, region: 'ID', sumber: '' })}
             >
-              <option value="">Pilih wilayah ({results.length})</option>
-              {results.map((r) => (
+              {Object.keys(masters).map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Provinsi
+            <select
+              aria-label="Provinsi"
+              value={province}
+              onChange={(e) => patch({ region: e.target.value || 'ID', sumber: '' })}
+            >
+              <option value="">Indonesia</option>
+              {provinces.map((r) => (
                 <option key={r.code} value={r.code}>
-                  {r.name} · {r.code}
+                  {r.name}
                 </option>
               ))}
             </select>
           </label>
-        )}
-        <label>
-          Periode tahun
-          <select
-            aria-label="Periode tahun"
-            value={period}
-            onChange={(e) => patch({ periode: e.target.value })}
-          >
-            <option value="">Semua tahun</option>
-            {Array.from({ length: 128 }, (_, i) => String(2027 - i)).map((y) => (
-              <option key={y}>{y}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sumber dan versi
-          <select
-            aria-label="Sumber dan versi"
-            value={source}
-            onChange={(e) => patch({ sumber: e.target.value })}
-          >
-            <option value="">Semua sumber (tidak dijumlahkan)</option>
-            {[...new Set([...availableSources, ...(source ? [source] : [])])].map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-      </section>
+          <label>
+            Kabupaten/kota
+            <select
+              aria-label="Kabupaten/kota"
+              disabled={!province}
+              value={code.includes('.') ? code : ''}
+              onChange={(e) => patch({ region: e.target.value || province, sumber: '' })}
+            >
+              <option value="">Seluruh provinsi (rekap provinsi)</option>
+              {districts.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Cari nama atau kode wilayah
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </label>
+          {search && (
+            <label>
+              Hasil pencarian
+              <select
+                aria-label="Hasil pencarian"
+                value=""
+                onChange={(e) => {
+                  patch({ region: e.target.value, sumber: '' });
+                  setSearch('');
+                }}
+              >
+                <option value="">Pilih wilayah ({results.length})</option>
+                {results.map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.name} · {r.code}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            Periode tahun
+            <select
+              aria-label="Periode tahun"
+              value={period}
+              onChange={(e) => patch({ periode: e.target.value })}
+            >
+              <option value="">Semua tahun</option>
+              {Array.from({ length: 128 }, (_, i) => String(2027 - i)).map((y) => (
+                <option key={y}>{y}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Sumber dan versi
+            <select
+              aria-label="Sumber dan versi"
+              value={source}
+              onChange={(e) => patch({ sumber: e.target.value })}
+            >
+              <option value="">Semua sumber (tidak dijumlahkan)</option>
+              {[...new Set([...availableSources, ...(source ? [source] : [])])].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        </section>
+      )}
       <p>
         <strong>
           {regionName(version, code)} · {code}
@@ -278,8 +287,11 @@ export default function IndonesiaWorkspace() {
         ))}
       </nav>
       <h2>{labels[panel]}</h2>
-      {panel === 'rekonsiliasi' ? (
+      {skdr.active && panel === 'situasi' ? (
+        <SkdrDashboard />
+      ) : panel === 'rekonsiliasi' ? (
         <>
+          <>{skdr.active && <SkdrInspector />}</>
           <p>
             Perbandingan hanya pada wilayah terpilih. Versi publikasi berbeda ditampilkan terpisah;
             tidak ada penggabungan otomatis.
@@ -397,6 +409,37 @@ export default function IndonesiaWorkspace() {
             onClick={() => download(`${activeKind}-${code}.csv`, csv(columns(activeKind), rows))}
           >
             Ekspor CSV sesuai filter aktif
+          </button>
+          <button
+            disabled={!rows.length}
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob(
+                  [
+                    JSON.stringify(
+                      {
+                        region: code,
+                        boundaryVersion: version,
+                        period,
+                        source,
+                        panel,
+                        records: rows,
+                      },
+                      null,
+                      2,
+                    ),
+                  ],
+                  { type: 'application/json' },
+                ),
+              );
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${panel}-${code}.json`;
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Ekspor JSON rekap
           </button>
           <section>
             <h3>Impor rekap agregat — {labels[activeKind]}</h3>

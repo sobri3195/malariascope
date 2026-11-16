@@ -1,3 +1,10 @@
+import { useSkdr } from './indonesia/SkdrContext';
+import {
+  SkdrFilters,
+  SkdrInspector,
+  SkdrSnapshots,
+  SkdrBreadcrumb,
+} from './indonesia/SkdrDashboard';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { useStore } from './store';
@@ -112,6 +119,10 @@ export function WorkspaceSkeleton({ label = 'Loading analytical workspace' }: { 
   );
 }
 export function SnapshotManager() {
+  const skdr = useSkdr();
+  return skdr.active ? <SkdrSnapshots /> : <ResearchSnapshotManager />;
+}
+function ResearchSnapshotManager() {
   const { state, update, year, setYear, district, setDistrict, model, setModel, riskMode } =
     useStore();
   const route = useLocation(),
@@ -267,6 +278,7 @@ export default function WorkspaceUX({
     riskMode,
     setRiskMode,
   } = useStore();
+  const skdr = useSkdr();
   const route = useLocation(),
     navigate = useNavigate();
   const [palette, setPalette] = useState(false),
@@ -427,69 +439,76 @@ export default function WorkspaceUX({
       {!hideContext && (
         <section className="ux-context no-print" aria-label="Global analytical context">
           <div className="ux-context-grid">
-            <label>
-              YEAR
-              <select
-                aria-label="Context year"
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-              >
-                {years.map((y) => (
-                  <option key={y}>{y}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              DISTRICT
-              <select
-                aria-label="Context district"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-              >
-                <option>All districts</option>
-                {districts.map((d) => (
-                  <option key={d}>{d}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              RISK MODE
-              <select
-                aria-label="Context risk configuration"
-                value={riskMode}
-                onChange={(e) => setRiskMode(e.target.value as typeof riskMode)}
-              >
-                {riskModes.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              MODEL
-              <select
-                aria-label="Context model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-              >
-                {forecastModels.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </label>
+            {skdr.active ? (
+              <SkdrFilters />
+            ) : (
+              <>
+                <label>
+                  YEAR
+                  <select
+                    aria-label="Context year"
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                  >
+                    {years.map((y) => (
+                      <option key={y}>{y}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  DISTRICT
+                  <select
+                    aria-label="Context district"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                  >
+                    <option>All districts</option>
+                    {districts.map((d) => (
+                      <option key={d}>{d}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  RISK MODE
+                  <select
+                    aria-label="Context risk configuration"
+                    value={riskMode}
+                    onChange={(e) => setRiskMode(e.target.value as typeof riskMode)}
+                  >
+                    {riskModes.map((m) => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  MODEL
+                  <select
+                    aria-label="Context model"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                  >
+                    {forecastModels.map((m) => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
             <label>
               DATASET
               <select
                 aria-label="Context dataset"
-                value={state.active}
-                onChange={(e) =>
-                  update(
-                    { active: e.target.value },
-                    'Dataset selected',
-                    state.datasets.find((d) => d.id === e.target.value)?.name ??
-                      'No primary dataset',
-                  )
-                }
+                value={skdr.active ? 'skdr-indonesia' : state.active}
+                onChange={(e) => {
+                  if (e.target.value === 'skdr-indonesia') {
+                    skdr.activate();
+                    return;
+                  }
+                  if (skdr.active) skdr.leave();
+                  update({ active: e.target.value }, 'Dataset selected', e.target.value);
+                }}
               >
+                <option value="skdr-indonesia">SKDR Kemenkes — Indonesia 2026</option>
                 <option value="">No primary dataset</option>
                 {state.datasets.map((d) => (
                   <option value={d.id} key={d.id}>
@@ -517,7 +536,13 @@ export default function WorkspaceUX({
               <NavLink to="/dashboard">Workspace</NavLink>
               <span>
                 {' '}
-                / {name} / {year} / {district}
+                {skdr.active ? (
+                  <SkdrBreadcrumb />
+                ) : (
+                  <>
+                    / {name} / {year} / {district}
+                  </>
+                )}
               </span>
             </nav>
             <div className="ux-actions">
@@ -563,7 +588,7 @@ export default function WorkspaceUX({
         aria-live="polite"
         aria-label="Workspace notifications"
       >
-        {toasts.map((t) => (
+        {(!skdr.active ? toasts : []).map((t) => (
           <div className="ux-toast" key={t.id}>
             <div>
               <strong>{t.title}</strong>
@@ -661,9 +686,21 @@ export default function WorkspaceUX({
             </select>
           </label>
           <p>
-            {district} · {year} · {model} · {riskMode}
+            {skdr.active ? (
+              <SkdrBreadcrumb />
+            ) : (
+              <>
+                {district} · {year} · {model} · {riskMode}
+              </>
+            )}
           </p>
-          {panel === 'Analytical Snapshots' ? (
+          {skdr.active ? (
+            panel === 'Analytical Snapshots' ? (
+              <SkdrSnapshots />
+            ) : (
+              <SkdrInspector />
+            )
+          ) : panel === 'Analytical Snapshots' ? (
             <SnapshotManager />
           ) : panel === 'Recent Activity' ? (
             <section>

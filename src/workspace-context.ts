@@ -1,3 +1,4 @@
+import { regionName } from './indonesia/engine.ts';
 import { riskModes, type RiskMode } from './risk-engine.ts';
 import { forecastModels } from './forecasting.ts';
 import { layerOptions } from './map-options.ts';
@@ -137,4 +138,33 @@ export function activityNotification(event: string) {
   if (/report.*generated/i.test(event)) return 'Report generated';
   if (/settings|profile|animation|risk mode/i.test(event)) return 'Settings changed';
   return event;
+}
+
+// Surveillance views retain their own typed context; never project national rows into district models.
+export function captureSurveillanceSnapshot(
+  selection: import('./indonesia/skdr').SkdrSelection,
+  name: string,
+  id: string,
+) {
+  return {
+    id,
+    name: name.trim() || 'SKDR snapshot',
+    dataset: 'skdr-indonesia' as const,
+    selection: structuredClone(selection),
+  };
+}
+export function restoreSurveillanceSnapshot(value: ReturnType<typeof captureSurveillanceSnapshot>) {
+  if (
+    !value ||
+    value.dataset !== 'skdr-indonesia' ||
+    typeof value.id !== 'string' ||
+    typeof value.name !== 'string' ||
+    !value.selection ||
+    value.selection.year !== 2026 ||
+    value.selection.snapshot !== '2026-m44' ||
+    typeof value.selection.region !== 'string' ||
+    !regionName('2025', value.selection.region)
+  )
+    return { error: 'Snapshot SKDR tidak sah.' };
+  return { selection: structuredClone(value.selection) };
 }

@@ -1,3 +1,5 @@
+import { useSkdr } from './indonesia/SkdrContext';
+import { SkdrDashboard, SkdrExports } from './indonesia/SkdrDashboard';
 import {
   DashboardCard as Panel,
   StatusBadge as Badge,
@@ -483,6 +485,18 @@ function Filters() {
 }
 function DashboardHeading({ summary }: { summary: any }) {
   const { year, state, filtered } = useData();
+  const skdr = useSkdr();
+  if (skdr.active)
+    return (
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">REGIONAL SURVEILLANCE WORKSPACE</div>
+          <h1>Command Dashboard</h1>
+          <p>Data sampai M43 2026 · Buletin M44</p>
+        </div>
+        <SkdrExports />
+      </div>
+    );
   return (
     <div className="page-heading">
       <div>
@@ -522,6 +536,8 @@ function Dashboard({
 }) {
   const { filtered, scoped, rows, state, year, district, model, signals } = useData();
   const navigate = useNavigate();
+  const skdr = useSkdr();
+  if (skdr.active) return <SkdrDashboard />;
   const alerts = signals.filter(
     (a) =>
       a.year === year &&
@@ -2157,6 +2173,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 function App() {
   const location = useLocation();
   const { state, signals, research, researchError } = useStore();
+  const skdr = useSkdr();
   const [mobile, setMobile] = useState(false);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 850px)').matches);
   const navigation = useRef<HTMLElement>(null);
@@ -2287,7 +2304,7 @@ function App() {
             </div>
             <nav aria-label="Primary navigation">
               <div className="nav-group">INTELLIGENCE WORKSPACE</div>
-              <NavLink to="/surveilans-indonesia">
+              <NavLink to={'/surveilans-indonesia' + (skdr.active ? location.search : '')}>
                 <Globe size={17} />
                 <span>Surveilans Indonesia</span>
               </NavLink>
@@ -2433,7 +2450,9 @@ function App() {
         <NavLink className="mobile-workspace-link" to="/mobile">
           <Smartphone size={17} /> Open the dedicated mobile workspace <ChevronRight size={16} />
         </NavLink>
-        {!['asean-map', 'research-intelligence'].includes(path) && <AnalyticalDemoControls />}
+        {!skdr.active && !['asean-map', 'research-intelligence'].includes(path) && (
+          <AnalyticalDemoControls />
+        )}
         <WorkspaceUX
           hideContext={['asean-map', 'research-intelligence'].includes(path)}
           modules={modules}
@@ -2451,7 +2470,7 @@ function App() {
             <Badge>RESEARCH PROTOTYPE</Badge>
           </div>
         )}
-        {researchError && <p role="alert">{researchError}</p>}
+        {!skdr.active && researchError && <p role="alert">{researchError}</p>}
         {state.researchMode === 'BUILTIN' &&
           !['/methodology', '/dashboard', '/asean-map', '/research-intelligence'].includes(
             location.pathname,
@@ -2474,13 +2493,22 @@ function App() {
           )}
         {location.pathname === '/district-intelligence' && <DistrictResearchContext />}
 
-        {error && (
+        {!skdr.active && error && (
           <div className="notice" role="alert" aria-label="Research evidence load error">
             {error}
             <Button onClick={() => window.location.reload()}>Retry loading</Button>
           </div>
         )}
-        {!data ? (
+        {skdr.active ? (
+          path === 'dashboard' ? (
+            <SkdrDashboard />
+          ) : (
+            <p>
+              Snapshot SKDR: gunakan Command Dashboard atau panel Surveilans Indonesia. Analisis
+              riset Papua tidak diterapkan.
+            </p>
+          )
+        ) : !data ? (
           <WorkspaceSkeleton label="Loading supplied research evidence" />
         ) : (
           <Routes>

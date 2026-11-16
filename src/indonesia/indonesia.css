@@ -95,3 +95,12 @@
     margin: 4px 0;
   }
 }
+/* This workspace is also a child of the Command Dashboard grid. */
+.indonesia {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.indonesia > * {
+  min-width: 0;
+}
