@@ -347,6 +347,11 @@ export function SkdrDashboard() {
       </p>
       <SkdrBreadcrumb />
       <p role="status">{syncStatus}</p>
+      {data.version && (
+        <p role="status">
+          Snapshot terbaca: {data.id} · versi {data.version}
+        </p>
+      )}
       <p>Cakupan data: {skdrReconciliation(data).availableProvinceCount}/38 provinsi</p>
       {data.evidence === 'user-supplied-incomplete' && (
         <p role="alert">

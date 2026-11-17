@@ -144,3 +144,86 @@ test('source dates and coverage must match PDF; audit gates reject synthetic pro
   assert.throws(() => verifyPdfMetadata({ ...snapshot, publishedAt: '2026-11-15' }, pages));
   assert.ok(validateAuditTargets(snapshot).length);
 });
+
+// @ts-expect-error Native ESM synchronization helpers are exercised by Node.
+import { withPublicationLock, recordSyncAttempt } from '../scripts/lib/skdr-state.mjs';
+test('publisher excludes concurrent writers and releases its own lock after failure', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'skdr-lock-'));
+  try {
+    await withPublicationLock(root, async () => {
+      await assert.rejects(
+        publishSnapshot({ root, snapshot: fixture().snapshot, pdf: Buffer.from('%PDF-TEST') }),
+        { code: 'SKDR_LOCKED' },
+      );
+      await assert.rejects(
+        withPublicationLock(root, () => null),
+        { code: 'SKDR_LOCKED' },
+      );
+    });
+    await assert.rejects(
+      withPublicationLock(root, () => {
+        throw Error('simulated failure');
+      }),
+    );
+    assert.equal(await withPublicationLock(root, () => 123), 123);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+test('attempt ledger retains success and active version after source failure without claiming display', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'skdr-ledger-'));
+  try {
+    const result = await publishSnapshot({
+      root: join(root, 'skdr'),
+      snapshot: fixture().snapshot,
+      pdf: Buffer.from('%PDF-TEST'),
+    });
+    const first = await recordSyncAttempt(root, {
+      source: 'skdr',
+      status: result.status,
+      attemptedAt: '2026-11-17T01:00:00Z',
+    });
+    const failed = await recordSyncAttempt(root, {
+      source: 'skdr',
+      status: 'failed',
+      failedStage: 'download',
+      attemptedAt: '2026-11-17T02:00:00Z',
+      error: 'HTTP 403',
+    });
+    assert.deepEqual(failed.active, first.active);
+    assert.equal(failed.lastSuccessAt, first.lastSuccessAt);
+    assert.equal(failed.lastPublishedAt, first.lastPublishedAt);
+    assert.equal(failed.lastAttemptedAt, '2026-11-17T02:00:00Z');
+    assert.equal(failed.publicationState, 'retained');
+    assert.equal(failed.attempts[0].failedStage, 'download');
+    assert.equal(failed.displayedAt, undefined);
+    const same = await recordSyncAttempt(root, {
+      source: 'skdr',
+      status: 'unchanged',
+      attemptedAt: '2026-11-17T03:00:00Z',
+    });
+    assert.equal(same.lastPublishedAt, first.lastPublishedAt);
+    assert.equal(same.lastSuccessAt, '2026-11-17T03:00:00Z');
+    const other = await recordSyncAttempt(root, {
+      source: 'sismal',
+      status: 'saved',
+      attemptedAt: '2026-11-17T04:00:00Z',
+    });
+    assert.equal(other.lastSuccessAt, same.lastSuccessAt);
+    assert.equal(other.attempts.length, 2);
+    assert.equal(other.publicationState, same.publicationState);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+test('rejected PDF row report includes all affected province codes and source pages', () => {
+  assert.throws(
+    () => verifyPdfRows(fixture().snapshot, {}),
+    (e: unknown) => {
+      const error = e as { rejectedRows: { regionCode: string; page: number }[] };
+      assert.equal(error.rejectedRows.length, 39);
+      assert.ok(error.rejectedRows.some((r) => r.regionCode === '91' && r.page === 45));
+      return true;
+    },
+  );
+});

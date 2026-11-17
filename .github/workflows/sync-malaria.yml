@@ -39,8 +39,19 @@ jobs:
           args=(--year "$SYNC_YEAR")
           if [ -n "$SYNC_BULLETIN" ]; then args+=(--bulletin "$SYNC_BULLETIN"); fi
           npm run data:sync:malaria -- "${args[@]}"
+      - name: Detect a changed active catalog
+        id: assets
+        shell: bash
+        run: |
+          if git diff --quiet -- public/data/indonesia/skdr/catalog.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm test && npm run build
+        if: steps.assets.outputs.changed == 'true'
       - name: Propose validated assets for existing Vercel Git deployment
+        if: steps.assets.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash

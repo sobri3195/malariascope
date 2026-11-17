@@ -69,6 +69,9 @@ try {
   await page.goto(base + '/dashboard?dataset=skdr-indonesia');
   const metric = page.locator('.metric strong');
   await expect(metric).toHaveText('399.404');
+  await expect(
+    page.getByText(`Snapshot terbaca: 2026-m45 · versi ${m45.version}`, { exact: true }),
+  ).toBeVisible();
   await expect(page.getByLabel('Context bulletin')).toHaveValue('2026-m45');
   await expect(page.getByText('Cakupan data: 38/38 provinsi', { exact: true })).toBeVisible();
   await expect(page.getByText('Belum ada edisi baru.', { exact: true })).toBeVisible();

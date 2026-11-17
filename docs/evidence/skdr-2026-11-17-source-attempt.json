@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "attemptedAt": "2026-11-17T01:31:20.481Z",
+  "lastAttemptedAt": "2026-11-17T01:31:20.481Z",
+  "lastSuccessAt": null,
+  "lastPublishedAt": null,
+  "active": null,
+  "publicationState": "unavailable",
+  "attempts": [
+    {
+      "source": "skdr",
+      "status": "failed",
+      "failedStage": "discovery",
+      "rejectedRows": [],
+      "stages": [],
+      "attemptedAt": "2026-11-17T01:31:20.481Z",
+      "error": "Error: Command failed: curl --fail-with-body --silent --show-error --location --max-time 40 --proto =https --proto-redir =https https://surveilans.kemkes.go.id/publikasi\ncurl: (56) CONNECT tunnel failed, response 403\n",
+      "retained": "Katalog dan versi valid terakhir tidak diubah."
+    }
+  ]
+}
