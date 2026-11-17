@@ -113,6 +113,57 @@ try {
   await expect(
     page.getByRole('heading', { name: 'SKDR Kemenkes — Indonesia 2026', exact: true }),
   ).toHaveCount(0);
+  const late = await browser.newPage();
+  let releaseCatalog;
+  const gate = new Promise((resolve) => {
+    releaseCatalog = resolve;
+  });
+  let catalogRequested;
+  const requested = new Promise((resolve) => {
+    catalogRequested = resolve;
+  });
+  let reads = 0;
+  await late.route('**/data/indonesia/skdr/catalog.json', async (route) => {
+    catalogRequested();
+    await gate;
+    await route.fulfill({
+      json: {
+        schemaVersion: 1,
+        latest: '2026-m44',
+        entries: [
+          {
+            id: m44.id,
+            version: m44.version,
+            complete: true,
+            publishedAt: m44.publishedAt,
+            path: `/data/indonesia/skdr/versions/${m44.id}-${m44.version}.json`,
+          },
+        ],
+      },
+    });
+  });
+  // Version assets have their own route; count attempts, fail once, then recover.
+  await late.route('**/data/indonesia/skdr/versions/*.json', (route) => {
+    reads++;
+    return reads === 1
+      ? route.fulfill({ status: 503, body: 'unavailable' })
+      : route.fulfill({ json: m44 });
+  });
+  await late.route('**/data/indonesia/skdr/2026-m44.json', (route) => {
+    reads++;
+    return route.fulfill({ status: 503, body: 'unavailable' });
+  });
+  await late.goto(base + '/dashboard?dataset=skdr-indonesia&snapshot=2026-m44&year=2026');
+  await requested;
+  await expect(late.getByText('Memuat snapshot SKDR…', { exact: true })).toBeVisible();
+  expect(reads).toBe(0);
+  releaseCatalog();
+  await expect(late.getByRole('button', { name: 'Coba lagi SKDR', exact: true })).toBeVisible();
+  expect(reads).toBe(1);
+  await late.getByRole('button', { name: 'Coba lagi SKDR', exact: true }).click();
+  await expect(late.locator('.metric strong')).toHaveText('388.495');
+  expect(reads).toBe(2);
+  await late.close();
   console.log(
     'PASS synthetic catalog contract: latest, M44/M45, 38 provinces, Aceh/district, cross-route selection, versioned export, source failure retention, explicit M44 reload, research isolation. Not official publication evidence.',
   );

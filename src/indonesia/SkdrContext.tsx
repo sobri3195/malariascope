@@ -113,10 +113,13 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
       });
     return () => controller.abort();
   }, [active, sourceError, selection.source, selection.year, revision]);
-  const explicitSnapshot = q.has('snapshot');
   const skdrId = selection.source === 'sismal' ? '2026-m44' : selection.snapshot;
+  const entry = catalog?.entries.find((e) => e.id === skdrId);
+  const snapshotPath = entry?.path || `/data/indonesia/skdr/${skdrId}.json`;
+  const expectedVersion = entry?.complete ? entry.version : null;
+  const catalogReady = !!catalog || !!catalogError;
   useEffect(() => {
-    if (!active || sourceError || (!explicitSnapshot && !catalog && !catalogError)) return;
+    if (!active || sourceError || !catalogReady) return;
     const controller = new AbortController();
     setData((previous) => (previous?.id === skdrId ? previous : null));
     setError('');
@@ -124,15 +127,14 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
       setError('Versi buletin SKDR tidak sah.');
       return () => controller.abort();
     }
-    const entry = catalog?.entries.find((e) => e.id === skdrId);
-    void fetch(entry?.path || `/data/indonesia/skdr/${skdrId}.json`, { signal: controller.signal })
+    void fetch(snapshotPath, { signal: controller.signal })
       .then(async (r) => {
         if (!r.ok) throw Error(`HTTP ${r.status}`);
         const s = await r.json();
         const errors = validateSkdr(s, s?.evidence === 'attachment-extraction');
         if (
-          entry?.complete &&
-          (s.version !== entry.version || s.evidence !== 'attachment-extraction')
+          expectedVersion !== null &&
+          (s.version !== expectedVersion || s.evidence !== 'attachment-extraction')
         )
           errors.push('Identitas versi berbeda dari katalog.');
         if (s?.id !== skdrId) errors.push('Versi respons berbeda dari buletin yang diminta.');
@@ -143,7 +145,7 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
         if (!controller.signal.aborted) setError(String(e));
       });
     return () => controller.abort();
-  }, [active, sourceError, revision, skdrId, catalog, catalogError, explicitSnapshot]);
+  }, [active, sourceError, revision, skdrId, snapshotPath, expectedVersion, catalogReady]);
   function select(s: Partial<SkdrSelection>) {
     const next = { ...selection, ...s };
     if (s.source === 'skdr' && selection.source !== 'skdr') {
