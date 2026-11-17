@@ -1,10 +1,11 @@
+import RegionalGIS from '../personnel/RegionalGIS';
 import { Link, useLocation } from 'react-router-dom';
 import { useSkdr } from './SkdrContext';
 import { regionName } from './engine';
 import { selectedSismal, scopedSismal } from './sismal';
 import { SkdrExports, SkdrBreadcrumb } from './SkdrDashboard';
 export default function SismalDashboard() {
-  const { sismal, selection, error, retry } = useSkdr();
+  const { sismal, selection, error, retry, select } = useSkdr();
   const location = useLocation();
   if (error)
     return (
@@ -59,6 +60,16 @@ export default function SismalDashboard() {
         Geometri resmi belum tersedia; pencarian dan tabel tetap berfungsi. Insidens, risiko dan
         prediksi tidak dihitung dari angka positif saja.
       </p>
+      <RegionalGIS
+        region={selection.region}
+        onSelect={(region) => select({ region })}
+        year={sismal.reportingYear}
+        source={sismal.sourceUrl}
+        version={sismal.id}
+        period={`SISMAL ${sismal.reportingYear}`}
+        values={sismal.rows}
+        coverageLevel="district"
+      />
       <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
         <table aria-label="Tabel SISMAL">
           <thead>
@@ -73,7 +84,9 @@ export default function SismalDashboard() {
           <tbody>
             {table.map((r) => (
               <tr key={r.regionCode}>
-                <td>{r.regionCode}</td>
+                <td>
+                  <button onClick={() => select({ region: r.regionCode })}>{r.regionCode}</button>
+                </td>
                 <td>{r.sourceId}</td>
                 <td>{r.value === null ? 'Belum tersedia' : r.value}</td>
                 <td>{r.reportingYear}</td>
