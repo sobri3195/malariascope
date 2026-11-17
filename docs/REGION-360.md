@@ -1,5 +1,7 @@
 # Profil Wilayah 360°
 
+Perbandingan dua pilihan Profil Wilayah 360° tersedia melalui **Tetapkan sebagai A/B**. Lihat [Bandingkan Dua Wilayah](REGION-COMPARISON.md) untuk aturan kesebandingan, URL publik, cakupan geometri, dan pengujiannya.
+
 This follow-up starts from `main` `e54f7b9` (PR #36). It completes shared profiles for annual SISMAL as well as weekly SKDR, adds child selectors to the breadcrumb, makes administrative polygons keyboard-operable, and fixes late/lazy geometry focusing and alias-safe selection. The existing research `/risk-map` and its source identities remain intact.
 
 ## Shared context

@@ -74,6 +74,26 @@
   outline-offset: -2px;
 }
 
+.comparison-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.comparison-columns article {
+  padding: 8px;
+  border: 1px solid #527478;
+  background: #f5f8fa;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.comparison-map-label {
+  background: white;
+  color: #123e40;
+  border: 2px solid #296f71;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .regional-stage:not(:has(.regional-detail)) {
   grid-template-columns: minmax(0, 1fr);
 }

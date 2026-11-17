@@ -1,13 +1,15 @@
 import { regionProfile, type RegionalValue } from '../region-profile';
 import { validateGeometry } from '../geometry';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { masters, regionName } from '../indonesia/engine';
 import { featureIdentity } from '../map-intelligence';
 import type { MapHandle } from '../MapCanvas';
 import type { Row } from '../analytics';
 import { personnelGet } from './PersonnelPanel';
 import './regional-gis.css';
+import RegionComparison from './RegionComparison';
+import { parseRegionReference } from '../region-comparison';
 const Canvas = lazy(() => import('../MapCanvas'));
 const Personnel = lazy(() => import('./PersonnelPanel'));
 const regions = masters['2025'].regions;
@@ -36,6 +38,18 @@ export default function RegionalGIS({
   const location = useLocation(),
     navigate = useNavigate();
   const query = new URLSearchParams(location.search);
+  const comparisonLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    const params = new URLSearchParams(location.search);
+    for (const slot of ['A', 'B']) {
+      const ref = parseRegionReference(params.get(`compare${slot}`));
+      if (ref)
+        labels[ref.region] = labels[ref.region]
+          ? `A/B · ${regionName('2025', ref.region)}`
+          : `${slot} · ${regionName('2025', ref.region)}`;
+    }
+    return labels;
+  }, [location.search]);
   const [search, setSearch] = useState(''),
     [authorized, setAuthorized] = useState(false),
     [authorizationVersion, setAuthorizationVersion] = useState(''),
@@ -57,8 +71,13 @@ export default function RegionalGIS({
   }
   const [showDetail, setShowDetail] = useState(false);
   useEffect(() => {
-    if (selected !== 'ID') setShowDetail(true);
-  }, [selected, location.key]);
+    if (
+      selected !== 'ID' ||
+      new URLSearchParams(location.search).has('compareA') ||
+      new URLSearchParams(location.search).has('compareB')
+    )
+      setShowDetail(true);
+  }, [selected, location.key, location.search]);
   useEffect(() => {
     if (geometry) map.current?.focus(selected);
   }, [selected, geometry]);
@@ -297,6 +316,7 @@ export default function RegionalGIS({
                 visible
                 clusters={{}}
                 selectedIdentity={selected}
+                comparisonLabels={comparisonLabels}
                 neighbors={[]}
                 facilities={[]}
                 camera={null}
@@ -375,6 +395,12 @@ export default function RegionalGIS({
                   bukan angka kabupaten/kota.
                 </p>
               </section>
+            )}
+            {!internal && (
+              <RegionComparison
+                selected={selected}
+                geometryCodes={geometry?.features.map((f: any) => featureIdentity(f)) || []}
+              />
             )}
             {internal && (
               <>
