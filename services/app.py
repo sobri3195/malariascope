@@ -363,3 +363,7 @@ def notifications(request: Request):
             dict(r)
             for r in db.execute("SELECT * FROM outbox ORDER BY created DESC LIMIT 100")
         ]
+
+# Reuse authenticated sessions; personnel privileges are provisioned separately.
+from services.personnel import install as install_personnel
+install_personnel(app, actor, connection, audit)

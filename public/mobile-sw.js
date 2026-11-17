@@ -34,7 +34,7 @@ const allowed = (url) =>
   url.origin === self.location.origin &&
   (url.pathname.startsWith('/assets/') || PUBLIC.includes(url.pathname));
 async function save(cache, key, response) {
-  if (!response.ok) return;
+  if (!response.ok || /no-store/i.test(response.headers.get('Cache-Control') || '')) return;
   const headers = new Headers(response.headers);
   headers.set('X-Malariascope-Cached-At', new Date().toISOString());
   await cache.put(

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useId, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './map-canvas.css';
@@ -53,6 +53,7 @@ const esc = (s: string) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!,
   );
 const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, ref) {
+  const patternId = useId().replace(/[^a-zA-Z0-9]/g, '') + '-nodata';
   const div = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
     geo = useRef<L.GeoJSON | null>(null),
@@ -74,15 +75,18 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
             map.current.fitBounds(bounds, { padding: [20, 20], animate: false });
         } else map.current?.setView([-3.2, 138.4], 6);
       },
-      focus: (identity) =>
+      focus: (identity) => {
+        const bounds = L.latLngBounds([]);
         geo.current?.eachLayer((layer) => {
-          const f = (layer as any).feature;
-          if (featureIdentity(f) === identity && 'getBounds' in layer)
-            map.current?.fitBounds((layer as L.Polygon).getBounds(), {
-              padding: [35, 35],
-              animate: false,
-            });
-        }),
+          const id = featureIdentity((layer as any).feature);
+          if (
+            (identity === 'ID' || id === identity || id.startsWith(identity + '.')) &&
+            'getBounds' in layer
+          )
+            bounds.extend((layer as L.Polygon).getBounds());
+        });
+        if (bounds.isValid()) map.current?.fitBounds(bounds, { padding: [35, 35], animate: false });
+      },
       svg: (title, legend, metadata) => {
         const m = map.current,
           p = latest.current;
@@ -124,7 +128,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
           const id = featureIdentity(f),
             neighbor = p.neighbors.includes(id),
             selected = p.selectedIdentity === id;
-          return `<path d="${d}" fill="${mapColor(p.administrative ? v : null, p.administrative ? p.layer : 'boundaries', p.breaks)}" fill-opacity="${p.opacity}" fill-rule="evenodd" stroke="${selected ? '#154b42' : neighbor ? '#4d60bf' : '#597a76'}" stroke-width="${selected ? 3 : neighbor ? 2.5 : 1}"${neighbor ? ' stroke-dasharray="5 3"' : ''}/>`;
+          return `<path d="${d}" fill="${p.administrative && v === null && p.layer !== 'boundaries' ? 'url(#no-data)' : mapColor(p.administrative ? v : null, p.administrative ? p.layer : 'boundaries', p.breaks)}" fill-opacity="${p.opacity}" fill-rule="evenodd" stroke="${selected ? '#154b42' : neighbor ? '#4d60bf' : '#597a76'}" stroke-width="${selected ? 3 : neighbor ? 2.5 : 1}"${neighbor ? ' stroke-dasharray="5 3"' : ''}/>`;
         };
         const facilities = p.facilities
           .map((f) => {
@@ -132,7 +136,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
             return `<circle cx="${xy.x}" cy="${xy.y}" r="4" fill="#29739b" stroke="white" stroke-width="1"><title>${esc(f.name)}</title></circle>`;
           })
           .join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.x}" height="${size.y + footerHeight}" viewBox="0 0 ${size.x} ${size.y + footerHeight}"><title>${esc(title)}</title><desc>${esc(metadata)} Basemap tiles omitted; vector administrative data only.</desc><rect width="100%" height="100%" fill="#eef3f2"/><defs><clipPath id="viewport"><rect width="${size.x}" height="${size.y}"/></clipPath></defs><g clip-path="url(#viewport)">${features.map(path).join('')}${facilities}</g><rect y="${size.y}" width="100%" height="${footerHeight}" fill="white"/><text x="15" y="${size.y + 24}" font-family="sans-serif" font-size="14" fill="#213b42">${esc(title)}</text>${legend.map((item, i) => `<rect x="15" y="${size.y + 35 + i * 17}" width="9" height="9" fill="${item.color}"/><text x="31" y="${size.y + 43 + i * 17}" font-family="sans-serif" font-size="10">${esc(item.label)}</text>`).join('')}<text x="15" y="${size.y + footerHeight - 13}" font-family="sans-serif" font-size="9">MALARIASCOPE · Analytical decision support · vector export without basemap</text></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.x}" height="${size.y + footerHeight}" viewBox="0 0 ${size.x} ${size.y + footerHeight}"><title>${esc(title)}</title><desc>${esc(metadata)} Basemap tiles omitted; vector administrative data only.</desc><rect width="100%" height="100%" fill="#eef3f2"/><defs><pattern id="no-data" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#edf0f2"/><path d="M0 8L8 0" stroke="#8999a4"/></pattern><clipPath id="viewport"><rect width="${size.x}" height="${size.y}"/></clipPath></defs><g clip-path="url(#viewport)">${features.map(path).join('')}${facilities}</g><rect y="${size.y}" width="100%" height="${footerHeight}" fill="white"/><text x="15" y="${size.y + 24}" font-family="sans-serif" font-size="14" fill="#213b42">${esc(title)}</text>${legend.map((item, i) => `<rect x="15" y="${size.y + 35 + i * 17}" width="9" height="9" fill="${item.color}"/><text x="31" y="${size.y + 43 + i * 17}" font-family="sans-serif" font-size="10">${esc(item.label)}</text>`).join('')}<text x="15" y="${size.y + footerHeight - 13}" font-family="sans-serif" font-size="9">MALARIASCOPE · Analytical decision support · vector export without basemap</text></svg>`;
       },
     }),
     [],
@@ -282,11 +286,36 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       layer.bindTooltip(el);
       const element = (layer as L.Path).getElement();
       if (element) {
+        const svg = (element as SVGElement).ownerSVGElement;
+        if (svg && !svg.querySelector('#' + patternId)) {
+          const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+          const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+          pattern.setAttribute('id', patternId);
+          pattern.setAttribute('width', '8');
+          pattern.setAttribute('height', '8');
+          pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+          const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          background.setAttribute('width', '8');
+          background.setAttribute('height', '8');
+          background.setAttribute('fill', '#edf0f2');
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', '0');
+          line.setAttribute('y1', '8');
+          line.setAttribute('x2', '8');
+          line.setAttribute('y2', '0');
+          line.setAttribute('stroke', '#8999a4');
+          pattern.append(background, line);
+          defs.append(pattern);
+          svg.prepend(defs);
+        }
+        if (props.administrative && value === null && props.layer !== 'boundaries')
+          element.setAttribute('fill', `url(#${patternId})`);
         element.classList.toggle('hotspot-neighbor', neighbor);
         element.classList.toggle('hotspot-selected', selected);
       }
     });
   }, [
+    patternId,
     props.geometry,
     props.administrative,
     props.rows,

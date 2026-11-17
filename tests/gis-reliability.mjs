@@ -26,7 +26,10 @@ await page.route('**/*', async (route) => {
 // Explicit disconnected/user-import coverage; populated research defaults are tested in research-desktop-iot.mjs.
 await page.addInitScript(() => {
   if (!localStorage.getItem('malariascope-v1'))
-    localStorage.setItem('malariascope-v1', JSON.stringify({researchMode:'USER IMPORT',datasets:[],active:'',geometry:null}));
+    localStorage.setItem(
+      'malariascope-v1',
+      JSON.stringify({ researchMode: 'USER IMPORT', datasets: [], active: '', geometry: null }),
+    );
 });
 try {
   await page.goto(base + '/risk-map');
@@ -112,7 +115,10 @@ try {
   const paths = page.locator('.hotspot-map-frame .leaflet-overlay-pane path');
   assert.equal(await paths.count(), 2);
   const fills = await paths.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('fill')));
-  assert.ok(fills.includes('#cbd4d4'));
+  assert.ok(
+    fills.some((fill) => /^url\(#.*-nodata\)$/.test(fill)),
+    'Missing data uses hatching, distinct from the available value',
+  );
   assert.equal(new Set(fills).size, 2);
   await page.getByLabel('Map layer', { exact: true }).selectOption('prediction');
   await page
