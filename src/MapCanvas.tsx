@@ -40,6 +40,7 @@ export type CanvasProps = {
   visible: boolean;
   clusters: Record<string, string>;
   selectedIdentity: string | null;
+  comparisonLabels?: Record<string, string>;
   neighbors: string[];
   facilities: PublicFacility[];
   camera: MapCamera | null;
@@ -256,6 +257,15 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       focusIdentity(map.current, geo.current, props.selectedIdentity);
   }, [props.focusSelection, props.administrative, props.selectedIdentity, props.geometry]);
   useEffect(() => {
+    const bounds = L.latLngBounds([]);
+    geo.current?.eachLayer((layer) => {
+      const id = featureIdentity((layer as any).feature);
+      if (props.comparisonLabels?.[id] && 'getBounds' in layer)
+        bounds.extend((layer as L.Polygon).getBounds());
+    });
+    if (bounds.isValid()) map.current?.fitBounds(bounds, { padding: [60, 60], animate: false });
+  }, [props.comparisonLabels, props.geometry]);
+  useEffect(() => {
     const g = geo.current,
       m = map.current;
     if (!g || !m) return;
@@ -289,16 +299,23 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       });
       const el = document.createElement('div'),
         title = document.createElement('strong');
-      title.textContent = row?.district || featureName(f);
+      const comparisonLabel = props.comparisonLabels?.[id];
+      title.textContent = comparisonLabel || row?.district || featureName(f);
       el.append(
         title,
         document.createElement('br'),
         document.createTextNode(
-          `${props.year} · ${props.administrative ? valueLabel(value, props.layer) : 'Country outline; district geometry not connected'}`,
+          comparisonLabel
+            ? 'Angka dan periode: lihat kolom perbandingan.'
+            : `${props.year} · ${props.administrative ? valueLabel(value, props.layer) : 'Country outline; district geometry not connected'}`,
         ),
       );
       layer.unbindTooltip();
-      layer.bindTooltip(el);
+      layer.bindTooltip(el, {
+        permanent: !!comparisonLabel,
+        direction: 'center',
+        className: comparisonLabel ? 'comparison-map-label' : '',
+      });
       const element = (layer as L.Path).getElement();
       if (element) {
         element.setAttribute('data-region-identity', id);
@@ -363,6 +380,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
     props.visible,
     props.clusters,
     props.selectedIdentity,
+    props.comparisonLabels,
     props.neighbors,
   ]);
   useEffect(() => {
