@@ -1,31 +1,67 @@
+import { validateAuditTargets } from '../src/indonesia/skdr.ts';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readFile, writeFile, mkdir, rm, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, rm, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { atomicJson, syncSismalYear, pdfUrl } from './lib/sync-malaria.mjs';
-import { convertSkdrMarkdown } from '../src/indonesia/skdr-conversion.ts';
+import { atomicJson, syncSismalYear } from './lib/sync-malaria.mjs';
+import { convertSkdrMarkdown, convertOfficialSkdrCsv } from '../src/indonesia/skdr-conversion.ts';
+import {
+  discoverBulletin,
+  discoverLatestBulletin,
+  indexUrl,
+  verifyPdfRows,
+  verifyPdfMetadata,
+  publishSnapshot,
+} from './lib/skdr-publication.mjs';
+import { extractPdfSnapshot, extractPdfMetadata } from './lib/skdr-pdf.mjs';
 const run = promisify(execFile);
 const args = process.argv.slice(2);
-const option = (name) => {
-  const i = args.indexOf(name);
-  return i < 0 ? undefined : args[i + 1];
-};
-const year = Number(option('--year') || 2026);
+const valued = [
+  '--year',
+  '--bulletin',
+  '--skdr-markdown',
+  '--pdf',
+  '--csv',
+  '--metadata',
+  '--output',
+];
+const flags = ['--dry-run', '--sismal-only'];
+const options = {};
+for (let i = 0; i < args.length; i++) {
+  const key = args[i];
+  if (flags.includes(key)) options[key] = true;
+  else if (valued.includes(key) && args[i + 1] && !args[i + 1].startsWith('--'))
+    options[key] = args[++i];
+  else throw Error(`Argumen tidak sah: ${key}`);
+}
+const year = Number(options['--year'] || 2026);
+let bulletin = Number(options['--bulletin'] || 45);
 if (
-  ![2025, 2026].includes(year) ||
-  args.some((a, i) => a.startsWith('--') && !['--year', '--skdr-markdown'].includes(a))
+  !Number.isInteger(year) ||
+  year < 2000 ||
+  year > 2099 ||
+  !Number.isInteger(bulletin) ||
+  bulletin < 1 ||
+  bulletin > 53
 )
-  throw Error('Usage: npm run data:sync:malaria -- --year 2026 [--skdr-markdown path.md]');
-const root = fileURLToPath(new URL('../public/data/indonesia/', import.meta.url));
+  throw Error('Tahun/nomor buletin tidak sah.');
+if (options['--csv'] && !options['--metadata'])
+  throw Error('--csv memerlukan --metadata dari sumber resmi.');
+if (options['--pdf'] && !options['--metadata'] && !options['--skdr-markdown'])
+  throw Error(
+    'Impor PDF lokal memerlukan URL/metadata resmi melalui --metadata atau --skdr-markdown.',
+  );
+const root = options['--output']
+  ? resolve(options['--output'])
+  : fileURLToPath(new URL('../public/data/indonesia/', import.meta.url));
 const now = new Date().toISOString();
 async function download(url) {
   const { stdout } = await run(
     'curl',
     [
-      '--fail',
+      '--fail-with-body',
       '--silent',
       '--show-error',
       '--location',
@@ -41,97 +77,84 @@ async function download(url) {
   );
   return stdout;
 }
-await mkdir(root, { recursive: true });
 const attempts = [];
-// One request per year; query province is not trusted as response coverage.
-for (const y of year === 2026 ? [2026, 2025] : [year])
-  attempts.push(await syncSismalYear({ year: y, root, download, now }));
-const markdown = option('--skdr-markdown');
 let directory;
-try {
-  const snapshot = markdown ? convertSkdrMarkdown(await readFile(resolve(markdown), 'utf8')) : null;
-  const targetPdf = snapshot?.sourceUrl || pdfUrl;
-  if (new URL(targetPdf).hostname !== 'surveilans.kemkes.go.id')
-    throw Error('PDF buletin harus dari surveilans.kemkes.go.id.');
-  const bytes = await download(targetPdf);
-  const pdfSha256 = createHash('sha256').update(bytes).digest('hex');
-  directory = await mkdtemp(join(tmpdir(), 'malaria-sync-'));
-  const pdf = join(directory, 'source.pdf');
-  await writeFile(pdf, bytes);
-  if (!markdown)
-    attempts.push({
-      source: 'skdr',
-      url: pdfUrl,
-      status: 'awaiting-csv',
-      pdfSha256,
-      attemptedAt: now,
-    });
-  else {
-    const input = await readFile(resolve(markdown), 'utf8');
-    const texts = {};
-    for (const page of [36, 45]) {
-      const output = join(directory, `page-${page}.txt`);
-      await run('pdftotext', ['-f', String(page), '-l', String(page), '-layout', pdf, output]);
-      texts[page] = await readFile(output, 'utf8');
-    }
-    const norm = (s) => s.toLocaleUpperCase('id').replace(/[^A-Z0-9]/g, '');
-    const notMatched = snapshot.rows.filter(
-      (r) =>
-        !texts[r.page]
-          .split(/\r?\n/)
-          .some(
-            (line) =>
-              norm(line).includes(norm(r.originalLabel)) &&
-              new RegExp(
-                `(?:^|[^0-9])${r.value.toLocaleString('id-ID').replaceAll('.', '[.,]?')}(?:[^0-9]|$)`,
-              ).test(line),
-          ),
+if (options['--sismal-only']) {
+  if (options['--dry-run'])
+    throw Error('Dry-run tersedia untuk publikasi SKDR; SISMAL tidak dijalankan.');
+  for (const y of year === 2026 ? [2026, 2025] : [year])
+    attempts.push(await syncSismalYear({ year: y, root, download, now }));
+} else
+  try {
+    let meta = options['--metadata']
+      ? JSON.parse(await readFile(resolve(options['--metadata']), 'utf8'))
+      : null;
+    const legacy = options['--skdr-markdown']
+      ? convertSkdrMarkdown(await readFile(resolve(options['--skdr-markdown']), 'utf8'))
+      : null;
+    let url = meta?.sourceUrl || legacy?.sourceUrl;
+    if (!url) {
+      const html = (await download(indexUrl)).toString('utf8');
+      if (options['--bulletin']) url = discoverBulletin(html, year, bulletin);
+      else {
+        const latest = discoverLatestBulletin(html, year);
+        bulletin = latest.bulletin;
+        url = latest.url;
+      }
+    } else if (!options['--bulletin'])
+      bulletin = meta?.bulletin || Number(legacy.id.split('-m')[1]);
+    if (new URL(url).hostname !== 'surveilans.kemkes.go.id' || new URL(url).protocol !== 'https:')
+      throw Error('URL PDF resmi harus HTTPS surveilans.kemkes.go.id.');
+    const bytes = options['--pdf']
+      ? await readFile(resolve(options['--pdf']))
+      : await download(url);
+    if (!bytes.subarray(0, 5).equals(Buffer.from('%PDF-')))
+      throw Error('Respons sumber bukan PDF.');
+    directory = await mkdtemp(join(tmpdir(), 'malaria-sync-'));
+    const pdf = join(directory, 'source.pdf'),
+      txt = join(directory, 'source.txt');
+    await writeFile(pdf, bytes);
+    await run('pdftotext', ['-layout', pdf, txt]);
+    const pages = Object.fromEntries(
+      (await readFile(txt, 'utf8')).split('\f').map((text, i) => [i + 1, text]),
     );
-    if (notMatched.length)
-      throw Error(
-        `Pencocokan baris PDF belum lulus: ${notMatched.map((r) => r.regionCode).join(', ')}. Periksa tata letak/OCR; jangan menandai sumber sudah diperiksa.`,
-      );
-    if (snapshot.sourceUrl !== targetPdf)
-      throw Error('URL lampiran berbeda dari PDF yang diperiksa.');
-    const published = {
-      ...snapshot,
-      fetchedAt: now,
-      pdfVerification: { method: 'pdf-text-lines', sha256: pdfSha256, pages: [36, 45] },
-      attachmentSha256: createHash('sha256').update(input).digest('hex'),
-    };
-    const target = join(root, 'skdr', `${snapshot.id}.json`);
-    try {
-      const prior = await readFile(target);
-      const sha = createHash('sha256').update(prior).digest('hex');
-      await atomicJson(
-        join(root, 'skdr', 'archive', `${snapshot.id}-${sha}.json`),
-        JSON.parse(prior.toString('utf8')),
-      );
-    } catch (e) {
-      if (e.code !== 'ENOENT') throw e;
-    }
-    await atomicJson(target, published);
+    if (!meta && !legacy)
+      meta = extractPdfMetadata(pages, { year, bulletin, sourceUrl: url, retrievedAt: now });
+    if (meta) meta = { ...meta, retrievedAt: now };
+    const snapshot = legacy
+      ? { ...legacy, retrievedAt: now }
+      : options['--csv']
+        ? convertOfficialSkdrCsv(await readFile(resolve(options['--csv']), 'utf8'), meta)
+        : extractPdfSnapshot(pages, meta);
+    if (snapshot.id !== `${year}-m${bulletin}` || snapshot.sourceUrl !== url)
+      throw Error('Identitas edisi/URL tidak sesuai permintaan.');
+    verifyPdfRows(snapshot, pages);
+    verifyPdfMetadata(snapshot, pages);
+    const auditErrors = validateAuditTargets(snapshot);
+    if (auditErrors.length) throw Error(auditErrors.join(' '));
     attempts.push({
       source: 'skdr',
-      status: 'saved',
-      url: pdfUrl,
-      rows: 39,
-      pdfSha256,
       attemptedAt: now,
+      ...(await publishSnapshot({
+        snapshot,
+        pdf: bytes,
+        root: join(root, 'skdr'),
+        dryRun: !!options['--dry-run'],
+      })),
     });
+  } catch (e) {
+    attempts.push({
+      source: 'skdr',
+      status: 'failed',
+      attemptedAt: now,
+      error: String(e),
+      retained: 'Katalog dan versi valid terakhir tidak diubah.',
+    });
+  } finally {
+    if (directory) await rm(directory, { recursive: true, force: true });
   }
-} catch (e) {
-  attempts.push({
-    source: 'skdr',
-    url: pdfUrl,
-    status: 'failed',
-    error: String(e),
-    attemptedAt: now,
-  });
-} finally {
-  if (directory) await rm(directory, { recursive: true, force: true });
-}
 const manifest = { attemptedAt: now, attempts };
-await atomicJson(join(root, 'sync-manifest.json'), manifest);
+if (!options['--dry-run']) await atomicJson(join(root, 'sync-manifest.json'), manifest);
 console.log(JSON.stringify(manifest, null, 2));
-if (attempts.some((a) => a.status !== 'saved')) process.exitCode = 1;
+if (attempts.some((a) => !['saved', 'published', 'revised', 'unchanged'].includes(a.status)))
+  process.exitCode = 1;

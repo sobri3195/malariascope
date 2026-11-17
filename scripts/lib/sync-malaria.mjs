@@ -3,8 +3,6 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import { normalizeSismal, validateSismal } from '../../src/indonesia/sismal.ts';
-export const pdfUrl =
-  'https://surveilans.kemkes.go.id/assets/publikasi/laporan-mingguan-situasi-terkini-penyakit-infem-dan-potensial-klb-wabah-m44-2026.pdf';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export async function atomicJson(file, value) {
   await mkdir(join(file, '..'), { recursive: true });

@@ -16,7 +16,7 @@ import {
 } from './AggregatePanels';
 import { useSkdr } from './SkdrContext';
 import { SkdrDashboard, SkdrInspector, SkdrFilters } from './SkdrDashboard';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import {
@@ -83,13 +83,12 @@ export default function IndonesiaWorkspace() {
     setPreview(null);
     setImporting(false);
     setDeleteTarget('');
-  }, [panel]);
-  useEffect(
-    () => () => {
+    // Invalidate the old panel before the next panel can accept an upload.
+    // A passive unmount cleanup may run after a new file read has started.
+    return () => {
       request.current++;
-    },
-    [],
-  );
+    };
+  }, [panel]);
   // Deliberately no research-data or synthetic-demo fallback.
   const activeKind: Kind = panel === 'rekonsiliasi' ? 'situasi' : (panel as Kind);
   const filtered = (kind: Kind) => selectRows(data[kind], version, code, period, source);

@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const base = process.env.APP_URL || 'http://127.0.0.1:5173';
@@ -86,11 +86,25 @@ try {
   await card.getByLabel('Rule description').fill('Review two annual high-risk observations.');
   await card.getByRole('button', { name: 'Save rule', exact: true }).click();
   assert.match(await card.innerText(), /1 triggered districts · 2 current signals/);
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')).alertLog.length),
+    )
+    .toBe(3);
   let stored = await page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')));
   assert.equal(stored.alertLog.length, 3);
   assert.equal(stored.alertLog[0].ruleSnapshot.persistence, 3);
   assert.equal(stored.rules[0].persistence, 2);
   assert.equal(stored.rules[0].priority, 'URGENT');
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')).alertLog.length),
+    )
+    .toBe(3);
+  await expect(card.getByLabel('Rule persistence')).toHaveValue('2');
+  const reloaded = await page.evaluate(() => JSON.parse(localStorage.getItem('malariascope-v1')));
+  assert.equal(reloaded.alertLog[0].timestamp, first.timestamp);
   await card.getByLabel('Rule active').uncheck();
   await card.getByRole('button', { name: 'Save rule', exact: true }).click();
   assert.match(await card.innerText(), /INACTIVE/);
