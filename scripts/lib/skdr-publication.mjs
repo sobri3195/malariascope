@@ -1,3 +1,4 @@
+import { withPublicationLock } from './skdr-state.mjs';
 import { createHash } from 'node:crypto';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -46,48 +47,60 @@ export function discoverLatestBulletin(html, year) {
 // Require the complete province label and a separate numeric cell. Substring matching
 // would incorrectly accept Papua's number on Papua Tengah/Papua Barat rows.
 export function verifyPdfRows(snapshot, pages) {
+  const rejectedRows = [];
   for (const row of snapshot.rows) {
-    const text = pages[row.page];
-    if (typeof text !== 'string') throw Error(`pdf-page: halaman ${row.page} tidak tersedia.`);
-    const matches = text.split(/\r?\n/).filter((line) => {
-      const cells = line
-        .trim()
-        .split(/\s{2,}|\t+/)
-        .map((s) => s.trim());
-      const labelIndex = cells.findIndex((cell) => {
-        if (row.level === 'national') return /^indonesia$/i.test(cell);
-        try {
-          return mapSkdrLabel(cell) === row.regionCode;
-        } catch {
-          return false;
-        }
+    try {
+      const text = pages[row.page];
+      if (typeof text !== 'string') throw Error(`pdf-page: halaman ${row.page} tidak tersedia.`);
+      const matches = text.split(/\r?\n/).filter((line) => {
+        const cells = line
+          .trim()
+          .split(/\s{2,}|\t+/)
+          .map((s) => s.trim());
+        const labelIndex = cells.findIndex((cell) => {
+          if (row.level === 'national') return /^indonesia$/i.test(cell);
+          try {
+            return mapSkdrLabel(cell) === row.regionCode;
+          } catch {
+            return false;
+          }
+        });
+        if (labelIndex < 0) return false;
+        const values =
+          row.level === 'province' && snapshot.sourceColumns
+            ? cells.length === 7 && labelIndex === snapshot.sourceColumns.province
+              ? [cells[snapshot.sourceColumns.confirmed]]
+              : []
+            : cells.slice(labelIndex + 1);
+        return values.some(
+          (cell) =>
+            /^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(cell) &&
+            Number(cell.replaceAll('.', '')) === row.value,
+        );
       });
-      if (labelIndex < 0) return false;
-      const values =
-        row.level === 'province' && snapshot.sourceColumns
-          ? cells.length === 7 && labelIndex === snapshot.sourceColumns.province
-            ? [cells[snapshot.sourceColumns.confirmed]]
-            : []
-          : cells.slice(labelIndex + 1);
-      return values.some(
-        (cell) =>
-          /^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(cell) &&
-          Number(cell.replaceAll('.', '')) === row.value,
-      );
-    });
-    if (row.level === 'national' && matches.length === 0) {
-      const number = String(row.value).split('').join('[.]?');
-      const prose = new RegExp(
-        `(?:^|[^0-9])${number}\\s+kasus\\s+(?:positif|terkonfirmasi)\\s+malaria(?![a-z])`,
-        'gi',
-      );
-      if ([...text.matchAll(prose)].length === 1) continue;
+      if (row.level === 'national' && matches.length === 0) {
+        const number = String(row.value).split('').join('[.]?');
+        const prose = new RegExp(
+          `(?:^|[^0-9])${number}\\s+kasus\\s+(?:positif|terkonfirmasi)\\s+malaria(?![a-z])`,
+          'gi',
+        );
+        if ([...text.matchAll(prose)].length === 1) continue;
+      }
+      if (matches.length !== 1)
+        throw Error(
+          `pdf-row: ${row.originalLabel}, halaman ${row.page}: ${matches.length} baris cocok; periksa tata letak/kolom resmi.`,
+        );
+    } catch (e) {
+      rejectedRows.push({
+        regionCode: row.regionCode,
+        label: row.originalLabel,
+        page: row.page,
+        reason: e.message,
+      });
     }
-    if (matches.length !== 1)
-      throw Error(
-        `pdf-row: ${row.originalLabel}, halaman ${row.page}: ${matches.length} baris cocok; periksa tata letak/kolom resmi.`,
-      );
   }
+  if (rejectedRows.length)
+    throw Object.assign(Error(rejectedRows.map((r) => r.reason).join('\n')), { rejectedRows });
 }
 export function verifyPdfMetadata(snapshot, pages) {
   const national = pages[snapshot.sourcePages?.national ?? 36] || '';
@@ -132,7 +145,11 @@ export function verifyPdfMetadata(snapshot, pages) {
       throw Error('pdf-metadata: waktu cakupan sumber tidak cocok.');
   }
 }
-export async function publishSnapshot({ snapshot, pdf, root, dryRun = false }) {
+export async function publishSnapshot(options) {
+  if (options.dryRun) return publishUnlocked(options);
+  return withPublicationLock(options.root, () => publishUnlocked(options));
+}
+async function publishUnlocked({ snapshot, pdf, root, dryRun = false }) {
   const errors = validateSkdr(snapshot, true);
   if (errors.length) throw Error(errors.join(' '));
   if (!Buffer.from(pdf).subarray(0, 5).equals(Buffer.from('%PDF-')))
