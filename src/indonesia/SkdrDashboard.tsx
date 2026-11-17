@@ -1,3 +1,4 @@
+import RegionalGIS from '../personnel/RegionalGIS';
 import { useLocalRepository } from './useLocalRepository';
 import LocalRecovery from './LocalRecovery';
 import { parseViews, emptyViews } from './snapshot-data';
@@ -393,13 +394,15 @@ export function SkdrDashboard() {
         Insidens, klasifikasi risiko, prediksi, dan peringatan riset tidak tersedia untuk snapshot
         ini: denominator dan kelayakan analisis belum tersedia.
       </p>
-      <section aria-label="Peta SKDR">
-        <h3>Peta wilayah</h3>
-        <p>
-          Geometri resmi yang cocok dengan kode dan jenjang belum tersedia. Tabel tetap berfungsi;
-          geometri studi Papua tidak digunakan sebagai pengganti.
-        </p>
-      </section>
+      <RegionalGIS
+        region={selection.region}
+        year={selection.year}
+        onSelect={(region) => select({ region })}
+        source={data.sourceUrl || data.evidence}
+        version={data.version || data.id}
+        period={`M${data.rows[0]?.weekThrough} ${selection.year}`}
+        values={data.rows}
+      />
       <div style={{ overflowX: 'auto' }}>
         <table aria-label="Tabel SKDR">
           <thead>

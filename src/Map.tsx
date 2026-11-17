@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Maximize, Minus, Plus, RotateCcw, Layers, X, Play, Pause, Download } from 'lucide-react';
 import { useStore } from './store';
 import { download, incidence, normalize, risk } from './analytics';
@@ -56,6 +56,35 @@ export default function MapView({ large = false }: { large?: boolean }) {
     model,
     update,
   } = useStore();
+  const route = useLocation(),
+    navigate = useNavigate();
+  const layerUpdate = useRef({ layer: state.layer, update });
+  layerUpdate.current = { layer: state.layer, update };
+  function chooseLayer(next: string) {
+    const p = new URLSearchParams(window.location.search);
+    p.set('gisLayer', next);
+    navigate(
+      { pathname: route.pathname, search: p.toString() },
+      { state: { workspaceContextSync: true } },
+    );
+    update({ layer: next });
+  }
+  useEffect(() => {
+    if (!large) return;
+    const currentLayer = layerUpdate.current;
+    const p = new URLSearchParams(route.search),
+      value = p.get('gisLayer');
+    if (value && layerOptions.some(([id]) => id === value)) {
+      if (value !== currentLayer.layer) currentLayer.update({ layer: value });
+    } else {
+      const current = new URLSearchParams(window.location.search);
+      current.set('gisLayer', currentLayer.layer || 'boundaries');
+      navigate(
+        { pathname: route.pathname, search: current.toString() },
+        { replace: true, state: { workspaceContextSync: true } },
+      );
+    }
+  }, [large, route.search, route.pathname, navigate]);
   const rows = useMemo(
     () =>
       gisRows(
@@ -617,6 +646,9 @@ export default function MapView({ large = false }: { large?: boolean }) {
       ref={root}
       className={`hotspot-workspace ${large ? 'expanded' : 'compact'} ${fullscreen ? 'is-fullscreen' : ''}`}
     >
+      {large && (
+        <NavLink to="/internal-personnel">Cek Personel — area internal terautentikasi</NavLink>
+      )}
       <p className="gis-disclaimer">
         Retrospective research intelligence — not an operational deployment map.
       </p>
@@ -640,7 +672,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
               <select
                 aria-label="Spatial analysis mode"
                 value={modes.find(([, id]) => id === layer)?.[1] || ''}
-                onChange={(e) => update({ layer: e.target.value })}
+                onChange={(e) => chooseLayer(e.target.value)}
               >
                 <option value="" disabled>
                   Custom layer
@@ -668,10 +700,25 @@ export default function MapView({ large = false }: { large?: boolean }) {
               <select
                 aria-label="Map layer"
                 value={layer}
-                onChange={(e) => update({ layer: e.target.value })}
+                onChange={(e) => chooseLayer(e.target.value)}
               >
                 {layerOptions.map(([id, label]) => (
-                  <option value={id} key={id}>
+                  <option
+                    value={id}
+                    key={id}
+                    disabled={
+                      id === 'incidence' &&
+                      !layerAvailability(
+                        features,
+                        rows,
+                        year,
+                        id,
+                        model,
+                        state.thresholds,
+                        clustersA,
+                      ).available
+                    }
+                  >
                     {label}
                     {!layerAvailability(
                       features,
@@ -821,7 +868,13 @@ export default function MapView({ large = false }: { large?: boolean }) {
                     list="gis-districts"
                     value={district === 'All districts' ? '' : district}
                     onChange={(e) => {
-                      setDistrict(e.target.value || 'All districts');
+                      const match = features.find(
+                        (f) =>
+                          featureIdentity(f) === e.target.value ||
+                          featureName(f).toLocaleLowerCase() === e.target.value.toLocaleLowerCase(),
+                      );
+                      setDistrict(match ? featureName(match) : e.target.value || 'All districts');
+                      if (match) mapA.current?.focus(featureIdentity(match));
                       setDrawer(!!e.target.value);
                     }}
                   />
@@ -924,7 +977,7 @@ export default function MapView({ large = false }: { large?: boolean }) {
                   <select
                     aria-label="Map indicator"
                     value={layer}
-                    onChange={(e) => update({ layer: e.target.value })}
+                    onChange={(e) => chooseLayer(e.target.value)}
                   >
                     {layerOptions.map(([id, label]) => (
                       <option key={id} value={id}>
@@ -986,8 +1039,13 @@ export default function MapView({ large = false }: { large?: boolean }) {
                 ))}
                 {administrative && (
                   <span>
-                    <i style={{ background: '#cbd4d4' }} />
-                    Unavailable
+                    <i
+                      style={{
+                        background:
+                          'repeating-linear-gradient(135deg,#edf0f2 0 4px,#8999a4 4px 5px)',
+                      }}
+                    />
+                    Unavailable · hatched
                   </span>
                 )}
               </div>
@@ -1003,12 +1061,27 @@ export default function MapView({ large = false }: { large?: boolean }) {
                 >
                   <X size={16} />
                 </button>
-                <div className="eyebrow">DISTRICT INTELLIGENCE</div>
+                <div className="eyebrow">DISTRICT INTELLIGENCE · Profil Wilayah 360°</div>
                 <h2>{district}</h2>
                 <p>
                   {year} · {currentDataset?.classification || 'USER IMPORT'}
                 </p>
                 <dl>
+                  <dt>Kode/identitas pada sumber</dt>
+                  <dd>{selected?.district_code || ctxA?.targetIdentity || 'Belum terpetakan'}</dd>
+                  <dt>Jenjang dataset</dt>
+                  <dd>{selected ? 'Kabupaten/Kota pada dataset aktif' : 'Belum terpetakan'}</dd>
+                  <dt>Cakupan data dimuat</dt>
+                  <dd>
+                    {
+                      new Set(
+                        rows
+                          .filter((r) => r.year === year && Number.isFinite(r.cases))
+                          .map((r) => r.district),
+                      ).size
+                    }{' '}
+                    unit dengan angka kasus tersedia
+                  </dd>
                   <dt>Cases</dt>
                   <dd>{format(selected?.cases)}</dd>
                   <dt>Population</dt>
@@ -1097,8 +1170,13 @@ export default function MapView({ large = false }: { large?: boolean }) {
                     </span>
                   ))}
                   <span>
-                    <i style={{ background: '#cbd4d4' }} />
-                    Unavailable
+                    <i
+                      style={{
+                        background:
+                          'repeating-linear-gradient(135deg,#edf0f2 0 4px,#8999a4 4px 5px)',
+                      }}
+                    />
+                    Unavailable · hatched
                   </span>
                 </div>
                 <small>Shared scale · same source and model</small>

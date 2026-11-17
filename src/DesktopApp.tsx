@@ -1,3 +1,4 @@
+import RegionalGIS from './personnel/RegionalGIS';
 import { useSkdr } from './indonesia/SkdrContext';
 import { SkdrDashboard, SkdrExports } from './indonesia/SkdrDashboard';
 import {
@@ -2178,6 +2179,11 @@ function App() {
   const location = useLocation();
   const { state, signals, research, researchError } = useStore();
   const skdr = useSkdr();
+  const personnelSismal = skdr.sismal?.reportingYear === skdr.selection.year ? skdr.sismal : null;
+  const personnelSkdr =
+    skdr.data?.id === skdr.selection.snapshot && skdr.data?.rows[0]?.year === skdr.selection.year
+      ? skdr.data
+      : null;
   const [mobile, setMobile] = useState(false);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 850px)').matches);
   const navigation = useRef<HTMLElement>(null);
@@ -2504,8 +2510,51 @@ function App() {
             <Button onClick={() => window.location.reload()}>Retry loading</Button>
           </div>
         )}
-        {skdr.active ? (
-          path === 'dashboard' ? (
+        {path === 'internal-personnel' ? (
+          <RegionalGIS
+            internal
+            region={
+              skdr.active
+                ? skdr.selection.region
+                : new URLSearchParams(location.search).get('region') || 'ID'
+            }
+            onSelect={skdr.active ? (region) => skdr.select({ region }) : undefined}
+            year={skdr.active ? skdr.selection.year : undefined}
+            source={
+              skdr.active
+                ? (skdr.selection.source === 'sismal'
+                    ? personnelSismal?.sourceUrl
+                    : personnelSkdr?.sourceUrl) || 'Sumber belum dimuat'
+                : undefined
+            }
+            version={
+              skdr.active
+                ? skdr.selection.source === 'sismal'
+                  ? personnelSismal?.id
+                  : personnelSkdr?.version || personnelSkdr?.id
+                : undefined
+            }
+            period={
+              skdr.active
+                ? skdr.selection.source === 'sismal'
+                  ? `SISMAL ${skdr.selection.year}`
+                  : `SKDR M${personnelSkdr?.rows[0]?.weekThrough || '—'} ${skdr.selection.year}`
+                : undefined
+            }
+            values={
+              skdr.active
+                ? skdr.selection.source === 'sismal'
+                  ? personnelSismal?.rows.map((r) => ({
+                      regionCode: r.regionCode,
+                      value: r.value,
+                      availability: r.value === null ? 'unavailable' : 'reported',
+                    }))
+                  : personnelSkdr?.rows
+                : undefined
+            }
+          />
+        ) : skdr.active ? (
+          ['dashboard', 'risk-map'].includes(path) ? (
             <SkdrDashboard />
           ) : (
             <p>

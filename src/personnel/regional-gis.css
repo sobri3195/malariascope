@@ -1,0 +1,75 @@
+.regional-gis {
+  background: #f5f8fa;
+  padding: 16px;
+  min-width: 0;
+}
+.regional-gis header p,
+.regional-detail p {
+  overflow-wrap: anywhere;
+}
+.regional-gis details {
+  background: white;
+  padding: 10px;
+}
+.regional-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 12px;
+  margin-top: 12px;
+}
+.regional-stage .map-canvas {
+  height: 65vh;
+  min-height: 420px;
+}
+.regional-stage table {
+  width: 100%;
+  max-height: 45vh;
+}
+.regional-detail {
+  background: white;
+  border: 1px solid #ccd8df;
+  padding: 16px;
+  max-height: 75vh;
+  overflow: auto;
+  position: sticky;
+  top: 16px;
+}
+.regional-gis button {
+  margin: 3px;
+}
+.regional-gis input,
+.regional-gis select {
+  max-width: 100%;
+}
+.regional-stage > div {
+  min-width: 0;
+  overflow: auto;
+}
+@media (max-width: 700px) {
+  .regional-stage {
+    display: block;
+  }
+  .regional-detail {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    max-height: 55vh;
+    border-radius: 18px 18px 0 0;
+    border-top: 3px solid #296f71;
+    margin-top: 12px;
+  }
+  .regional-gis {
+    padding: 8px;
+  }
+  .regional-stage .map-canvas {
+    min-height: 350px;
+  }
+}
+
+.regional-gis tr[aria-selected='true'] {
+  background: #e2f1ec;
+  outline: 2px solid #296f71;
+  outline-offset: -2px;
+}
