@@ -66,6 +66,15 @@ function fixture(kind, changes = {}) {
   return { ...r, ...changes };
 }
 async function upload(page, kind, rows) {
+  const titles = {
+    asal: 'Asal penularan',
+    layanan: 'Kesiapan layanan',
+    respons: 'Respons kasus',
+    situasi: 'Situasi malaria',
+  };
+  await expect(
+    page.getByRole('heading', { name: 'Impor rekap agregat — ' + titles[kind] }),
+  ).toBeVisible();
   await page.getByLabel('CSV agregat', { exact: true }).setInputFiles({
     name: 'test-only.csv',
     mimeType: 'text/csv',
@@ -111,8 +120,26 @@ try {
   await confirm(page);
   await expect(page.getByRole('status').last()).toContainText('Duplikat');
   await page.getByRole('button', { name: 'Batal', exact: true }).click();
+  // Resolve the previous panel's read after the new panel has accepted its file.
+  await page.evaluate(() => {
+    const original = File.prototype.text;
+    File.prototype.text = function () {
+      if (this.name !== 'slow-old-panel.csv') return original.call(this);
+      return new Promise((resolve) => {
+        window.finishOldPanelRead = async () => resolve(await original.call(this));
+      });
+    };
+  });
+  await page.getByLabel('CSV agregat', { exact: true }).setInputFiles({
+    name: 'slow-old-panel.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv(columns('asal'), [fixture('asal')])),
+  });
   await page.getByRole('button', { name: 'Kesiapan layanan', exact: true }).click();
   await upload(page, 'layanan', [fixture('layanan')]);
+  await expect(page.getByRole('region', { name: 'Pratinjau impor' })).toContainText('TEST-layanan');
+  await page.evaluate(() => window.finishOldPanelRead());
+  await expect(page.getByRole('region', { name: 'Pratinjau impor' })).toContainText('TEST-layanan');
   await confirm(page);
   await expect(page.getByRole('table', { name: 'Indikator kesiapan layanan' })).toContainText(
     'Belum dinilai (penyebut nol)',

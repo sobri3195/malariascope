@@ -47,13 +47,11 @@ try {
     status: 'reported',
     confirmed: '0',
   });
-  await page
-    .getByLabel('CSV agregat', { exact: true })
-    .setInputFiles({
-      name: 'uji.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv(columns('situasi'), [row])),
-    });
+  await page.getByLabel('CSV agregat', { exact: true }).setInputFiles({
+    name: 'uji.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv(columns('situasi'), [row])),
+  });
   await page.getByRole('button', { name: 'Konfirmasi rekap tanpa identitas dan simpan' }).click();
   await expect(page.locator('article')).toContainText('DILAPORKAN');
   await expect(page.locator('article dd').last()).toHaveText('0');
@@ -75,13 +73,14 @@ try {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBeTruthy();
   await page.getByRole('button', { name: 'Respons kasus', exact: true }).click();
-  await page
-    .getByLabel('CSV agregat', { exact: true })
-    .setInputFiles({
-      name: 'patient.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from('nik,nama\n123,Pasien\n'),
-    });
+  await expect(
+    page.getByRole('heading', { name: 'Impor rekap agregat — Respons kasus' }),
+  ).toBeVisible();
+  await page.getByLabel('CSV agregat', { exact: true }).setInputFiles({
+    name: 'patient.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('nik,nama\n123,Pasien\n'),
+  });
   await expect(page.getByRole('status').last()).toContainText('kolom identitas');
   expect(errors).toEqual([]);
   console.log(

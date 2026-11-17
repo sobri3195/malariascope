@@ -35,7 +35,7 @@ export function SkdrExports() {
   return (
     <>
       <button
-        disabled={!payload || !!error}
+        disabled={!payload || (!!error && !data)}
         onClick={() =>
           save(
             `${selection.source || 'skdr'}-${selection.year}-${selection.region}.json`,
@@ -47,7 +47,7 @@ export function SkdrExports() {
         Export overview
       </button>
       <button
-        disabled={!payload || !!error}
+        disabled={!payload || (!!error && !data)}
         onClick={() => {
           if (!payload) return;
           const rows: RecordRow[] = payload.records.map((r) =>
@@ -100,7 +100,7 @@ export function SkdrExports() {
   );
 }
 export function SkdrFilters() {
-  const { selection, select } = useSkdr();
+  const { selection, select, catalog } = useSkdr();
   const [search, setSearch] = useState('');
   const matches = masters['2025'].regions.filter((r) =>
     (r.name + ' ' + r.code).toLocaleLowerCase('id').includes(search.toLocaleLowerCase('id')),
@@ -196,7 +196,7 @@ export function SkdrFilters() {
           value={selection.source || 'skdr'}
           onChange={(e) => select({ source: e.target.value as 'skdr' | 'sismal' })}
         >
-          <option value="skdr">SKDR kumulatif M43 2026</option>
+          <option value="skdr">SKDR mingguan kumulatif</option>
           <option value="sismal">SISMAL tahunan</option>
         </select>
       </label>
@@ -210,12 +210,17 @@ export function SkdrFilters() {
           {selection.source === 'sismal' ? (
             <option value={`sismal-${selection.year}`}>SISMAL {selection.year}</option>
           ) : (
-            <option value="2026-m44">2026-m44</option>
+            (catalog?.entries || [{ id: '2026-m44' }]).map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.id}
+              </option>
+            ))
           )}
           {selection.snapshot !==
-            (selection.source === 'sismal' ? `sismal-${selection.year}` : '2026-m44') && (
-            <option>{selection.snapshot}</option>
-          )}
+            (selection.source === 'sismal' ? `sismal-${selection.year}` : '2026-m44') &&
+            !catalog?.entries.some((e) => e.id === selection.snapshot) && (
+              <option>{selection.snapshot}</option>
+            )}
         </select>
       </label>
     </>
@@ -234,7 +239,7 @@ export function SkdrBreadcrumb() {
 }
 export function SkdrInspector() {
   const { data, sismal, selection, error } = useSkdr();
-  if (error) return <p role="alert">Jejak sumber belum tersedia: {error}</p>;
+  if (error && !data) return <p role="alert">Jejak sumber belum tersedia: {error}</p>;
   if (selection.source === 'sismal')
     return (
       <section aria-label="SISMAL Inspector">
@@ -275,14 +280,18 @@ export function SkdrInspector() {
         {data.retrievedAt || 'Belum diterima'}
       </p>
       <p>
+        Waktu cakupan sumber: {data.dataAsOf || 'Tidak dinyatakan'}. Versi:{' '}
+        {data.version || data.id}. SHA-256 PDF: {data.pdfVerification?.sha256 || 'Belum tersedia'}.
+      </p>
+      <p>
         Asal bukti: {data.evidence}. {data.retrievalNote} Master batas 2025: transkripsi kode
         Kemendagri; belum seluruhnya diaudit terhadap lampiran resmi.
       </p>
-      {selection.region === 'ID' && (
+      {
         <dl>
-          <dt>Angka publikasi nasional · halaman 36</dt>
+          <dt>Angka publikasi nasional · halaman {data.sourcePages?.national ?? 36}</dt>
           <dd>{fmt(r.national)}</dd>
-          <dt>Jumlah turunan 38 provinsi · halaman 45</dt>
+          <dt>Jumlah turunan 38 provinsi · halaman {data.sourcePages?.provinces ?? 45}</dt>
           <dd>{fmt(r.provinceSum)}</dd>
           <dt>Provinsi dengan angka tersedia</dt>
           <dd>
@@ -295,21 +304,16 @@ export function SkdrInspector() {
           <dt>Status</dt>
           <dd>{r.status}</dd>
         </dl>
-      )}
-      <p>
-        Target pemeriksaan dari permintaan: 394.361 dan selisih 5.866. Keduanya baru menjadi hasil
-        hitungan bila seluruh angka provinsi telah diterima; bukan hasil rekonstruksi provinsi yang
-        kosong.
-      </p>
+      }
       <SkdrExports />
     </section>
   );
 }
 export function SkdrDashboard() {
-  const { data, error, retry, selection, select } = useSkdr();
+  const { data, error, retry, selection, select, syncStatus } = useSkdr();
   const location = useLocation();
   if (selection.source === 'sismal') return <SismalDashboard />;
-  if (error)
+  if (error && !data)
     return (
       <section role="alert">
         <h2>Data SKDR gagal dimuat</h2>
@@ -342,6 +346,8 @@ export function SkdrDashboard() {
         Data sampai M{data.rows[0]?.weekThrough} 2026 · Buletin {data.rows[0]?.bulletin}
       </p>
       <SkdrBreadcrumb />
+      <p role="status">{syncStatus}</p>
+      <p>Cakupan data: {skdrReconciliation(data).availableProvinceCount}/38 provinsi</p>
       {data.evidence === 'user-supplied-incomplete' && (
         <p role="alert">
           Publikasi belum diperiksa terhadap PDF resmi. Rincian lengkap 38 provinsi belum diterima;

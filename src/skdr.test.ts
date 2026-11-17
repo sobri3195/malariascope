@@ -77,7 +77,8 @@ test('selection exports exact level, version and provenance; empty district neve
   const province = skdrExport(supplied, { ...initialSkdr, region: '31' });
   assert.equal(province.records.length, 1);
   assert.equal(province.records[0].value, 367);
-  assert.equal(province.reconciliation, undefined);
+  assert.equal(province.reconciliation?.national, 388495);
+  assert.equal(province.reconciliation?.provinceSum, null);
   assert.equal(skdrExport(supplied, { ...initialSkdr, region: '31.01' }).records.length, 0);
   assert.equal(skdrExport(supplied, { ...initialSkdr, snapshot: '2026-m43' }).records.length, 0);
   assert.equal(skdrExport(supplied, { ...initialSkdr, year: 2025 }).records.length, 0);

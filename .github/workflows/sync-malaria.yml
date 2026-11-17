@@ -1,0 +1,61 @@
+name: Synchronize official malaria bulletin
+on:
+  schedule:
+    # 06.20 WIB (UTC+7), daily; publication still requires reviewed merge.
+    - cron: '20 23 * * *'
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Bulletin year
+        default: '2026'
+        required: true
+      bulletin:
+        description: Bulletin number (empty selects latest indexed edition)
+        required: false
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: malaria-official-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Read official index, validate PDF and publish version assets
+        env:
+          SYNC_YEAR: ${{ inputs.year || '2026' }}
+          SYNC_BULLETIN: ${{ inputs.bulletin }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--year "$SYNC_YEAR")
+          if [ -n "$SYNC_BULLETIN" ]; then args+=(--bulletin "$SYNC_BULLETIN"); fi
+          npm run data:sync:malaria -- "${args[@]}"
+      - run: npm test && npm run build
+      - name: Propose validated assets for existing Vercel Git deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- public/data/indonesia/skdr; then exit 0; fi
+          git switch -c automation/malaria-bulletin-${{ github.run_id }}
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add public/data/indonesia/skdr public/data/indonesia/sync-manifest.json
+          git commit -m "data: synchronize validated official malaria bulletin"
+          git push origin HEAD
+          gh pr create --base main --title "Update validated official malaria bulletin" --body "Validated official PDF, immutable snapshot and active catalog. Review source reconciliation and CI before merging. Existing Vercel Git integration publishes after authorized merge; this workflow does not deploy directly."
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: malaria-sync-evidence
+          path: public/data/indonesia/sync-manifest.json

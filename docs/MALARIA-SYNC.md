@@ -1,5 +1,7 @@
 # Penarikan dan pemuatan SKDR/SISMAL
 
+> Petunjuk sinkronisasi terbaru, katalog versi, dry-run, impor 7 kolom, jadwal dan batas validasi ada pada [audit 17 November 2026](AUDIT-2026-11-17.md). Uraian di bawah adalah catatan implementasi sebelumnya; jalankan SISMAL dengan `--sismal-only`.
+
 Perbaikan ini berangkat dari implementasi Surveilans Indonesia pada commit `4e8d0ae`. Masalah direproduksi pada `/dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m44&region=11.03`: awalnya tidak ada pilihan tahun 2025, status kabupaten masih generik dan label workspace masih Papua.
 
 ## Perilaku dashboard
@@ -38,7 +40,7 @@ Klaim respons 488 baris/37 label provinsi pada 2025 berasal dari instruksi pengg
 ## Perintah sinkronisasi
 
 ```sh
-npm run data:sync:malaria -- --year 2026
+npm run data:sync:malaria -- --year 2026 --sismal-only
 npm run data:sync:malaria -- --year 2026 --skdr-markdown /path/Prompt_Codex_MalariaScope_Indonesia.md
 ```
 

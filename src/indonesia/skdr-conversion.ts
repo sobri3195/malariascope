@@ -79,3 +79,88 @@ export function convertSkdrMarkdown(markdown: string): SkdrSnapshot {
   if (errors.length) throw Error(errors.join('\n'));
   return snapshot;
 }
+
+export type OfficialSkdrMetadata = {
+  year: number;
+  bulletin: number;
+  weekThrough: number;
+  publishedAt: string;
+  dataAsOf: string;
+  sourceUrl: string;
+  retrievedAt: string;
+  national: number;
+  nationalPage: number;
+  provincePage: number;
+  // Explicit column names: do not infer a metric from its numeric position.
+  provinceColumn: string;
+  confirmedColumn: string;
+};
+export function parseIndonesianInteger(value: string): number {
+  if (!/^(?:0|[1-9]\d*|[1-9]\d{0,2}(?:\.\d{3})+)$/.test(value.trim()))
+    throw Error(`Angka agregat Indonesia tidak sah: ${value}`);
+  const number = Number(value.replaceAll('.', '').trim());
+  if (!Number.isSafeInteger(number)) throw Error('Angka melebihi rentang integer aman.');
+  return number;
+}
+export function convertOfficialSkdrCsv(input: string, meta: OfficialSkdrMetadata): SkdrSnapshot {
+  const parsed = Papa.parse<Record<string, string>>(input.replace(/^\uFEFF/, ''), {
+    header: true,
+    skipEmptyLines: 'greedy',
+    transformHeader: (h) => h.trim(),
+  });
+  if (
+    parsed.errors.length ||
+    parsed.meta.fields?.length !== 7 ||
+    !parsed.meta.fields.includes(meta.provinceColumn) ||
+    !parsed.meta.fields.includes(meta.confirmedColumn) ||
+    meta.provinceColumn === meta.confirmedColumn
+  )
+    throw Error(
+      'Lampiran Indonesia harus memiliki 7 kolom dan pemetaan provinsi/kasus terkonfirmasi eksplisit.',
+    );
+  const rows: SkdrRow[] = parsed.data.map((r) => ({
+    level: 'province',
+    regionCode: mapSkdrLabel(r[meta.provinceColumn]),
+    originalLabel: r[meta.provinceColumn].trim(),
+    year: meta.year,
+    weekThrough: meta.weekThrough,
+    bulletin: `M${meta.bulletin}`,
+    metric: 'confirmed_cases',
+    value: parseIndonesianInteger(r[meta.confirmedColumn]),
+    availability: 'reported',
+    page: meta.provincePage,
+    sourceUrl: meta.sourceUrl,
+  }));
+  rows.unshift({
+    level: 'national',
+    regionCode: 'ID',
+    originalLabel: 'Indonesia',
+    year: meta.year,
+    weekThrough: meta.weekThrough,
+    bulletin: `M${meta.bulletin}`,
+    metric: 'confirmed_cases',
+    value: meta.national,
+    availability: 'reported',
+    page: meta.nationalPage,
+    sourceUrl: meta.sourceUrl,
+  });
+  const snapshot: SkdrSnapshot = {
+    id: `${meta.year}-m${meta.bulletin}`,
+    dataset: 'skdr-indonesia',
+    boundaryVersion: '2025',
+    publishedAt: meta.publishedAt,
+    dataAsOf: meta.dataAsOf,
+    retrievedAt: meta.retrievedAt,
+    sourceUrl: meta.sourceUrl,
+    evidence: 'attachment-extraction',
+    sourcePages: { national: meta.nationalPage, provinces: meta.provincePage },
+    sourceColumns: {
+      province: parsed.meta.fields!.indexOf(meta.provinceColumn),
+      confirmed: parsed.meta.fields!.indexOf(meta.confirmedColumn),
+    },
+    rows,
+  };
+  const errors = validateSkdr(snapshot, true);
+  if (errors.length) throw Error(errors.join('\n'));
+  return snapshot;
+}
