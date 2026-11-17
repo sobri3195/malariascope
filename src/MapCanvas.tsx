@@ -29,6 +29,7 @@ export type CanvasProps = {
   context?: 'local' | 'osm';
   geometry: any;
   administrative: boolean;
+  focusSelection?: boolean;
   rows: Row[];
   year: number;
   layer: string;
@@ -43,7 +44,7 @@ export type CanvasProps = {
   facilities: PublicFacility[];
   camera: MapCamera | null;
   onCamera: (camera: MapCamera, bounds: Bounds) => void;
-  onSelect: (district: string) => void;
+  onSelect: (district: string, identity?: string) => void;
   label: string;
   reduced: boolean;
 };
@@ -52,6 +53,18 @@ const esc = (s: string) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!,
   );
+function focusIdentity(m: L.Map | null, g: L.GeoJSON | null, identity: string) {
+  const bounds = L.latLngBounds([]);
+  g?.eachLayer((layer) => {
+    const id = featureIdentity((layer as any).feature);
+    if (
+      (identity === 'ID' || id === identity || id.startsWith(identity + '.')) &&
+      'getBounds' in layer
+    )
+      bounds.extend((layer as L.Polygon).getBounds());
+  });
+  if (bounds.isValid()) m?.fitBounds(bounds, { padding: [35, 35], animate: false });
+}
 const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, ref) {
   const patternId = useId().replace(/[^a-zA-Z0-9]/g, '') + '-nodata';
   const div = useRef<HTMLDivElement>(null),
@@ -61,6 +74,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
     latest = useRef(props);
   latest.current = props;
   const [error, setError] = useState('');
+  const keyboardNodes = useRef(new WeakSet<Element>());
   useImperativeHandle(
     ref,
     () => ({
@@ -75,18 +89,7 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
             map.current.fitBounds(bounds, { padding: [20, 20], animate: false });
         } else map.current?.setView([-3.2, 138.4], 6);
       },
-      focus: (identity) => {
-        const bounds = L.latLngBounds([]);
-        geo.current?.eachLayer((layer) => {
-          const id = featureIdentity((layer as any).feature);
-          if (
-            (identity === 'ID' || id === identity || id.startsWith(identity + '.')) &&
-            'getBounds' in layer
-          )
-            bounds.extend((layer as L.Polygon).getBounds());
-        });
-        if (bounds.isValid()) map.current?.fitBounds(bounds, { padding: [35, 35], animate: false });
-      },
+      focus: (identity) => focusIdentity(map.current, geo.current, identity),
       svg: (title, legend, metadata) => {
         const m = map.current,
           p = latest.current;
@@ -165,7 +168,12 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
     m.on('resize', move);
     move();
     const resize = new ResizeObserver(() => {
-      if (map.current === m) m.invalidateSize({ animate: false, pan: false });
+      if (map.current === m) {
+        m.invalidateSize({ animate: false, pan: false });
+        const p = latest.current;
+        if (p.focusSelection && p.administrative && p.selectedIdentity)
+          focusIdentity(m, geo.current, p.selectedIdentity);
+      }
     });
     resize.observe(div.current);
     return () => {
@@ -227,7 +235,10 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
             p.geometry?.features || [],
             p.rows.filter((r) => r.year === p.year),
           ).find((m) => featureIdentity(m.feature) === featureIdentity(f as MapFeature))?.row;
-          p.onSelect(row?.district || featureName(f as MapFeature));
+          p.onSelect(
+            row?.district || featureName(f as MapFeature),
+            featureIdentity(f as MapFeature),
+          );
         });
       },
     }).addTo(m);
@@ -240,6 +251,10 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       geo.current = null;
     };
   }, [props.geometry, props.administrative]);
+  useEffect(() => {
+    if (props.focusSelection && props.administrative && props.selectedIdentity)
+      focusIdentity(map.current, geo.current, props.selectedIdentity);
+  }, [props.focusSelection, props.administrative, props.selectedIdentity, props.geometry]);
   useEffect(() => {
     const g = geo.current,
       m = map.current;
@@ -286,6 +301,26 @@ const MapCanvas = forwardRef<MapHandle, CanvasProps>(function MapCanvas(props, r
       layer.bindTooltip(el);
       const element = (layer as L.Path).getElement();
       if (element) {
+        element.setAttribute('data-region-identity', id);
+        if (props.administrative) {
+          element.setAttribute('role', 'button');
+          element.setAttribute('tabindex', '0');
+          element.setAttribute(
+            'aria-label',
+            `${row?.district || featureName(f)} · ${id} · ${props.year}`,
+          );
+          element.setAttribute('aria-pressed', String(selected));
+          if (!keyboardNodes.current.has(element)) {
+            element.addEventListener('keydown', (event) => {
+              const e = event as KeyboardEvent;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                layer.fire('click');
+              }
+            });
+            keyboardNodes.current.add(element);
+          }
+        }
         const svg = (element as SVGElement).ownerSVGElement;
         if (svg && !svg.querySelector('#' + patternId)) {
           const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');

@@ -73,3 +73,7 @@
   outline: 2px solid #296f71;
   outline-offset: -2px;
 }
+
+.regional-stage:not(:has(.regional-detail)) {
+  grid-template-columns: minmax(0, 1fr);
+}

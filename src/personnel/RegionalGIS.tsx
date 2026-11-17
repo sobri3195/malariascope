@@ -1,3 +1,4 @@
+import { regionProfile, type RegionalValue } from '../region-profile';
 import { validateGeometry } from '../geometry';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -18,7 +19,8 @@ type Props = {
   source?: string;
   version?: string;
   period?: string;
-  values?: { regionCode: string; value: number | null; availability: string }[];
+  values?: RegionalValue[];
+  coverageLevel?: 'province' | 'district';
 };
 export default function RegionalGIS({
   internal = false,
@@ -29,6 +31,7 @@ export default function RegionalGIS({
   version = '2025',
   period = 'Belum dipilih',
   values = [],
+  coverageLevel = 'province',
 }: Props) {
   const location = useLocation(),
     navigate = useNavigate();
@@ -55,13 +58,13 @@ export default function RegionalGIS({
   const [showDetail, setShowDetail] = useState(false);
   useEffect(() => {
     if (selected !== 'ID') setShowDetail(true);
-  }, [selected]);
+  }, [selected, location.key]);
   useEffect(() => {
     if (geometry) map.current?.focus(selected);
   }, [selected, geometry]);
   function select(code: string) {
-    if (onSelect) onSelect(code);
-    else {
+    if (code !== selected && onSelect) onSelect(code);
+    else if (code !== selected) {
       const q = new URLSearchParams(location.search);
       q.set('region', code);
       navigate(
@@ -142,7 +145,6 @@ export default function RegionalGIS({
         )
         .slice(0, 30)
     : children;
-  const value = values.find((v) => v.regionCode === selected);
   if (internal && !authorized)
     return (
       <section>
@@ -156,6 +158,8 @@ export default function RegionalGIS({
       </section>
     );
   if (!regions.some((r) => r.code === selected)) return <p role="alert">Kode wilayah tidak sah.</p>;
+  const profile = regionProfile(selected, values, coverageLevel);
+  const province = selected === 'ID' ? '' : selected.slice(0, 2);
   return (
     <section className="regional-gis" aria-label="GIS wilayah">
       <header>
@@ -185,6 +189,41 @@ export default function RegionalGIS({
             </>
           )}
           {selected.includes('.') && <> → {regionName('2025', selected)}</>}
+          <label>
+            Provinsi Profil 360
+            <select
+              aria-label="Provinsi Profil 360"
+              value={province}
+              onChange={(e) => select(e.target.value || 'ID')}
+            >
+              <option value="">Indonesia</option>
+              {regions
+                .filter((r) => /^\d{2}$/.test(r.code))
+                .map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            Kabupaten/Kota Profil 360
+            <select
+              aria-label="Kabupaten/Kota Profil 360"
+              disabled={!province}
+              value={selected.includes('.') ? selected : ''}
+              onChange={(e) => select(e.target.value || province)}
+            >
+              <option value="">Seluruh provinsi</option>
+              {regions
+                .filter((r) => r.code.startsWith(province + '.'))
+                .map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.name}
+                  </option>
+                ))}
+            </select>
+          </label>
         </nav>
         <p>
           {source} · periode malaria: {period} · versi {version}
@@ -247,6 +286,7 @@ export default function RegionalGIS({
                 ref={map}
                 geometry={geometry}
                 administrative
+                focusSelection
                 rows={rows}
                 year={year}
                 layer={layer === 'personnel' ? 'boundaries' : layer}
@@ -261,7 +301,11 @@ export default function RegionalGIS({
                 facilities={[]}
                 camera={null}
                 onCamera={() => {}}
-                onSelect={(name) => {
+                onSelect={(name, identity) => {
+                  if (identity && regions.some((r) => r.code === identity)) {
+                    select(identity);
+                    return;
+                  }
                   const f = geometry.features.find(
                     (f: any) =>
                       f.properties?.name === name ||
@@ -306,35 +350,29 @@ export default function RegionalGIS({
         {showDetail && (
           <aside className="regional-detail" aria-label="Detail wilayah GIS">
             <button onClick={() => setShowDetail(false)}>Tutup detail wilayah</button>
-            <h3>Profil Wilayah 360° · {regionName('2025', selected)}</h3>
+            <h3>Profil Wilayah 360° · {profile.name}</h3>
             <p>
-              Kode: {selected} · Jenjang:{' '}
-              {selected === 'ID'
-                ? 'Nasional'
-                : selected.includes('.')
-                  ? 'Kabupaten/Kota'
-                  : 'Provinsi'}
+              Kode: {profile.code} · Jenjang: {profile.level}
             </p>
             <p>
-              Cakupan pelaporan:{' '}
-              {values.filter((v) => /^\d{2}$/.test(v.regionCode) && v.value !== null).length}/38
-              provinsi berangka pada sumber ini.
+              Cakupan data: {profile.coverage.available}/{profile.coverage.total}{' '}
+              {profile.coverage.label} berangka pada master wilayah. Kelengkapan pelaporan resmi
+              belum tersedia.
             </p>
             <p>
               {source} · {period} · {version}
             </p>
             <p>
-              Kasus: {value?.value == null ? 'Belum tersedia' : value.value.toLocaleString('id-ID')}{' '}
-              · {value?.availability || 'unavailable'}
+              Kasus:{' '}
+              {profile.value === null ? 'Belum tersedia' : profile.value.toLocaleString('id-ID')} ·{' '}
+              {profile.availability}
             </p>
-            {selected.includes('.') && value?.value == null && (
+            {profile.parent && (
               <section aria-label="Angka induk tingkat provinsi">
-                <h4>Konteks provinsi — {regionName('2025', selected.slice(0, 2))}</h4>
+                <h4>Konteks provinsi — {profile.parent.name}</h4>
                 <p>
-                  {values
-                    .find((v) => v.regionCode === selected.slice(0, 2))
-                    ?.value?.toLocaleString('id-ID') ?? 'Belum tersedia'}{' '}
-                  kasus · {period}. Angka provinsi bukan angka kabupaten/kota.
+                  {profile.parent.value.toLocaleString('id-ID')} kasus · {period}. Angka provinsi
+                  bukan angka kabupaten/kota.
                 </p>
               </section>
             )}

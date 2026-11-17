@@ -2520,6 +2520,7 @@ function App() {
             }
             onSelect={skdr.active ? (region) => skdr.select({ region }) : undefined}
             year={skdr.active ? skdr.selection.year : undefined}
+            coverageLevel={skdr.selection.source === 'sismal' ? 'district' : 'province'}
             source={
               skdr.active
                 ? (skdr.selection.source === 'sismal'
