@@ -95,9 +95,27 @@ try {
   await expect(page.getByRole('table', { name: 'Tabel SISMAL' })).toContainText(
     'belum tervalidasi',
   );
+  await page.goto(base + '/dashboard');
+  await page.getByLabel('Context dataset').selectOption('sismal-indonesia');
+  await expect(page.getByLabel('Cakupan SISMAL')).toContainText('0/514');
+  await page.getByLabel('Context year').selectOption('2025');
+  await expect(page.getByLabel('Cakupan SISMAL')).toContainText('1/514');
+  const table = page.getByRole('table', { name: 'Tabel SISMAL' });
+  await expect(table.locator('tbody tr')).toHaveCount(38);
+  await table.getByRole('button', { name: 'Aceh', exact: true }).click();
+  await expect(page.getByLabel('Cakupan SISMAL')).toContainText('1/23');
+  await expect(table.locator('tbody tr')).toHaveCount(23);
+  await table.getByRole('button', { name: '11.04', exact: true }).click();
+  await expect(page.getByLabel('Cakupan SISMAL')).toContainText('0/1');
+  await expect(table.locator('tbody tr')).toHaveCount(1);
+  await expect(table).toContainText('Tanpa baris sumber');
+  await expect(page.getByLabel('Cek Personel')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBeTruthy();
   expect(errors).toEqual([]);
   console.log(
-    'PASS Aceh Timur: 2026 missing and separately labelled province context; 2025 source/year/ID/code/status; URL reload; exact export; shared panels/Inspector; mobile; fetch failure and retry. Portal-response path uses synthetic fixture; live sources remain blocked.',
+    'PASS SISMAL source loading, national coverage, province and district drilldown, exact export, mobile layout and retries. Portal-response path uses a synthetic fixture.',
   );
 } finally {
   await browser.close();

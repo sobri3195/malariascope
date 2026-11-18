@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { regionName } from '../indonesia/engine';
 type Person = Record<string, string>;
 export async function personnelGet(path: string, signal?: AbortSignal) {
   const r = await fetch('/api/personnel/' + path, {
@@ -25,7 +26,7 @@ export default function PersonnelPanel({ region }: { region: string }) {
     placementAsOf: string;
     demo: boolean;
     total: number;
-    units: { id: string; label: string; total: number }[];
+    units: { id: string; label: string; total: number; regionCode: string }[];
   } | null>(null);
   const [unit, setUnit] = useState(''),
     [query, setQuery] = useState(''),
@@ -95,7 +96,7 @@ export default function PersonnelPanel({ region }: { region: string }) {
   }, [region, unit, person]);
   // Parent keys this component by region; no response/cache survives a selection change.
   return (
-    <section aria-label="Cek Personel">
+    <section className="personnel-roster" aria-label="Cek Personel">
       <h3>Cek Personel</h3>
       {error && <p role="alert">{error}</p>}
       {!summary && !error && <p role="status">Memuat cakupan personel…</p>}
@@ -123,7 +124,7 @@ export default function PersonnelPanel({ region }: { region: string }) {
               <option value="">Pilih unit</option>
               {summary.units.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.label} · {u.total}
+                  {u.label} · {regionName('2025', u.regionCode) || u.regionCode} · {u.total}
                 </option>
               ))}
             </select>

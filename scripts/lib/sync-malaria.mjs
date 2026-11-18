@@ -2,7 +2,12 @@ import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
-import { normalizeSismal, validateSismal } from '../../src/indonesia/sismal.ts';
+import {
+  normalizeReviewedSismal,
+  normalizeSismal,
+  validateSismal,
+} from '../../src/indonesia/sismal.ts';
+import { districtCoverage } from '../../src/region-profile.ts';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export async function atomicJson(file, value) {
   await mkdir(join(file, '..'), { recursive: true });
@@ -15,12 +20,17 @@ export async function atomicJson(file, value) {
     throw e;
   }
 }
-export async function syncSismalYear({ year, root, download, now }) {
+export async function syncSismalYear({ year, root, download, now, reviewedFile, dryRun = false }) {
   const url = `https://malaria.kemkes.go.id/api/sismal/chartMap/${year}/?province=ACEH`;
   const file = join(root, 'sismal', `${year}.json`);
   let prior = null;
   let priorRaw = null;
-  const base = { source: 'sismal', reportingYear: year, url, attemptedAt: now };
+  const base = {
+    source: 'sismal',
+    reportingYear: year,
+    attemptedAt: now,
+    url: reviewedFile ? null : url,
+  };
   try {
     try {
       priorRaw = await readFile(file, 'utf8');
@@ -30,8 +40,17 @@ export async function syncSismalYear({ year, root, download, now }) {
     } catch (e) {
       if (e.code !== 'ENOENT') throw e;
     }
-    const bytes = await download(url);
-    const s = normalizeSismal(JSON.parse(bytes.toString('utf8')), year, now, url);
+    const bytes = reviewedFile ? await readFile(reviewedFile) : await download(url);
+    let payload;
+    try {
+      payload = JSON.parse(bytes.toString('utf8'));
+    } catch {
+      throw Error('Berkas atau respons SISMAL bukan JSON yang sah.');
+    }
+    const s = reviewedFile
+      ? normalizeReviewedSismal(payload, year)
+      : normalizeSismal(payload, year, now, url);
+    base.url = s.sourceUrl;
     const errors = validateSismal(s, year);
     if (errors.length) throw Error(errors.join(' '));
     const sha256 = hash(bytes);
@@ -47,7 +66,7 @@ export async function syncSismalYear({ year, root, download, now }) {
     // Never replace valid observations with an all-unavailable payload or a regressing coverage set.
     const available = new Set(s.rows.filter((r) => r.value !== null).map((r) => r.regionCode));
     const priorAvailable =
-      prior?.evidence === 'portal-response'
+      prior && prior.evidence !== 'user-supplied-incomplete'
         ? prior.rows.filter((r) => r.value !== null).map((r) => r.regionCode)
         : [];
     if (!available.size || priorAvailable.some((code) => !available.has(code)))
@@ -58,6 +77,17 @@ export async function syncSismalYear({ year, root, download, now }) {
         receivedMappedRows: s.rows.length,
         retainedRows: Array.isArray(prior?.rows) ? prior.rows.length : 0,
       };
+    const result = {
+      ...base,
+      evidence: s.evidence,
+      rawSha256: sha256,
+      mappedRows: s.rows.length,
+      availableRegions: available.size,
+      provinceLabels: new Set(s.rows.map((r) => r.originalProvince)).size,
+      coverage: districtCoverage('ID', s.rows),
+      unmapped: s.unmapped,
+    };
+    if (dryRun) return { ...result, status: 'validated' };
     // Unmapped rows remain in the manifest for review, without raw fields or patient identifiers.
     if (priorRaw !== null) {
       const priorHash = hash(Buffer.from(priorRaw));
@@ -71,14 +101,9 @@ export async function syncSismalYear({ year, root, download, now }) {
     await atomicJson(archive, s);
     await atomicJson(file, s);
     return {
-      ...base,
+      ...result,
       status: 'saved',
-      rawSha256: sha256,
       archive: `sismal/archive/${year}-${archiveHash}.json`,
-      mappedRows: s.rows.length,
-      availableRegions: available.size,
-      provinceLabels: new Set(s.rows.map((r) => r.originalProvince)).size,
-      unmapped: s.unmapped,
     };
   } catch (e) {
     return {

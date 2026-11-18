@@ -97,3 +97,63 @@
 .regional-stage:not(:has(.regional-detail)) {
   grid-template-columns: minmax(0, 1fr);
 }
+
+.regional-gis--sismal {
+  border: 1px solid #c5d5dd;
+  border-radius: 8px;
+}
+.regional-gis--sismal header > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.regional-gis--sismal .regional-detail-actions {
+  position: sticky;
+  top: -16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 4px 0;
+  background: #fff;
+  z-index: 1;
+}
+.regional-gis--sismal .regional-detail-actions a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.regional-gis--sismal .regional-stage th,
+.regional-gis--sismal .regional-stage td {
+  padding: 8px;
+  border-bottom: 1px solid #dce5e9;
+  text-align: left;
+}
+.personnel-roster {
+  border-top: 1px solid #ccd8df;
+  padding-top: 12px;
+}
+.personnel-roster label {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  min-width: 0;
+}
+.personnel-roster :is(select, input) {
+  width: 100%;
+}
+@media (max-width: 700px) {
+  .regional-gis--sismal.regional-gis--internal .regional-detail {
+    top: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+  .regional-gis--sismal:not(.regional-gis--internal) .regional-stage {
+    display: flex;
+    flex-direction: column;
+  }
+  .regional-gis--sismal:not(.regional-gis--internal) .regional-detail {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+}

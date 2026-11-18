@@ -19,7 +19,7 @@ const Context = createContext<{
   error: string;
   retry: () => void;
   select: (s: Partial<SkdrSelection>) => void;
-  activate: () => void;
+  activate: (source?: 'skdr' | 'sismal') => void;
   leave: () => void;
 }>(null!);
 export function SkdrProvider({ children }: { children: ReactNode }) {
@@ -100,7 +100,10 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
       setSismalError('Tahun SISMAL belum tersedia.');
       return () => controller.abort();
     }
-    void fetch(`/data/indonesia/sismal/${selection.year}.json`, { signal: controller.signal })
+    void fetch(`/data/indonesia/sismal/${selection.year}.json`, {
+      signal: controller.signal,
+      cache: 'no-cache',
+    })
       .then(async (r) => {
         if (!r.ok) throw Error(`HTTP ${r.status}`);
         const s = await r.json();
@@ -180,11 +183,18 @@ export function SkdrProvider({ children }: { children: ReactNode }) {
                     : 'Katalog versi tervalidasi dimuat.'),
         selection,
         data: sourceError ? null : data,
-        sismal: sourceError ? null : sismal,
+        sismal: !sourceError && sismal?.reportingYear === selection.year ? sismal : null,
         error: sourceError || (selection.source === 'sismal' ? sismalError : error),
         retry: () => setRevision((n) => n + 1),
         select,
-        activate: () => navigate(`${route.pathname}?dataset=${skdrDataset}&region=ID`),
+        activate: (source = 'skdr') => {
+          const path =
+            source === 'sismal' &&
+            !['/risk-map', '/surveilans-indonesia', '/internal-personnel'].includes(route.pathname)
+              ? '/dashboard'
+              : route.pathname;
+          navigate(`${path}?dataset=${skdrDataset}&source=${source}&region=ID`);
+        },
         leave: () => navigate(route.pathname),
       }}
     >

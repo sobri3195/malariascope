@@ -3,7 +3,7 @@ import { useLocalRepository } from './useLocalRepository';
 import LocalRecovery from './LocalRecovery';
 import { parseViews, emptyViews } from './snapshot-data';
 import SismalDashboard from './SismalDashboard';
-import { surveillanceExport } from './sismal';
+import { selectedSismal, sismalEvidence, surveillanceExport } from './sismal';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSkdr } from './SkdrContext';
@@ -240,29 +240,30 @@ export function SkdrBreadcrumb() {
 }
 export function SkdrInspector() {
   const { data, sismal, selection, error } = useSkdr();
-  if (error && !data) return <p role="alert">Jejak sumber belum tersedia: {error}</p>;
+  if (error && (selection.source === 'sismal' || !data))
+    return <p role="alert">Jejak sumber belum tersedia: {error}</p>;
   if (selection.source === 'sismal')
-    return (
+    return !sismal || selection.snapshot !== sismal.id ? (
+      <p role="status">Snapshot SISMAL belum tersedia untuk pilihan ini.</p>
+    ) : (
       <section aria-label="SISMAL Inspector">
         <h2>Jejak sumber SISMAL</h2>
         <SkdrBreadcrumb />
         <p>
-          Tahun pelaporan {sismal?.reportingYear} · sumber {sismal?.sourceUrl}
+          Tahun pelaporan {sismal.reportingYear} · sumber {sismal.sourceUrl}
         </p>
         <p>
-          Waktu penarikan: {sismal?.retrievedAt || 'Belum ditarik'}. Status respons:{' '}
-          {sismal?.responseState}. Wilayah dengan angka dalam berkas sumber:{' '}
-          {sismal?.rows.filter((r) => r.value !== null).length ?? 0}; belum terpetakan:{' '}
-          {sismal?.unmapped.length ?? 0}.
+          {sismalEvidence[sismal.evidence]}. Waktu penarikan:{' '}
+          {sismal.retrievedAt || 'Belum ditarik'}. Wilayah dengan angka dalam berkas sumber:{' '}
+          {sismal.rows.filter((r) => r.value !== null).length}; belum terpetakan:{' '}
+          {sismal.unmapped.length}.
         </p>
-        {sismal?.rows
-          .filter((r) => r.regionCode === selection.region)
-          .map((r) => (
-            <p key={r.regionCode}>
-              ID sumber {r.sourceId} → kode Kemendagri {r.regionCode}; induk {r.provinceCode}.
-              Status: {r.validationStatus}; pembaruan {r.updatedAt || 'Tidak dinyatakan'}.
-            </p>
-          ))}
+        {selectedSismal(sismal, selection).map((r) => (
+          <p key={r.regionCode}>
+            ID sumber {r.sourceId} → kode Kemendagri {r.regionCode}; induk {r.provinceCode}. Status:{' '}
+            {r.validationStatus}; pembaruan {r.updatedAt || 'Tidak dinyatakan'}.
+          </p>
+        ))}
         <SkdrExports />
       </section>
     );

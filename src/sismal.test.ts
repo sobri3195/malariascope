@@ -1,16 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   normalizeSismal,
+  normalizeReviewedSismal,
   mapSismalRegion,
   validateSismal,
   selectedSismal,
   surveillanceExport,
 } from './indonesia/sismal.ts';
 import { syncSismalYear } from '../scripts/lib/sync-malaria.mjs';
+import { masters } from './indonesia/engine.ts';
 import { captureSurveillanceSnapshot, restoreSurveillanceSnapshot } from './workspace-context.ts';
 const url = 'https://malaria.kemkes.go.id/api/sismal/chartMap/2025/?province=ACEH';
 const now = '2026-11-16T06:00:00Z';
@@ -39,6 +41,8 @@ test('source ID 1105 maps by period/name/parent to Aceh Timur 11.03; ID is not c
   });
   assert.throws(() => mapSismalRegion('1105', 'ACEH TIMUR', 'JAWA BARAT', 2025));
   assert.throws(() => mapSismalRegion('9999', 'Bogor', 'JAWA BARAT', 2025));
+  assert.equal(mapSismalRegion('9999', ' Kab. Bogor ', 'JAWA BARAT', 2025).regionCode, '32.01');
+  assert.throws(() => mapSismalRegion('9999', 'Kota Aceh Timur', 'ACEH', 2025));
 });
 test('cross-province response is normalized once and exact selection never leaks other province/year', () => {
   const s = normalizeSismal([aceh, gorontalo], 2025, now, url);
@@ -60,6 +64,13 @@ test('cross-province response is normalized once and exact selection never leaks
   assert.equal(out.selection.source, 'sismal');
   assert.equal(out.source.id, 'sismal-2025');
   assert.equal(out.records[0].reportingYear, 2025);
+  assert.deepEqual(out.coverage, {
+    available: 1,
+    total: 1,
+    partial: 0,
+    unavailable: 0,
+    missing: 0,
+  });
 });
 test('zero, unavailable, empty, malformed, wrong year and conflicting aliases are distinct', () => {
   const s = normalizeSismal([gorontalo, { ...aceh, positive_cases: null }], 2025, now, url);
@@ -149,6 +160,64 @@ test('SISMAL view snapshot restores source/year/version without turning into SKD
       .selection,
     selection,
   );
+});
+
+test('reviewed aggregate import covers the national master and dry runs without publishing', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'sismal-reviewed-'));
+  const reviewedFile = join(root, 'reviewed.json');
+  const master = masters['2025'].regions;
+  const districts = master.filter((region) => /^\d{2}\.\d{2}$/.test(region.code));
+  // Synthetic full-coverage fixture. Case counts deliberately carry no source meaning.
+  const input = {
+    sourceUrl: url,
+    retrievedAt: now,
+    rows: districts.map((region, index) => ({
+      source_id: String(2000 + index),
+      district: region.name,
+      province: master.find((r) => r.code === region.code.slice(0, 2))!.name,
+      reporting_year: 2025,
+      positive_cases: 0,
+    })),
+  };
+  const args = {
+    year: 2025,
+    root,
+    now,
+    reviewedFile,
+    download: async () => assert.fail('offline import'),
+  };
+  const file = join(root, 'sismal', '2025.json');
+  try {
+    await writeFile(reviewedFile, JSON.stringify(input));
+    const preview = await syncSismalYear({ ...args, dryRun: true });
+    assert.equal(preview.status, 'validated', JSON.stringify(preview));
+    assert.equal(preview.coverage.available, 514);
+    assert.equal(preview.provinceLabels, 38);
+    await assert.rejects(readFile(file), { code: 'ENOENT' });
+    assert.equal((await syncSismalYear(args)).status, 'saved');
+    const original = await readFile(file, 'utf8');
+    const snapshot = JSON.parse(original);
+    assert.deepEqual(validateSismal(snapshot, 2025), []);
+    assert.equal(snapshot.evidence, 'reviewed-aggregate');
+    assert.equal(snapshot.rows[0].value, 0);
+    await writeFile(reviewedFile, JSON.stringify({ ...input, rows: input.rows.slice(0, 1) }));
+    assert.equal((await syncSismalYear(args)).status, 'coverage-regression');
+    assert.equal(await readFile(file, 'utf8'), original);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('reviewed import rejects unrecognized columns, official host mismatches and unresolved names', () => {
+  const input = { sourceUrl: url, retrievedAt: now, rows: [aceh] };
+  for (const invalid of [
+    { ...input, sourceUrl: 'https://example.org/sismal.json' },
+    { ...input, retrievedAt: 'yesterday' },
+    { ...input, rows: [{ ...aceh, patient_name: 'Synthetic name' }] },
+    { ...input, rows: [{ ...aceh, district: 'Unmapped district' }] },
+    { ...input, rows: [{ ...aceh, reporting_year: 2026 }] },
+  ])
+    assert.throws(() => normalizeReviewedSismal(invalid, 2025));
 });
 
 test('sync preserves corrupt prior artifacts and keeps retrieval archives across identical response bytes', async () => {

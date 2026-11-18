@@ -1,5 +1,27 @@
 import { masters, regionName } from './indonesia/engine.ts';
 export type RegionalValue = { regionCode: string; value: number | null; availability: string };
+export function districtCoverage(code: string, values: readonly RegionalValue[]) {
+  const districts = masters['2025'].regions.filter(
+    (r) =>
+      /^\d{2}\.\d{2}$/.test(r.code) &&
+      (code === 'ID' || r.code === code || r.code.startsWith(code + '.')),
+  );
+  const byCode = new Map(values.map((row) => [row.regionCode, row]));
+  let available = 0;
+  let partial = 0;
+  let unavailable = 0;
+  let missing = 0;
+  for (const district of districts) {
+    const row = byCode.get(district.code);
+    if (!row) missing++;
+    else if (row.value === null) unavailable++;
+    else {
+      available++;
+      if (row.availability === 'partial') partial++;
+    }
+  }
+  return { available, total: districts.length, partial, unavailable, missing };
+}
 export function regionProfile(
   code: string,
   values: RegionalValue[],
@@ -12,13 +34,7 @@ export function regionProfile(
   const parent = code.includes('.')
     ? values.find((r) => r.regionCode === code.slice(0, 2))
     : undefined;
-  const expected = new Set(
-    master
-      .filter((r) =>
-        level === 'province' ? /^\d{2}$/.test(r.code) : /^\d{2}\.\d{2}$/.test(r.code),
-      )
-      .map((r) => r.code),
-  );
+  const expected = new Set(master.filter((r) => /^\d{2}$/.test(r.code)).map((r) => r.code));
   const available = new Set(
     values.filter((r) => expected.has(r.regionCode) && r.value !== null).map((r) => r.regionCode),
   );
@@ -36,10 +52,9 @@ export function regionProfile(
             value: parent.value,
           }
         : null,
-    coverage: {
-      available: available.size,
-      total: expected.size,
-      label: level === 'province' ? 'provinsi' : 'kabupaten/kota',
-    },
+    coverage:
+      level === 'district'
+        ? { ...districtCoverage(code, values), label: 'kabupaten/kota' }
+        : { available: available.size, total: expected.size, label: 'provinsi' },
   };
 }

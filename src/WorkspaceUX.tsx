@@ -510,10 +510,18 @@ export default function WorkspaceUX({
               DATASET
               <select
                 aria-label="Context dataset"
-                value={skdr.active ? 'skdr-indonesia' : state.active}
+                value={
+                  skdr.active
+                    ? skdr.selection.source === 'sismal'
+                      ? 'sismal-indonesia'
+                      : 'skdr-indonesia'
+                    : state.active
+                }
                 onChange={(e) => {
-                  if (e.target.value === 'skdr-indonesia') {
-                    skdr.activate();
+                  if (['skdr-indonesia', 'sismal-indonesia'].includes(e.target.value)) {
+                    const source = e.target.value === 'sismal-indonesia' ? 'sismal' : 'skdr';
+                    if (skdr.active) skdr.select({ source });
+                    else skdr.activate(source);
                     return;
                   }
                   if (skdr.active) skdr.leave();
@@ -521,6 +529,7 @@ export default function WorkspaceUX({
                 }}
               >
                 <option value="skdr-indonesia">SKDR Kemenkes — Indonesia 2026</option>
+                <option value="sismal-indonesia">SISMAL Kemenkes — Indonesia</option>
                 <option value="">No primary dataset</option>
                 {state.datasets.map((d) => (
                   <option value={d.id} key={d.id}>
