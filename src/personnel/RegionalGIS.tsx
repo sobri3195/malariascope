@@ -1,8 +1,9 @@
-import { regionProfile, type RegionalValue } from '../region-profile';
+import { districtCoverage, regionProfile, type RegionalValue } from '../region-profile';
 import { validateGeometry } from '../geometry';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { masters, regionName } from '../indonesia/engine';
+import { skdrDataset } from '../indonesia/skdr';
 import { featureIdentity } from '../map-intelligence';
 import type { MapHandle } from '../MapCanvas';
 import type { Row } from '../analytics';
@@ -19,6 +20,7 @@ type Props = {
   region?: string;
   onSelect?: (code: string) => void;
   source?: string;
+  sourceNote?: string;
   version?: string;
   period?: string;
   values?: RegionalValue[];
@@ -30,6 +32,7 @@ export default function RegionalGIS({
   region = 'ID',
   onSelect,
   source = 'Master wilayah Kemendagri 2025',
+  sourceNote,
   version = '2025',
   period = 'Belum dipilih',
   values = [],
@@ -59,6 +62,13 @@ export default function RegionalGIS({
     [opened, setOpened] = useState(true);
   const map = useRef<MapHandle>(null);
   const selected = onSelect ? region : query.get('region') || region;
+  const sismalContext = query.get('dataset') === skdrDataset && query.get('source') === 'sismal';
+  const regionalQuery = new URLSearchParams(query);
+  regionalQuery.set('region', selected);
+  if (internal) regionalQuery.delete('gisLayer');
+  const returnToSismal = sismalContext && (
+    <NavLink to={'/dashboard?' + regionalQuery.toString()}>Kembali ke SISMAL</NavLink>
+  );
   const layer =
     internal && authorized && query.get('gisLayer') === 'personnel' ? 'personnel' : 'cases';
   function setLayer(next: string) {
@@ -72,12 +82,13 @@ export default function RegionalGIS({
   const [showDetail, setShowDetail] = useState(false);
   useEffect(() => {
     if (
+      layer === 'personnel' ||
       selected !== 'ID' ||
       new URLSearchParams(location.search).has('compareA') ||
       new URLSearchParams(location.search).has('compareB')
     )
       setShowDetail(true);
-  }, [selected, location.key, location.search]);
+  }, [layer, selected, location.key, location.search]);
   useEffect(() => {
     if (geometry) map.current?.focus(selected);
   }, [selected, geometry]);
@@ -174,27 +185,24 @@ export default function RegionalGIS({
           Masuk melalui layanan autentikasi organisasi yang dikonfigurasi. Akses roster memerlukan
           grant personel tersendiri.
         </p>
+        {returnToSismal}
       </section>
     );
   if (!regions.some((r) => r.code === selected)) return <p role="alert">Kode wilayah tidak sah.</p>;
   const profile = regionProfile(selected, values, coverageLevel);
   const province = selected === 'ID' ? '' : selected.slice(0, 2);
   return (
-    <section className="regional-gis" aria-label="GIS wilayah">
+    <section
+      className={`regional-gis${sismalContext ? ' regional-gis--sismal' : ''}${internal ? ' regional-gis--internal' : ''}`}
+      aria-label="GIS wilayah"
+    >
       <header>
-        {!internal && (
-          <NavLink
-            to={
-              '/internal-personnel?' +
-              new URLSearchParams({
-                ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                region: selected,
-              }).toString()
-            }
-          >
+        {!internal && !sismalContext && (
+          <NavLink to={'/internal-personnel?' + regionalQuery.toString()}>
             Cek Personel internal
           </NavLink>
         )}
+        {internal && !showDetail && returnToSismal}
         <h2>{internal ? 'GIS Internal — Cek Personel' : 'GIS Surveilans Indonesia'}</h2>
         <nav aria-label="Breadcrumb wilayah">
           <button onClick={() => select('ID')}>Indonesia</button>
@@ -247,6 +255,7 @@ export default function RegionalGIS({
         <p>
           {source} · periode malaria: {period} · versi {version}
         </p>
+        {internal && sourceNote && <p role="status">{sourceNote}</p>}
       </header>
       <details open>
         <summary>Filter dan legenda wilayah</summary>
@@ -345,11 +354,13 @@ export default function RegionalGIS({
               <tr>
                 <th>Wilayah</th>
                 <th>Kasus</th>
+                {coverageLevel === 'district' && <th>Cakupan kabupaten/kota berangka</th>}
               </tr>
             </thead>
             <tbody>
               {matches.map((r) => {
                 const v = values.find((v) => v.regionCode === r.code);
+                const coverage = coverageLevel === 'district' && districtCoverage(r.code, values);
                 return (
                   <tr key={r.code} aria-selected={r.code === selected}>
                     <td>
@@ -361,6 +372,11 @@ export default function RegionalGIS({
                       {v?.value == null ? 'Belum tersedia' : v.value.toLocaleString('id-ID')}
                       {v?.availability === 'partial' ? ' · parsial' : ''}
                     </td>
+                    {coverage && (
+                      <td>
+                        {coverage.available}/{coverage.total}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -369,7 +385,10 @@ export default function RegionalGIS({
         </div>
         {showDetail && (
           <aside className="regional-detail" aria-label="Detail wilayah GIS">
-            <button onClick={() => setShowDetail(false)}>Tutup detail wilayah</button>
+            <div className="regional-detail-actions">
+              <button onClick={() => setShowDetail(false)}>Tutup detail wilayah</button>
+              {internal && returnToSismal}
+            </div>
             <h3>Profil Wilayah 360° · {profile.name}</h3>
             <p>
               Kode: {profile.code} · Jenjang: {profile.level}
@@ -404,7 +423,9 @@ export default function RegionalGIS({
             )}
             {internal && (
               <>
-                <button onClick={() => setLayer('personnel')}>Tab Personel</button>
+                {layer !== 'personnel' && (
+                  <button onClick={() => setLayer('personnel')}>Tab Personel</button>
+                )}
                 {layer === 'personnel' && (
                   <Suspense fallback={<p>Memuat Personel…</p>}>
                     <Personnel key={selected + authorizationVersion} region={selected} />

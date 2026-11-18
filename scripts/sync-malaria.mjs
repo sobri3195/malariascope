@@ -26,6 +26,7 @@ const valued = [
   '--pdf',
   '--csv',
   '--metadata',
+  '--sismal-file',
   '--output',
 ];
 const flags = ['--dry-run', '--sismal-only'];
@@ -48,6 +49,10 @@ if (
   bulletin > 53
 )
   throw Error('Tahun/nomor buletin tidak sah.');
+if (options['--sismal-file'] && (!options['--sismal-only'] || !options['--year']))
+  throw Error('--sismal-file memerlukan --sismal-only dan --year.');
+if (options['--sismal-only'] && ![2025, 2026].includes(year))
+  throw Error('Tahun SISMAL belum didukung oleh master wilayah.');
 if (options['--csv'] && !options['--metadata'])
   throw Error('--csv memerlukan --metadata dari sumber resmi.');
 if (options['--pdf'] && !options['--metadata'] && !options['--skdr-markdown'])
@@ -84,10 +89,18 @@ async function synchronize() {
   let stage = 'discovery';
   let directory;
   if (options['--sismal-only']) {
-    if (options['--dry-run'])
-      throw Error('Dry-run tersedia untuk publikasi SKDR; SISMAL tidak dijalankan.');
-    for (const y of year === 2026 ? [2026, 2025] : [year])
-      attempts.push(await syncSismalYear({ year: y, root, download, now }));
+    const reviewedFile = options['--sismal-file'];
+    for (const y of !reviewedFile && year === 2026 ? [2026, 2025] : [year])
+      attempts.push(
+        await syncSismalYear({
+          year: y,
+          root,
+          download,
+          now,
+          reviewedFile,
+          dryRun: !!options['--dry-run'],
+        }),
+      );
   } else
     try {
       let meta = options['--metadata']
@@ -184,7 +197,11 @@ async function synchronize() {
     for (const attempt of attempts) manifest = await recordSyncAttempt(root, attempt);
   }
   console.log(JSON.stringify(manifest, null, 2));
-  if (attempts.some((a) => !['saved', 'published', 'revised', 'unchanged'].includes(a.status)))
+  if (
+    attempts.some(
+      (a) => !['validated', 'saved', 'published', 'revised', 'unchanged'].includes(a.status),
+    )
+  )
     process.exitCode = 1;
 }
 if (options['--dry-run']) await synchronize();

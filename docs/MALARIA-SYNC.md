@@ -1,6 +1,28 @@
 # Penarikan dan pemuatan SKDR/SISMAL
 
-> Petunjuk sinkronisasi terbaru, katalog versi, dry-run, impor 7 kolom, jadwal dan batas validasi ada pada [audit 17 November 2026](AUDIT-2026-11-17.md). Uraian di bawah adalah catatan implementasi sebelumnya; jalankan SISMAL dengan `--sismal-only`.
+> Petunjuk katalog, penarikan PDF, impor tujuh kolom, dan jadwal SKDR ada pada [audit 17 November 2026](AUDIT-2026-11-17.md).
+
+## SISMAL nasional dan impor rekap resmi
+
+Pilih **SISMAL Kemenkes — Indonesia** pada pemilih dataset. Pilih tahun, lalu buka provinsi dari tabel cakupan untuk melihat kabupaten/kotanya. Cakupan memakai master wilayah 2025 dengan 38 provinsi dan 514 kabupaten/kota. Nilai nol dihitung sebagai angka yang tersedia. Baris dengan nilai kosong dan wilayah tanpa baris sumber ditampilkan terpisah. Ekspor JSON menyertakan cakupan pilihan dan observasi sumber. Total resmi provinsi atau nasional memerlukan rekap pada jenjang tersebut.
+
+**Cek Personel internal** membawa tahun, snapshot, dan wilayah ke GIS Personel. Layanan internal menampilkan unit dan detail sesuai izin akun. Acuan penempatan personel ditampilkan terpisah dari tahun pelaporan SISMAL.
+
+Jika akses portal tertolak, gunakan berkas JSON dari rekap resmi yang sudah ditinjau. Berkas memerlukan tiga properti:
+
+- `sourceUrl` berisi URL HTTPS publik pada `malaria.kemkes.go.id`.
+- `retrievedAt` berisi waktu penarikan asli dengan zona waktu ISO 8601.
+- `rows` berisi rekap kabupaten/kota untuk satu tahun. Gunakan kolom `source_id` (empat digit), `district`, `province`, `positive_cases`, dan `reporting_year`. Kolom `updated_at` dan `validation_status` opsional. Gunakan `null` bila sumber tidak menyatakan angka. Nama kabupaten/kota ambigu memerlukan label administratif lengkap. Berkas hanya berisi rekap agregat.
+
+```sh
+npm run data:sync:malaria -- --sismal-only --year 2025 --sismal-file /path/to/rekap-resmi.json --dry-run
+```
+
+Periksa cakupan dan hasil pemetaan pada laporan, lalu hilangkan `--dry-run` untuk menyimpan snapshot tahun tersebut. Impor ini tidak memerlukan koneksi portal. Baris yang belum terpetakan, tahun yang berbeda, konflik data, dan penurunan cakupan snapshot resmi sebelumnya menghentikan publikasi. Laporan menyimpan checksum berkas input, sedangkan snapshot menyimpan observasi hasil normalisasi dan label sumber impor.
+
+Validasi penarikan langsung tersedia melalui `npm run data:sync:malaria -- --sismal-only --year 2026 --dry-run`. Pemeriksaan 18 November 2026 tetap menerima penolakan CONNECT 403 untuk 2025 dan 2026. Snapshot yang dibundel masih memuat 1/514 kabupaten/kota untuk 2025, berdasarkan angka dari permintaan sebelumnya, dan 0/514 untuk 2026.
+
+## Riwayat implementasi awal
 
 Perbaikan ini berangkat dari implementasi Surveilans Indonesia pada commit `4e8d0ae`. Masalah direproduksi pada `/dashboard?dataset=skdr-indonesia&year=2026&snapshot=2026-m44&region=11.03`: awalnya tidak ada pilihan tahun 2025, status kabupaten masih generik dan label workspace masih Papua.
 

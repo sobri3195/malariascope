@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSkdr } from '../indonesia/SkdrContext';
 import { validateSkdr, type SkdrSnapshot } from '../indonesia/skdr';
-import { validateSismal, type SismalSnapshot } from '../indonesia/sismal';
+import { sismalEvidence, validateSismal, type SismalSnapshot } from '../indonesia/sismal';
 import { validateSkdrCatalog } from '../indonesia/skdr-catalog';
 import { regionName } from '../indonesia/engine';
 import {
@@ -30,7 +30,7 @@ async function load(ref: RegionReference, signal: AbortSignal): Promise<Comparis
       'district',
       s.sourceUrl,
       `SISMAL ${s.reportingYear}`,
-      `SISMAL · kasus positif tahunan · ${s.id} · ${s.evidence === 'portal-response' ? 'respons portal' : 'angka parsial dari permintaan, belum diverifikasi terhadap portal'}`,
+      `SISMAL · kasus positif tahunan · ${s.id} · ${sismalEvidence[s.evidence]}`,
       'Kasus positif',
     );
   }

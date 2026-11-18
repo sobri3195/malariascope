@@ -174,6 +174,26 @@ with connection() as db: db.execute('UPDATE personnel_grants SET fields=?',(json
     await expect(epidemiology.getByLabel('Layer GIS')).toHaveValue('personnel');
     await expect(epidemiology.getByLabel('Cek Personel')).toContainText('DEMO SINTETIS');
 
+    await epidemiology.goto(base + '/dashboard?dataset=skdr-indonesia&source=sismal&year=2025');
+    await expect(epidemiology.getByLabel('Cakupan SISMAL')).toContainText('1/514');
+    await epidemiology.getByRole('link', { name: 'Cek Personel internal', exact: true }).click();
+    await expect(epidemiology.getByLabel('Layer GIS')).toHaveValue('personnel');
+    const roster = epidemiology.getByLabel('Cek Personel');
+    await expect(roster).toContainText('Total dalam cakupan Anda: 4');
+    await expect(roster.getByLabel('Unit personel')).not.toContainText('Unit Demo Jakarta');
+    await epidemiology.getByLabel('Provinsi Profil 360').selectOption('11');
+    await expect(epidemiology.getByLabel('Detail wilayah GIS')).toContainText('1/23');
+    await epidemiology.getByLabel('Kabupaten/Kota Profil 360').selectOption('11.03');
+    await expect(epidemiology.getByLabel('Detail wilayah GIS')).toContainText('Kasus: 4');
+    await expect(roster).toContainText('Acuan penempatan:');
+    await roster.getByLabel('Unit personel').selectOption('demo-aceh');
+    await roster.getByRole('button', { name: 'Personel Sintetis 1', exact: true }).click();
+    await expect(roster.getByLabel('Detail personel')).toContainText('DEMO-***1');
+    await epidemiology.getByRole('link', { name: 'Kembali ke SISMAL', exact: true }).click();
+    expect(new URL(epidemiology.url()).searchParams.get('region')).toBe('11.03');
+    await expect(epidemiology.getByLabel('Context year')).toHaveValue('2025');
+    await expect(epidemiology.getByLabel('Cek Personel')).toHaveCount(0);
+
     await epidemiology.close();
 
     // A new forbidden region must clear the previous region's profiles.

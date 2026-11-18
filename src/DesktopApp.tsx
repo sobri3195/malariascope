@@ -1,6 +1,7 @@
 import RegionalGIS from './personnel/RegionalGIS';
 import { useSkdr } from './indonesia/SkdrContext';
 import { SkdrDashboard, SkdrExports } from './indonesia/SkdrDashboard';
+import { sismalEvidence } from './indonesia/sismal';
 import {
   DashboardCard as Panel,
   StatusBadge as Badge,
@@ -2179,7 +2180,7 @@ function App() {
   const location = useLocation();
   const { state, signals, research, researchError } = useStore();
   const skdr = useSkdr();
-  const personnelSismal = skdr.sismal?.reportingYear === skdr.selection.year ? skdr.sismal : null;
+  const personnelSismal = skdr.sismal?.id === skdr.selection.snapshot ? skdr.sismal : null;
   const personnelSkdr =
     skdr.data?.id === skdr.selection.snapshot && skdr.data?.rows[0]?.year === skdr.selection.year
       ? skdr.data
@@ -2528,11 +2529,18 @@ function App() {
                     : personnelSkdr?.sourceUrl) || 'Sumber belum dimuat'
                 : undefined
             }
+            sourceNote={
+              skdr.active && skdr.selection.source === 'sismal'
+                ? personnelSismal
+                  ? sismalEvidence[personnelSismal.evidence]
+                  : skdr.error || 'Snapshot SISMAL belum tersedia.'
+                : undefined
+            }
             version={
               skdr.active
-                ? skdr.selection.source === 'sismal'
-                  ? personnelSismal?.id
-                  : personnelSkdr?.version || personnelSkdr?.id
+                ? (skdr.selection.source === 'sismal'
+                    ? personnelSismal?.id
+                    : personnelSkdr?.version || personnelSkdr?.id) || '—'
                 : undefined
             }
             period={
@@ -2545,11 +2553,7 @@ function App() {
             values={
               skdr.active
                 ? skdr.selection.source === 'sismal'
-                  ? personnelSismal?.rows.map((r) => ({
-                      regionCode: r.regionCode,
-                      value: r.value,
-                      availability: r.value === null ? 'unavailable' : 'reported',
-                    }))
+                  ? personnelSismal?.rows
                   : personnelSkdr?.rows
                 : undefined
             }

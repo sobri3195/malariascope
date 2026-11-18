@@ -131,3 +131,136 @@
   font-weight: 600;
   padding: 8px;
 }
+
+.sismal-workspace {
+  min-height: auto;
+  background: #f4f8f7;
+}
+.sismal-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: clamp(16px, 3vw, 28px);
+  border-radius: 10px;
+  background: linear-gradient(110deg, #143245, #145b56);
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.sismal-heading a {
+  display: inline-flex;
+  min-height: 44px;
+  padding: 0 14px;
+  align-items: center;
+  border-radius: 6px;
+  background: #fff;
+  color: #164e49;
+  font-weight: 600;
+  text-decoration: none;
+}
+.sismal-heading a:hover {
+  background: #def3ee;
+}
+.sismal-heading h2 {
+  margin: 6px 0 4px;
+  color: inherit;
+  font-size: clamp(1.35rem, 3vw, 2.05rem);
+}
+.sismal-heading p,
+.sismal-heading span {
+  margin: 0;
+  color: #def3ee;
+}
+.sismal-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.sismal-summary article {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.sismal-summary article p {
+  margin: 6px 0 0;
+}
+.sismal-summary strong {
+  color: #143245;
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+  font-variant-numeric: tabular-nums;
+}
+.sismal-coverage progress {
+  display: block;
+  width: 100%;
+  height: 12px;
+  margin-top: 8px;
+  accent-color: #14776f;
+}
+.sismal-provenance {
+  color: #3f5967;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.sismal-table {
+  max-height: min(28rem, 60vh);
+  border: 1px solid #c5d5dd;
+  border-radius: 8px;
+  background: #fff;
+}
+.sismal-table table {
+  font-size: 0.875rem;
+}
+.sismal-table thead {
+  position: sticky;
+  top: 0;
+}
+.sismal-table tbody tr:nth-child(even) {
+  background: #f4f8f7;
+}
+.sismal-table tbody th {
+  font-weight: inherit;
+}
+.sismal-table button {
+  border-color: transparent;
+  margin: 0;
+  color: #075d78;
+  text-align: left;
+}
+.sismal-table button:hover {
+  border-color: #8da7b5;
+}
+.sismal-unavailable {
+  color: #52646f;
+}
+.sismal-value {
+  color: #164e49;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sismal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+@media (max-width: 600px) {
+  .sismal-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sismal-table thead {
+    position: static;
+  }
+  .sismal-national-table {
+    table-layout: fixed;
+    overflow-wrap: anywhere;
+  }
+  .sismal-national-table :is(th, td) {
+    padding: 8px 5px;
+  }
+  .sismal-national-table th:first-child {
+    width: 40%;
+  }
+}

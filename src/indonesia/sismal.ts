@@ -1,4 +1,5 @@
-import { masters, regionName, validDate, validTimestamp } from './engine.ts';
+import { masters, regionName, validDate, validHttps, validTimestamp } from './engine.ts';
+import { districtCoverage } from '../region-profile.ts';
 import { mapSkdrLabel, type SkdrSelection, type SkdrSnapshot, skdrExport } from './skdr.ts';
 export type SismalRow = {
   level: 'district';
@@ -20,16 +21,26 @@ export type SismalSnapshot = {
   reportingYear: number;
   retrievedAt: string | null;
   sourceUrl: string;
-  evidence: 'portal-response' | 'user-supplied-incomplete';
+  evidence: 'portal-response' | 'reviewed-aggregate' | 'user-supplied-incomplete';
   responseState: 'available' | 'empty' | 'not-fetched';
   boundaryVersion: '2025';
   rows: SismalRow[];
   unmapped: { sourceId: string; reason: string }[];
 };
-const normalized = (s: string) =>
+export const sismalEvidence: Record<SismalSnapshot['evidence'], string> = {
+  'portal-response': 'Respons portal SISMAL',
+  'reviewed-aggregate': 'Rekap resmi SISMAL yang ditinjau dan diimpor',
+  'user-supplied-incomplete': 'Data parsial dari permintaan; belum diperiksa terhadap portal',
+};
+const districtLabel = (s: string) =>
   s
+    .trim()
     .toLocaleUpperCase('id')
-    .replace(/^(KABUPATEN|KAB\.?|KOTA)\s+/, '')
+    .replace(/^KAB\.?\s+/, 'KABUPATEN ')
+    .replace(/\s+/g, ' ');
+const normalized = (s: string) =>
+  districtLabel(s)
+    .replace(/^(KABUPATEN|KOTA)\s+/, '')
     .replace(/[^A-Z0-9]/g, '');
 // Source IDs are NOT Kemendagri codes. This override comes from the supplied source example.
 export const sourceMappings = [
@@ -57,10 +68,9 @@ export function mapSismalRegion(sourceId: string, name: string, province: string
     (r) => r.code.startsWith(provinceCode + '.') && normalized(r.name) === normalized(name),
   );
   // City and regency names cannot be disambiguated by silently dropping their type.
-  const exact = candidates.filter(
-    (r) => r.name.toLocaleUpperCase('id') === name.toLocaleUpperCase('id'),
-  );
-  const match = exact.length === 1 ? exact : candidates;
+  const exact = candidates.filter((r) => districtLabel(r.name) === districtLabel(name));
+  const typed = /^(KABUPATEN|KOTA)\s/.test(districtLabel(name));
+  const match = typed || exact.length === 1 ? exact : candidates;
   if (match.length !== 1)
     throw Error(`Wilayah tidak terpetakan/ambigu dalam induk ${provinceCode}.`);
   return { regionCode: match[0].code, provinceCode };
@@ -172,6 +182,50 @@ export function normalizeSismal(
     unmapped,
   };
 }
+
+function officialSismalUrl(url: unknown): url is string {
+  return validHttps(url) && new URL(url).origin === 'https://malaria.kemkes.go.id';
+}
+
+export function normalizeReviewedSismal(input: unknown, year: number): SismalSnapshot {
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    throw Error('Berkas rekap SISMAL harus berupa objek JSON.');
+  const { sourceUrl, retrievedAt, rows, ...extra } = input as Record<string, unknown>;
+  if (
+    Object.keys(extra).length ||
+    !officialSismalUrl(sourceUrl) ||
+    !validTimestamp(retrievedAt) ||
+    !Array.isArray(rows) ||
+    !rows.length ||
+    rows.length > 100000
+  )
+    throw Error('Rekap SISMAL wajib berisi sourceUrl resmi, retrievedAt, dan rows agregat.');
+  const columns = new Set<string>(Object.values(aliases).map(([canonical]) => canonical));
+  for (const [i, row] of rows.entries()) {
+    if (
+      !row ||
+      typeof row !== 'object' ||
+      Array.isArray(row) ||
+      Object.keys(row).some((key) => !columns.has(key)) ||
+      Object.values(row).some(
+        (value) =>
+          typeof value === 'string' &&
+          (value.length > 250 || /\b\d{16}\b|[\w.+-]+@[\w.-]+\.[a-z]{2,}/i.test(value)),
+      )
+    )
+      throw Error(`Baris ${i + 1}: hanya kolom rekap agregat SISMAL yang diizinkan.`);
+  }
+  const snapshot = normalizeSismal(rows, year, retrievedAt, sourceUrl);
+  if (snapshot.unmapped.length)
+    throw Error(
+      `Rekap ditolak: ${snapshot.unmapped.length} baris tidak terpetakan (ID ${snapshot.unmapped
+        .slice(0, 10)
+        .map((row) => row.sourceId)
+        .join(', ')}).`,
+    );
+  return { ...snapshot, evidence: 'reviewed-aggregate' };
+}
+
 export function validateSismal(s: SismalSnapshot, year: number): string[] {
   if (
     !s ||
@@ -182,7 +236,7 @@ export function validateSismal(s: SismalSnapshot, year: number): string[] {
     s.boundaryVersion !== '2025' ||
     !Array.isArray(s.rows) ||
     !Array.isArray(s.unmapped) ||
-    !['portal-response', 'user-supplied-incomplete'].includes(s.evidence) ||
+    !Object.hasOwn(sismalEvidence, s.evidence) ||
     !['available', 'empty', 'not-fetched'].includes(s.responseState)
   )
     return ['Snapshot SISMAL tidak sah.'];
@@ -223,14 +277,15 @@ export function validateSismal(s: SismalSnapshot, year: number): string[] {
     if (keys.has(key)) errors.push('Duplikat unit pada snapshot SISMAL.');
     keys.add(key);
   }
-  if (s.evidence === 'portal-response' && !validTimestamp(s.retrievedAt))
+  if (s.evidence !== 'user-supplied-incomplete' && !validTimestamp(s.retrievedAt))
     errors.push('Penarikan portal wajib bertanggal.');
-  if (!/^https:\/\/malaria\.kemkes\.go\.id\//.test(s.sourceUrl))
-    errors.push('URL sumber SISMAL tidak sah.');
+  if (!officialSismalUrl(s.sourceUrl)) errors.push('URL sumber SISMAL tidak sah.');
   if (s.responseState === 'empty' && (s.rows.length || s.unmapped.length))
     errors.push('Respons kosong tidak boleh memuat observasi.');
-  if (s.evidence === 'portal-response' && s.responseState === 'not-fetched')
+  if (s.evidence !== 'user-supplied-incomplete' && s.responseState === 'not-fetched')
     errors.push('Status respons bertentangan dengan bukti penarikan.');
+  if (s.evidence === 'reviewed-aggregate' && (!s.rows.length || s.unmapped.length))
+    errors.push('Rekap impor wajib berisi observasi yang terpetakan.');
   if (s.unmapped.some((r) => !r || typeof r.sourceId !== 'string' || typeof r.reason !== 'string'))
     errors.push('Daftar pemetaan ditolak tidak sah.');
   return errors;
@@ -290,6 +345,7 @@ export function surveillanceExport(
       responseState: sismal.responseState,
     },
     records: scopedSismal(sismal, selection),
+    coverage: districtCoverage(selection.region, sismal.rows),
     reconciliation: undefined,
   };
 }
